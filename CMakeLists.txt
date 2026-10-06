@@ -35,6 +35,7 @@ target_include_directories(cppui_headers INTERFACE
 # CPPUI 核心與 PAL 實作庫 (cppui_pal)
 # -----------------------------------------------------------------------------
 set(CPPUI_SOURCES
+    src/rendering/DisplayListRenderer.cpp
     src/rendering/backend/SoftwareRenderContext.cpp
     src/rendering/backend/SkiaRenderContext.cpp
 )

@@ -69,6 +69,21 @@ struct Rect {
     constexpr Point Origin() const noexcept { return Point(x, y); }
     constexpr Size GetSize() const noexcept { return Size(width, height); }
 
+    constexpr bool IsEmpty() const noexcept {
+        return width <= 0.0f || height <= 0.0f;
+    }
+
+    constexpr Rect Intersect(const Rect& other) const noexcept {
+        float l = (x > other.x) ? x : other.x;
+        float t = (y > other.y) ? y : other.y;
+        float r = (Right() < other.Right()) ? Right() : other.Right();
+        float b = (Bottom() < other.Bottom()) ? Bottom() : other.Bottom();
+        if (r <= l || b <= t) {
+            return Rect(0.0f, 0.0f, 0.0f, 0.0f);
+        }
+        return Rect(l, t, r - l, b - t);
+    }
+
     constexpr bool Contains(const Point& p) const noexcept {
         return p.x >= x && p.x <= Right() && p.y >= y && p.y <= Bottom();
     }
