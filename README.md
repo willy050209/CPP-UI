@@ -15,6 +15,7 @@ CPPUI 是一個極致現代化、高效能且具備極速開發體驗的跨平�
 ## 📚 設計規範與文件 (Documentation)
 
 請在開始開發或閱讀源碼前，詳閱以下實體規範檔案：
+- [📖 **CPPUI MSDN 風格完整 API 參考文件 (API Reference)**](docs/api/README.md)
 - [01. 三層架構分離與依賴邊界規範](docs/specs/01_architecture_layers.md)
 - [02. 代碼規範與向下相容標準 (compat.hpp)](docs/specs/02_coding_standards_compat.md)
 - [03. 命令錄製、DisplayList 與記憶體架構](docs/specs/03_rendering_and_memory.md)
