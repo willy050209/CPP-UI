@@ -15,7 +15,7 @@ struct TextLayoutEngine::Impl {
         TextWrapping wrapping,
         TextTrimming trimming
     ) const {
-        auto layoutImpl = std::unique_ptr<TextLayout::Impl>(new TextLayout::Impl());
+        auto layoutImpl = std::make_shared<TextLayout::Impl>();
         layoutImpl->text = std::string(text.data(), text.size());
         layoutImpl->font = font;
 

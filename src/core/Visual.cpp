@@ -114,13 +114,16 @@ void Visual::Render(rendering::DrawingContext& dc) {
         return;
     }
 
+    // 壓入本節點的局部相對坐標偏移
+    dc.PushOffset(m_visualOffset);
+
     bool hasOpacity = (m_opacity < 1.0f);
     if (hasOpacity) {
         dc.PushOpacity(m_opacity);
     }
 
     if (m_clipToBounds) {
-        dc.PushClip(Rect(m_visualOffset.x, m_visualOffset.y, m_visualBounds.width, m_visualBounds.height));
+        dc.PushClip(Rect(0.0f, 0.0f, m_visualBounds.width, m_visualBounds.height));
     }
 
     // 呼叫虛擬繪圖自訂點
@@ -140,6 +143,9 @@ void Visual::Render(rendering::DrawingContext& dc) {
     if (hasOpacity) {
         dc.PopOpacity();
     }
+
+    // 彈出本節點的局部坐標偏移
+    dc.PopOffset();
 }
 
 } // namespace core

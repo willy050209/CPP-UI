@@ -68,13 +68,13 @@ public:
     TextLayout();
     ~TextLayout();
 
+    // 支援拷貝與共享所有權 (O(1) 共享底層排版狀態)
+    TextLayout(const TextLayout& other);
+    TextLayout& operator=(const TextLayout& other);
+
     // 支援移動語意
     TextLayout(TextLayout&& other) noexcept;
     TextLayout& operator=(TextLayout&& other) noexcept;
-
-    // 禁止拷貝 (持有底層引擎原生排版資源句柄)
-    TextLayout(const TextLayout&) = delete;
-    TextLayout& operator=(const TextLayout&) = delete;
 
     /// <summary>
     /// 取得排版總體寬高尺寸 (以 DIP 浮點數表示)
@@ -118,10 +118,10 @@ public:
 
     // 內部建構輔助 (PImpl)
     struct Impl;
-    explicit TextLayout(std::unique_ptr<Impl> impl);
+    explicit TextLayout(std::shared_ptr<Impl> impl);
 
 private:
-    std::unique_ptr<Impl> m_impl;
+    std::shared_ptr<Impl> m_impl;
 };
 
 } // namespace text

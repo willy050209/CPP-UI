@@ -13,18 +13,23 @@ TextBlock::TextBlock(compat::string_view text)
 void TextBlock::SetText(compat::string_view text) {
     if (m_text != text) {
         m_text.assign(text.data(), text.size());
+        m_isLayoutDirty = true;
         InvalidateMeasure();
     }
 }
 
 void TextBlock::SetFont(const text::FontDescriptor& font) {
-    m_font = font;
-    InvalidateMeasure();
+    if (m_font != font) {
+        m_font = font;
+        m_isLayoutDirty = true;
+        InvalidateMeasure();
+    }
 }
 
 void TextBlock::SetFontSize(float size) {
     if (m_font.GetSize() != size) {
         m_font.SetSize(size);
+        m_isLayoutDirty = true;
         InvalidateMeasure();
     }
 }
@@ -32,6 +37,7 @@ void TextBlock::SetFontSize(float size) {
 void TextBlock::SetFontFamily(compat::string_view family) {
     if (m_font.GetFamily() != family) {
         m_font.SetFamily(family);
+        m_isLayoutDirty = true;
         InvalidateMeasure();
     }
 }
@@ -39,6 +45,7 @@ void TextBlock::SetFontFamily(compat::string_view family) {
 void TextBlock::SetFontWeight(text::FontWeight weight) {
     if (m_font.GetWeight() != weight) {
         m_font.SetWeight(weight);
+        m_isLayoutDirty = true;
         InvalidateMeasure();
     }
 }
@@ -46,6 +53,7 @@ void TextBlock::SetFontWeight(text::FontWeight weight) {
 void TextBlock::SetFontStyle(text::FontStyle style) {
     if (m_font.GetStyle() != style) {
         m_font.SetStyle(style);
+        m_isLayoutDirty = true;
         InvalidateMeasure();
     }
 }
@@ -60,6 +68,7 @@ void TextBlock::SetForeground(core::Color foreground) {
 void TextBlock::SetTextWrapping(text::TextWrapping wrapping) {
     if (m_wrapping != wrapping) {
         m_wrapping = wrapping;
+        m_isLayoutDirty = true;
         InvalidateMeasure();
     }
 }
@@ -67,6 +76,7 @@ void TextBlock::SetTextWrapping(text::TextWrapping wrapping) {
 void TextBlock::SetTextAlignment(text::TextAlignment alignment) {
     if (m_alignment != alignment) {
         m_alignment = alignment;
+        m_isLayoutDirty = true;
         InvalidateVisual();
     }
 }
@@ -74,6 +84,7 @@ void TextBlock::SetTextAlignment(text::TextAlignment alignment) {
 void TextBlock::SetTextTrimming(text::TextTrimming trimming) {
     if (m_trimming != trimming) {
         m_trimming = trimming;
+        m_isLayoutDirty = true;
         InvalidateMeasure();
     }
 }
@@ -88,7 +99,17 @@ core::Size TextBlock::MeasureOverride(core::Size availableSize) {
         maxW = 1e9f;
     }
 
-    return text::TextLayoutEngine::Get().MeasureText(m_text, m_font, maxW);
+    m_textLayout = text::TextLayoutEngine::Get().CreateLayout(
+        m_text,
+        m_font,
+        maxW,
+        1e9f,
+        m_alignment,
+        m_wrapping,
+        m_trimming
+    );
+    m_isLayoutDirty = false;
+    return m_textLayout.GetSize();
 }
 
 void TextBlock::OnRender(rendering::DrawingContext& dc) {
@@ -98,18 +119,21 @@ void TextBlock::OnRender(rendering::DrawingContext& dc) {
     float layoutW = (bounds.width > 0.0f) ? bounds.width : 1e9f;
     float layoutH = (bounds.height > 0.0f) ? bounds.height : 1e9f;
 
-    text::TextLayout layout = text::TextLayoutEngine::Get().CreateLayout(
-        m_text,
-        m_font,
-        layoutW,
-        layoutH,
-        m_alignment,
-        m_wrapping,
-        m_trimming
-    );
+    if (m_isLayoutDirty || m_textLayout.GetLineCount() == 0) {
+        m_textLayout = text::TextLayoutEngine::Get().CreateLayout(
+            m_text,
+            m_font,
+            layoutW,
+            layoutH,
+            m_alignment,
+            m_wrapping,
+            m_trimming
+        );
+        m_isLayoutDirty = false;
+    }
 
-    if (layout.GetNativeHandle() != nullptr) {
-        dc.DrawTextLayout(layout, core::Point(0.0f, 0.0f), m_foreground);
+    if (m_textLayout.GetNativeHandle() != nullptr) {
+        dc.DrawTextLayout(m_textLayout, core::Point(0.0f, 0.0f), m_foreground);
     } else {
         dc.DrawText(m_text, core::Point(0.0f, 0.0f), m_font, m_foreground);
     }

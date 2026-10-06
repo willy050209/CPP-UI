@@ -297,10 +297,7 @@ int main() {
     auto updateLayoutAndRender = [&]() {
         if (currentWidth == 0 || currentHeight == 0) return;
 
-        // 1. 執行排版更新 (雙階段管線)
-        layoutMgr.UpdateLayout(*rootBorder, Size(static_cast<float>(currentWidth), static_cast<float>(currentHeight)));
-
-        // 2. 更新狀態字串
+        // 1. 更新狀態字串 (於排版更新前執行，確保狀態字串之度量與邊界配置與當前幀同步)
         auto stats = layoutMgr.GetStats();
         std::string statStr = "【排版引擎即時度量】 累計 Measure: " + std::to_string(stats.totalMeasures)
                             + " 次 | 累計 Arrange: " + std::to_string(stats.totalArranges)
@@ -308,6 +305,9 @@ int main() {
                             + " | 標題對齊: " + alignNames[alignIdx]
                             + " | 卡片總數: " + std::to_string(cardStack->GetChildrenCount() - 1);
         statusText->SetText(statStr);
+
+        // 2. 執行排版更新 (雙階段管線)
+        layoutMgr.UpdateLayout(*rootBorder, Size(static_cast<float>(currentWidth), static_cast<float>(currentHeight)));
 
         // 3. 錄製視覺樹繪製指令流
         displayList.Clear();

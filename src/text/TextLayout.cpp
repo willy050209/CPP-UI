@@ -4,10 +4,13 @@
 namespace cppui {
 namespace text {
 
-TextLayout::TextLayout() : m_impl(new Impl()) {}
+TextLayout::TextLayout() : m_impl(std::make_shared<Impl>()) {}
 TextLayout::~TextLayout() = default;
 
-TextLayout::TextLayout(std::unique_ptr<Impl> impl) : m_impl(std::move(impl)) {}
+TextLayout::TextLayout(std::shared_ptr<Impl> impl) : m_impl(std::move(impl)) {}
+
+TextLayout::TextLayout(const TextLayout& other) = default;
+TextLayout& TextLayout::operator=(const TextLayout& other) = default;
 
 TextLayout::TextLayout(TextLayout&& other) noexcept = default;
 TextLayout& TextLayout::operator=(TextLayout&& other) noexcept = default;

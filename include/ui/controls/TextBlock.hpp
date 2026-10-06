@@ -61,6 +61,9 @@ private:
     text::TextWrapping    m_wrapping = text::TextWrapping::WordWrap;
     text::TextAlignment   m_alignment = text::TextAlignment::Left;
     text::TextTrimming    m_trimming = text::TextTrimming::None;
+
+    text::TextLayout      m_textLayout;
+    bool                  m_isLayoutDirty = true;
 };
 
 } // namespace controls
