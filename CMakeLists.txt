@@ -38,11 +38,18 @@ set(CPPUI_SOURCES
     src/rendering/DisplayListRenderer.cpp
     src/rendering/backend/SoftwareRenderContext.cpp
     src/rendering/backend/SkiaRenderContext.cpp
+    src/text/FontManager.cpp
+    src/text/TextShaper.cpp
+    src/text/BiDiAnalyzer.cpp
+    src/text/LineBreaker.cpp
+    src/text/TextLayout.cpp
+    src/text/TextLayoutEngine.cpp
 )
 
 if(WIN32)
     list(APPEND CPPUI_SOURCES
         src/pal/win32/PlatformWindowWin32.cpp
+        src/text/DirectWriteTextEngine.cpp
     )
 endif()
 

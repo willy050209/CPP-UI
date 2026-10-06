@@ -88,24 +88,31 @@ int main() {
         interactiveLayout = textEngine.CreateLayout(interactiveText, bodyFont, contentW, 400.0f, TextAlignment::Left, TextWrapping::WordWrap);
     };
 
+    RunLoop loop;
+    loop.AttachWindow(window);
+
     window->SetEventCallback([&](const RawInputEvent& e) {
         switch (e.type) {
             case RawEventType::MouseMove:
                 mousePos = e.mouse.position;
+                loop.RequestRedraw();
                 break;
             case RawEventType::MouseDown:
                 isMouseDown = true;
                 mousePos = e.mouse.position;
+                loop.RequestRedraw();
                 break;
             case RawEventType::MouseUp:
                 isMouseDown = false;
                 mousePos = e.mouse.position;
+                loop.RequestRedraw();
                 break;
             case RawEventType::WindowResize:
                 currentWidth = e.window.width;
                 currentHeight = e.window.height;
                 dpiScale = e.window.dpiScale;
                 renderContext->Resize(currentWidth, currentHeight);
+                loop.RequestRedraw();
                 break;
             case RawEventType::KeyDown:
                 if (e.key.virtualKey == 27) {
@@ -123,12 +130,11 @@ int main() {
 
     compat::println("Entering RunLoop. Move mouse over the interactive text area to inspect hit-testing!");
 
-    RunLoop loop;
-    loop.AttachWindow(window);
-
     auto startTime = std::chrono::high_resolution_clock::now();
 
     loop.SetRenderCallback([&]() {
+        if (currentWidth == 0 || currentHeight == 0) return;
+
         auto now = std::chrono::high_resolution_clock::now();
         float elapsed = std::chrono::duration<float>(now - startTime).count();
 
@@ -224,6 +230,9 @@ int main() {
         IRenderTarget* target = renderContext->BeginFrame();
         renderer.Render(displayList, target);
         renderContext->EndFrame();
+
+        // 持續請求重繪以維持 60 FPS 動畫 (光標閃爍與動態度量)
+        loop.RequestRedraw();
     });
 
     loop.Run();

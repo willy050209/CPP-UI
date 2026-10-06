@@ -1,6 +1,36 @@
-$clangPath = "C:\Program Files\LLVM\bin\clang++.exe"
-$gccPath   = "C:\msys64\ucrt64\bin\g++.exe"
-$vsDevCmd  = "C:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\Tools\VsDevCmd.bat"
+# 1. 動態查找 Clang++
+$clangPath = if (Get-Command clang++.exe -ErrorAction SilentlyContinue) { (Get-Command clang++.exe).Source }
+             elseif (Test-Path "C:\Program Files\LLVM\bin\clang++.exe") { "C:\Program Files\LLVM\bin\clang++.exe" }
+             else { "clang++.exe" }
+
+# 2. 動態查找 G++
+$gccPath = if (Get-Command g++.exe -ErrorAction SilentlyContinue) { (Get-Command g++.exe).Source }
+           elseif (Test-Path "C:\msys64\ucrt64\bin\g++.exe") { "C:\msys64\ucrt64\bin\g++.exe" }
+           else { "g++.exe" }
+
+# 3. 動態查找 VsDevCmd.bat
+$vsDevCmdCandidates = @(
+    "C:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\Tools\VsDevCmd.bat",
+    "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat",
+    "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat",
+    "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\Tools\VsDevCmd.bat",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat"
+)
+$vsDevCmd = $vsDevCmdCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $vsDevCmd) {
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vswhere) {
+        $installPath = & $vswhere -latest -property installationPath
+        if ($installPath -and (Test-Path "$installPath\Common7\Tools\VsDevCmd.bat")) {
+            $vsDevCmd = "$installPath\Common7\Tools\VsDevCmd.bat"
+        }
+    }
+}
+if (-not $vsDevCmd) {
+    $vsDevCmd = "C:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\Tools\VsDevCmd.bat"
+}
+
 $outDir    = "build\matrix_test"
 
 if (-not (Test-Path $outDir)) {
@@ -187,3 +217,11 @@ Write-Host "`n==================================================================
 Write-Host " CPPUI Multi-Compiler x Multi-Standard Cross-Verification Matrix"
 Write-Host "=========================================================================="
 $results | Format-Table -AutoSize
+
+$failures = $results | Where-Object { $_.Compile -ne "PASS" -or $_.Run -ne "PASS" }
+if ($failures.Count -gt 0) {
+    Write-Error "$($failures.Count) test(s) failed in matrix suite!"
+    exit 1
+} else {
+    Write-Host "`nAll $($results.Count) tests PASSED successfully!" -ForegroundColor Green
+}

@@ -45,6 +45,9 @@ public:
     bool WaitEvents(int timeoutMs = -1) override;
 
     void RequestRedraw() override;
+    void SetPaintCallback(PaintCallback callback) override {
+        m_paintCallback = std::move(callback);
+    }
 
     HWND GetHwnd() const noexcept { return m_hwnd; }
     HDC  GetHdc() const noexcept { return m_hdc; }
@@ -66,6 +69,7 @@ private:
     uint32_t      m_width = 800;
     uint32_t      m_height = 600;
     EventCallback m_eventCallback;
+    PaintCallback m_paintCallback;
 };
 
 } // namespace win32

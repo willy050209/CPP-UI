@@ -1,0 +1,87 @@
+name: CPPUI CI Pipeline
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  msvc-build:
+    name: MSVC (Windows, C++20)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake (MSVC x64)
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_STANDARD=20
+
+      - name: Build All Targets (cppui_core, tests, examples)
+        run: cmake --build build --config Release
+
+      - name: Run CTest Suite
+        run: ctest --test-dir build -C Release --output-on-failure --verbose
+
+  clang-build:
+    name: Clang++ (Windows, C++20)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake (Clang++ with Ninja)
+        run: cmake -B build -G "Ninja" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+
+      - name: Build All Targets
+        run: cmake --build build
+
+      - name: Run CTest Suite
+        run: ctest --test-dir build --output-on-failure --verbose
+
+  mingw-build:
+    name: MinGW GCC (Windows UCRT64, C++20)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 UCRT64 Environment
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-cmake
+
+      - name: Configure CMake (MinGW GCC with Ninja)
+        shell: msys2 {0}
+        run: cmake -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+
+      - name: Build All Targets
+        shell: msys2 {0}
+        run: cmake --build build
+
+      - name: Run CTest Suite
+        shell: msys2 {0}
+        run: ctest --test-dir build --output-on-failure --verbose
+
+  matrix-verification:
+    name: Multi-Compiler Full Matrix Suite (48/48 Standards Verification)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 for MinGW G++
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: mingw-w64-ucrt-x86_64-gcc
+
+      - name: Run Multi-Compiler Multi-Standard Matrix Suite
+        shell: powershell
+        run: powershell.exe -ExecutionPolicy Bypass -File tests/run_matrix_suite.ps1

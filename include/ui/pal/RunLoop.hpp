@@ -27,6 +27,7 @@ public:
     /// </summary>
     void AttachWindow(std::shared_ptr<IPlatformWindow> window) {
         m_window = std::move(window);
+        UpdateWindowPaintHook();
     }
 
     /// <summary>
@@ -34,6 +35,7 @@ public:
     /// </summary>
     void SetRenderCallback(std::function<void()> callback) {
         m_renderCallback = std::move(callback);
+        UpdateWindowPaintHook();
     }
 
     /// <summary>
@@ -94,6 +96,16 @@ public:
     }
 
 private:
+    void UpdateWindowPaintHook() {
+        if (m_window && m_renderCallback) {
+            m_window->SetPaintCallback([this]() {
+                if (m_renderCallback) {
+                    m_renderCallback();
+                }
+            });
+        }
+    }
+
     std::shared_ptr<IPlatformWindow> m_window = nullptr;
     std::function<void()>            m_renderCallback;
     bool                             m_running = false;

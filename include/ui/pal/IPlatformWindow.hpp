@@ -54,6 +54,10 @@ public:
 
     // 觸發視窗重繪請求
     virtual void RequestRedraw() = 0;
+
+    // 即時重繪渲染回呼 (用於視窗尺寸拖曳變更與系統繪製通知)
+    using PaintCallback = std::function<void()>;
+    virtual void SetPaintCallback(PaintCallback callback) = 0;
 };
 
 } // namespace pal

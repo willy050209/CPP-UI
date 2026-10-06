@@ -344,6 +344,9 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             m_width = LOWORD(lParam);
             m_height = HIWORD(lParam);
             DispatchEvent(RawInputEvent::MakeResize(m_width, m_height, m_dpiScale, ts));
+            if (m_paintCallback && m_width > 0 && m_height > 0) {
+                m_paintCallback();
+            }
             return 0;
         }
 
@@ -354,6 +357,9 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
                          prc->right - prc->left, prc->bottom - prc->top,
                          SWP_NOZORDER | SWP_NOACTIVATE);
             DispatchEvent(RawInputEvent::MakeResize(m_width, m_height, m_dpiScale, ts));
+            if (m_paintCallback && m_width > 0 && m_height > 0) {
+                m_paintCallback();
+            }
             return 0;
         }
 
@@ -376,6 +382,9 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(m_hwnd, &ps);
+            if (m_paintCallback && m_width > 0 && m_height > 0) {
+                m_paintCallback();
+            }
             EndPaint(m_hwnd, &ps);
             (void)hdc;
             return 0;
