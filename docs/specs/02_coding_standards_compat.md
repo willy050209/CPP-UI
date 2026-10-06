@@ -10,19 +10,39 @@ CPPUI 專案全面引入自行研發的 [`compat.hpp`](file:///D:/P/CPP/CPPUI/in
 
 ---
 
-## 2. 強制性相容型別使用規範
+## 2. 強制性相容型別與現代化視圖使用規範 (Modern Views & Types)
 
-在 `cppui` 命名空間內編寫所有公共頭文件與核心邏輯時，**一律遵循以下型別映射表**：
+在 `cppui` 命名空間內編寫所有公共頭文件與核心邏輯時，**一律遵循以下型別映射與現代化視圖規範**：
+
+### 2.1 型別映射標準表
 
 | 標準庫概念 | 禁用寫法 | 強制使用寫法 | 說明 |
 | :--- | :--- | :--- | :--- |
-| **字串視圖** | `const char*` + `size_t` | `compat::string_view` | 避免多餘字串拷貝，唯讀參數首選。 |
-| **陣列切片視圖**| `const T*` + `size_t` | `compat::span<T>` / `compat::span<const T>` | 記憶體連續緩衝區（如 DisplayList 指令流、Glyph 陣列）首選。 |
+| **字串視圖** | `const char*` + `size_t` / `const std::string&` | `compat::string_view` | 避免多餘字串拷貝，唯讀字串參數首選。 |
+| **陣列切片視圖**| `const T*` + `size_t` / `const std::vector<T>&` | `compat::span<T>` / `compat::span<const T>` | 連續記憶體緩衝區（如指令流、字符 Glyphs）首選。 |
+| **集合惰性管線**| 手寫暫存 `std::vector` / 繁複迴圈 | `compat::views::*` 搭配 `operator\|` | 零分配惰性過濾與投影（`filter`, `transform`, `take`）。 |
 | **可空值語意** | 裸指標 `nullptr` 代表無值 | `compat::optional<T>` | 清楚表述數值可能不存在（如文字命中測試結果）。 |
 | **型別安全聯合**| `union` 或 `void*` | `compat::variant<Ts...>` | 用於多型事件參數、屬性值包裝。 |
-| **錯誤返回** | C 風格錯誤代碼 / 拋出異常 | `compat::expected<T, E>` | 適用於可預期的管線失敗（如字型加載、檔案解碼），不產生異常棧開銷。 |
+| **錯誤返回** | C 風格錯誤代碼 / 拋出異常 | `compat::expected<T, E>` | 適用於可預期的管線失敗，不產生異常棧開銷。 |
 | **字串格式化** | `sprintf` / `std::stringstream` | `compat::format(...)` | 型別安全且高效的文字格式化。 |
-| **終端除錯輸出**| `printf` / `std::cout` | `compat::print(...)` | 跨平台 UTF-8 友善終端輸出。 |
+| **終端除錯輸出**| `printf` / `std::cout` | `compat::print(...)` / `compat::println(...)` | 跨平台 UTF-8 友善終端輸出。 |
+
+### 2.2 現代化視圖 (Views) 優先契約
+1. **字串視圖優先**：
+   - 所有函式與方法的唯讀字串參數，**一律使用 `compat::string_view`**。
+   - 嚴禁使用 `const std::string&` 作為唯讀參數型別（除非該函式內部必須轉存所有權且使用移動語意）。
+   - 與底層 Win32 C-API 互動需傳遞 NUL 結尾字串時，封裝於內部私有實作轉換，公開介面維持 `compat::string_view`。
+2. **緩衝區切片視圖優先 (`compat::span`)**：
+   - 所有接受連續記憶體區塊（如頂點、繪圖操作流、字符、像素區段）的函式，**強制使用 `compat::span<T>` 或 `compat::span<const T>`**。
+   - 嚴禁使用老舊的雙參數裸指標加長度 (`const T* ptr, size_t count`)，杜絕越界與安全漏洞。
+   - 避免將參數型別硬綁定為特定容器（如 `const std::vector<T>&`），改用 `compat::span<const T>` 即可同時無縫接收 `std::vector`、`std::array`、原生陣列或連續平坦記憶體池。
+3. **資料流轉換優先走惰性管線 (`compat::views::*`)**：
+   - 處理元件樹、命中清單或圖元集合的過濾、投影與截取時，優先採用 `compat::views::*` 搭配管道運算子 `|`（如 `compat::views::filter`, `transform`, `take`, `as_const`）。
+   - 實現 $O(1)$ 複製複雜度與零堆積配置，嚴禁手寫建立臨時 `std::vector` 進行中繼儲存。
+4. **生命週期安全原則 (Borrowing & Lifetime Safety)**：
+   - 視圖（`string_view`, `span`, `subrange`, 視圖適配器）為不具備所有權的「借用視圖」（Borrowed View）。
+   - 嚴禁持有或回傳指向臨時右值物件（Rvalue Container）的懸空視圖。
+
 
 ---
 
