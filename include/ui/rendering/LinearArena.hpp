@@ -101,12 +101,23 @@ public:
     /// <summary>
     /// 取得平坦緩衝區原始資料指標
     /// </summary>
-    const uint8_t* GetData() const noexcept {
+    COMPAT_NODISCARD const uint8_t* GetData() const noexcept {
         return m_buffer.data();
     }
 
-    uint8_t* GetData() noexcept {
+    COMPAT_NODISCARD uint8_t* GetData() noexcept {
         return m_buffer.data();
+    }
+
+    /// <summary>
+    /// 取得目前已使用平坦資料之連續切片視圖 (span)
+    /// </summary>
+    COMPAT_NODISCARD compat::span<const uint8_t> GetSpan() const noexcept {
+        return compat::span<const uint8_t>(m_buffer.data(), m_offset);
+    }
+
+    COMPAT_NODISCARD compat::span<uint8_t> GetSpan() noexcept {
+        return compat::span<uint8_t>(m_buffer.data(), m_offset);
     }
 
 private:

@@ -16743,6 +16743,67 @@ namespace compat {
     COMPAT_NODISCARD inline COMPAT_CONSTEXPR_14 const T& clamp(const T& v, const T& lo, const T& hi) {
         return (v < lo) ? lo : (hi < v) ? hi : v;
     }
+
+    /// <summary>
+    /// 跨 C++14/17/20/23 相容的連續緩衝區切片視圖 (span)
+    /// </summary>
+    template <typename T>
+    class span {
+    public:
+        using element_type           = T;
+        using value_type             = typename std::remove_cv<T>::type;
+        using size_type              = std::size_t;
+        using difference_type        = std::ptrdiff_t;
+        using pointer                = T*;
+        using const_pointer          = const T*;
+        using reference              = T&;
+        using const_reference        = const T&;
+        using iterator               = T*;
+        using const_iterator         = const T*;
+
+        COMPAT_CONSTEXPR_14 span() noexcept : m_data(nullptr), m_size(0) {}
+        COMPAT_CONSTEXPR_14 span(pointer ptr, size_type count) noexcept : m_data(ptr), m_size(count) {}
+        COMPAT_CONSTEXPR_14 span(pointer first, pointer last) noexcept : m_data(first), m_size(static_cast<size_type>(last - first)) {}
+
+        template <std::size_t N>
+        COMPAT_CONSTEXPR_14 span(element_type (&arr)[N]) noexcept : m_data(arr), m_size(N) {}
+
+        template <typename Container, typename = typename std::enable_if<
+            !std::is_same<typename std::decay<Container>::type, span>::value &&
+            std::is_convertible<decltype(std::declval<Container&>().data()), pointer>::value
+        >::type>
+        COMPAT_CONSTEXPR_14 span(Container& cont) noexcept : m_data(cont.data()), m_size(cont.size()) {}
+
+        template <typename Container, typename = typename std::enable_if<
+            !std::is_same<typename std::decay<Container>::type, span>::value &&
+            std::is_convertible<decltype(std::declval<const Container&>().data()), pointer>::value
+        >::type>
+        COMPAT_CONSTEXPR_14 span(const Container& cont) noexcept : m_data(cont.data()), m_size(cont.size()) {}
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 pointer data() const noexcept { return m_data; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 size_type size() const noexcept { return m_size; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 size_type size_bytes() const noexcept { return m_size * sizeof(element_type); }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool empty() const noexcept { return m_size == 0; }
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference operator[](size_type idx) const noexcept { return m_data[idx]; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference front() const noexcept { return m_data[0]; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference back() const noexcept { return m_data[m_size - 1]; }
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 iterator begin() const noexcept { return m_data; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 iterator end() const noexcept { return m_data + m_size; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const_iterator cbegin() const noexcept { return m_data; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const_iterator cend() const noexcept { return m_data + m_size; }
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 span subspan(size_type offset, size_type count = static_cast<size_type>(-1)) const noexcept {
+            if (offset >= m_size) return span();
+            size_type maxCount = m_size - offset;
+            return span(m_data + offset, static_cast<size_type>((count > maxCount) ? maxCount : count));
+        }
+
+    private:
+        pointer   m_data = nullptr;
+        size_type m_size = 0;
+    };
 } // namespace compat
 
 // Undefine strictly internal private implementation details only

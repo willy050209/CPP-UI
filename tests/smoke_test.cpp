@@ -42,6 +42,28 @@ int main() {
     assert(col.r == 70 && col.g == 130 && col.b == 180 && col.a == 255);
     compat::println("[PASS] Color (SteelBlue RGBA)");
 
+    // 6. 驗證 compat::span
+    int arr[] = { 10, 20, 30, 40, 50 };
+    compat::span<int> sp(arr);
+    assert(sp.size() == 5);
+    assert(sp[0] == 10);
+    assert(sp.back() == 50);
+    compat::span<int> sub = sp.subspan(1, 3);
+    assert(sub.size() == 3);
+    assert(sub[0] == 20);
+    compat::println("[PASS] compat::span (size={}, subspan={})", sp.size(), sub.size());
+
+    // 7. 驗證 compat::views 惰性管道
+    int sum = 0;
+    auto pipe = compat::views::iota(1, 10)
+        | compat::views::filter([](int n) { return n % 2 == 0; })
+        | compat::views::take(3);
+    compat::ranges::for_each(pipe, [&](int v) {
+        sum += v;
+    });
+    assert(sum == (2 + 4 + 6));
+    compat::println("[PASS] compat::views pipeline (iota | filter | take)");
+
     compat::println("[CPPUI Smoke Test] All checks passed successfully!");
     return 0;
 }

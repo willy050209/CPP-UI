@@ -38,6 +38,14 @@ public:
         return m_pixels.data();
     }
 
+    COMPAT_NODISCARD compat::span<uint32_t> GetPixelSpan() noexcept {
+        return compat::span<uint32_t>(m_pixels.data(), m_pixels.size());
+    }
+
+    COMPAT_NODISCARD compat::span<const uint32_t> GetPixelSpan() const noexcept {
+        return compat::span<const uint32_t>(m_pixels.data(), m_pixels.size());
+    }
+
     void Clear(core::Color color) override {
         // Windows DIB 預設為 BGRA 32-bit 格式
         uint32_t pixelValue = (static_cast<uint32_t>(color.a) << 24) |

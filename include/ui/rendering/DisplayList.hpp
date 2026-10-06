@@ -105,9 +105,16 @@ public:
         m_opCount = 0;
     }
 
-    size_t GetOpCount() const noexcept { return m_opCount; }
-    size_t GetTotalBytes() const noexcept { return m_arena.GetUsedBytes(); }
-    bool IsEmpty() const noexcept { return m_opCount == 0; }
+    COMPAT_NODISCARD size_t GetOpCount() const noexcept { return m_opCount; }
+    COMPAT_NODISCARD size_t GetTotalBytes() const noexcept { return m_arena.GetUsedBytes(); }
+    COMPAT_NODISCARD bool IsEmpty() const noexcept { return m_opCount == 0; }
+
+    /// <summary>
+    /// 取得命令串流底層連續二進位緩衝區切片視圖 (span)
+    /// </summary>
+    COMPAT_NODISCARD compat::span<const uint8_t> GetBufferSpan() const noexcept {
+        return m_arena.GetSpan();
+    }
 
 private:
     LinearArena m_arena;
