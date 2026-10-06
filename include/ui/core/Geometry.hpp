@@ -114,6 +114,14 @@ struct Thickness {
         : left(horizontal), top(vertical), right(horizontal), bottom(vertical) {}
     COMPAT_CONSTEXPR_14 Thickness(float l, float t, float r, float b) noexcept
         : left(l), top(t), right(r), bottom(b) {}
+
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const Thickness& other) const noexcept {
+        return left == other.left && top == other.top && right == other.right && bottom == other.bottom;
+    }
+
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const Thickness& other) const noexcept {
+        return !(*this == other);
+    }
 };
 
 /// <summary>
@@ -131,6 +139,14 @@ struct Color {
 
     COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint8_t a, uint8_t r, uint8_t g, uint8_t b) noexcept {
         return Color(r, g, b, a);
+    }
+
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const Color& other) const noexcept {
+        return r == other.r && g == other.g && b == other.b && a == other.a;
+    }
+
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const Color& other) const noexcept {
+        return !(*this == other);
     }
 };
 

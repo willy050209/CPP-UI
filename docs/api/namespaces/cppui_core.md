@@ -15,10 +15,10 @@
 
 ---
 
-## 結構與類別索引 (Types)
-
-| 結構 (Struct) | 簡介與職責 |
+| 結構 / 類別 (Type) | 簡介與職責 |
 | :--- | :--- |
+| [`Visual`](../classes/core_visual.md) | 視覺樹抽象基底，維護親緣關係、位移、邊界、命中測試與繪製指令派發。 |
+| [`UIElement`](../classes/core_uielement.md) | 具備 Margin、Alignment、Min/Max 幾何約束，`Measure` / `Arrange` 雙階段排版管線與髒標記冒泡追蹤。 |
 | [`Point`](../classes/core_point.md) | 表示二維笛卡爾座標系上的浮點數點 $(x, y)$。 |
 | [`Size`](../classes/core_size.md) | 表示二維空間中的寬度與高度 $(width, height)$。 |
 | [`Rect`](../classes/core_rect.md) | 表示由原點與尺寸所定義的二維軸對齊矩形區域，支援幾何求交集與點包含測試。 |

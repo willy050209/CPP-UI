@@ -9,6 +9,7 @@
 ### 1. 官方 API 參考手冊 (MSDN-Style API Reference)
 * [📖 **CPPUI API 參考文件首頁**](api/README.md)
   * [幾何與核心型別 (`cppui::core`)](api/namespaces/cppui_core.md)
+  * [視覺樹與排版容器 (`cppui::layout`)](api/namespaces/cppui_layout.md)
   * [平台抽象層 (`cppui::pal`)](api/namespaces/cppui_pal.md)
   * [繪圖與命令錄製管線 (`cppui::rendering`)](api/namespaces/cppui_rendering.md)
   * [文字排版與塑形管線 (`cppui::text`)](api/namespaces/cppui_text.md)
@@ -21,6 +22,7 @@
   * [⚙️ DisplayList 二進位錄製深度解析](api/guides/display_list_recording.md)
   * [🖥️ 高分屏 DPI 與座標轉換指南](api/guides/dpi_and_coordinates.md)
   * [📝 工業級文字排版與雙向命中測試指南](api/guides/text_shaping_and_layout.md)
+  * [📐 雙階段排版管線與髒標記追蹤指南](api/guides/layout_pipeline_and_dirty_tracking.md)
 
 ---
 

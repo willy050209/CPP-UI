@@ -55,7 +55,8 @@ graph TD
 
 | 命名空間 (Namespace) | 模組標題 | 簡述與職責 | 核心型別導覽 |
 | :--- | :--- | :--- | :--- |
-| [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 座標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，支援編譯期求值 (`constexpr`)。 | [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
+| [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 座標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，以及視覺樹根基 [`Visual`](classes/core_visual.md) 與排版核心 [`UIElement`](classes/core_uielement.md)。 | [`Visual`](classes/core_visual.md), [`UIElement`](classes/core_uielement.md), [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
+| [`cppui::layout`](namespaces/cppui_layout.md) | **排版容器與調度** | 提供雙階段微架構排版管線容器（`StackPanel`、`Border`、`Canvas`）與頂層排版調度管理器 `LayoutManager`。 | [`Panel`](classes/layout_panel.md), [`StackPanel`](classes/layout_stackpanel.md), [`Border`](classes/layout_border.md), [`Canvas`](classes/layout_canvas.md), [`LayoutManager`](classes/layout_layoutmanager.md) |
 | [`cppui::pal`](namespaces/cppui_pal.md) | **平台抽象層 (PAL)** | 封裝作業系統原生視窗生命週期、主執行緒低延遲事件循環 (RunLoop) 以及統一輸入事件模型。 | [`IPlatformWindow`](classes/pal_iplatformwindow.md), [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md), [`RunLoop`](classes/pal_runloop.md), [`RawInputEvent`](classes/pal_rawinputevent.md) |
 | [`cppui::rendering`](namespaces/cppui_rendering.md) | **繪圖與渲染管線** | 實作高效命令錄製架構，透過自研二進位 DisplayList 與連續平坦 LinearArena 徹底隔離 UI 與光柵化後端。 | [`DrawingContext`](classes/rendering_drawingcontext.md), [`DisplayList`](classes/rendering_displaylist.md), [`DisplayListRenderer`](classes/rendering_displaylistrenderer.md), [`LinearArena`](classes/rendering_lineararena.md), [`DrawOp`](classes/rendering_drawop.md) |
 | [`cppui::text`](namespaces/cppui_text.md) | **文字排版與塑形管線** | 雙軌架構文字引擎，支援系統字型匹配、OpenType 字形塑形、BiDi 雙向分析、UAX #14 斷行、多行折行、省略號與雙向命中測試。 | [`FontDescriptor`](classes/text_font.md), [`FontManager`](classes/text_fontmanager.md), [`TextShaper`](classes/text_textshaper.md), [`BiDiAnalyzer`](classes/text_bidianalyzer.md), [`LineBreaker`](classes/text_linebreaker.md), [`TextLayout`](classes/text_textlayout.md), [`TextLayoutEngine`](classes/text_textlayoutengine.md) |
@@ -64,6 +65,16 @@ graph TD
 ---
 
 ## 3. 核心類別快速索引 (Type Quick Reference)
+
+### 視覺樹與排版 (Visual Tree & Layout Engine)
+* [`Visual`](classes/core_visual.md)：視覺樹基底類別，維護親緣關係、局部位移、邊界、座標轉換 (`PointToScreen`)、反向 Z-Order 命中測試與指令流派發。
+* [`UIElement`](classes/core_uielement.md)：具備 Margin、Alignment、Min/Max 幾何約束，`Measure` / `Arrange` 雙階段排版管線與髒標記冒泡追蹤。
+* [`Panel`](classes/layout_panel.md)：多子元件排版容器抽象基底。
+* [`StackPanel`](classes/layout_stackpanel.md)：垂直/水平流式排版容器，支援 Spacing 間距與 Collapsed 忽略。
+* [`Border`](classes/layout_border.md)：裝飾容器，支援 BorderBrush、BorderThickness、CornerRadius、Background 與 Padding 內縮。
+* [`Canvas`](classes/layout_canvas.md)：絕對定位畫布容器，支援 `Canvas::SetLeft` 與 `Canvas::SetTop` 附加屬性。
+* [`LayoutManager`](classes/layout_layoutmanager.md)：頂層視窗排版調度器，支援雙階段管線執行與度量統計。
+* [`TextBlock`](classes/controls_textblock.md)：文字展示控制項，橋接 M3 文字排版管線並實作顏色修改之純 Visual 髒標記隔離。
 
 ### 幾何與數值 (Core Types)
 * [`Point`](classes/core_point.md)：2D 浮點數座標結構。
@@ -103,12 +114,13 @@ graph TD
 * [**DisplayList 二進位錄製深度解析**](guides/display_list_recording.md)：深入探討命令錄製架構、記憶體池重用、Clip Stack 矩形剪裁與每秒數千萬次操作之微架構調優。
 * [**高分屏 DPI 與座標轉換指南**](guides/dpi_and_coordinates.md)：說明設備獨立像素 (DIP)、物理像素與 Windows 多螢幕動態 DPI 縮放的計算原理與事件對接。
 * [**工業級文字排版與雙向命中測試指南**](guides/text_shaping_and_layout.md)：詳解文字塑形、多行折行、CJK 標點禁則、省略號裁切與文字編輯器游標定位技術。
+* [**雙階段排版管線與髒標記追蹤指南**](guides/layout_pipeline_and_dirty_tracking.md)：詳解 Measure / Arrange 雙階段排版微架構、容器約束、對齊求解與精確髒標記隔離機制。
 
 ---
 
 ## 5. 跨標準相容性契約 (Compatibility Matrix)
 
-本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（48/48 通過，零報錯、零警告）：
+本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（60/60 通過，零報錯、零警告）：
 
 | 編譯器 | C++14 | C++17 | C++20 | C++23 / Latest |
 | :--- | :---: | :---: | :---: | :---: |

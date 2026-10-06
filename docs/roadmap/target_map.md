@@ -85,20 +85,22 @@ graph TD
 
 ---
 
-### 里程碑 4 (M4)：Visual Tree、Dirty Tracking 與雙階段佈局系統 (Layout Engine)
+### 里程碑 4 (M4)：Visual Tree、Dirty Tracking 與雙階段佈局系統 (Layout Engine) [已完成]
 * **核心目標**：構建 Avalonia 風格的階層式視覺樹，將排版幾何約束求解與繪圖呈現徹底分離。
 * **技術選型**：Avalonia Two-Pass Layout (`Measure` / `Arrange`) 模型。
 * **核心交付物**：
-  * `Visual` 基底類別：維護座標系（Transform）、邊界（Bounds）、裁剪（ClipBounds）與 `Render(DrawingContext&)`。
-  * `UIElement` 基底類別：維護 `Margin`、`Padding`、`Width`、`Height`、`HorizontalAlignment`、`VerticalAlignment`。
+  * `Visual` 基底類別：維護座標系（Transform）、邊界（Bounds）、裁剪（ClipBounds）、反向 Z-Order 命中測試與 `Render(DrawingContext&)`。
+  * `UIElement` 基底類別：維護 `Margin`、`Width`、`Height`、`MinWidth`、`MaxWidth`、`HorizontalAlignment`、`VerticalAlignment`。
   * 雙階段排版管線：
     * `Measure(availableSize)` $\rightarrow$ 計算並快取 `DesiredSize`。
     * `Arrange(finalRect)` $\rightarrow$ 配置子元件之實際位置 `RenderBounds`。
   * 髒標記（Dirty Tracking）系統：分離 `InvalidateMeasure`、`InvalidateArrange`、`InvalidateVisual`。
+  * 核心佈局容器與控制項：`Panel`、`StackPanel`、`Border`、`Canvas`、`LayoutManager`、`TextBlock`。
 * **驗收標準 (Acceptance Criteria)**：
   1. 建立至少三層嵌套的視覺樹，排版約束（如 Margin、居中對齊、拉伸對齊）計算精確無誤。
   2. 變更顏色等外觀屬性時，觸發 `InvalidateVisual`，監控確認**完全不重跑 Measure 與 Arrange**。
   3. 變更字串長度時，向上精確標記父節點尺寸髒區，正確觸發局部重排。
+  4. 通過全編譯器多標準 60/60 矩陣測試與 10,000 元件排版壓測。
 
 ---
 

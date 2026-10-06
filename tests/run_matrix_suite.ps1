@@ -100,6 +100,19 @@ foreach ($s in $clangStandards) {
     } else {
         Record-Result "Clang++" $s "TextPipeline" "FAIL" "N/A" "N/A"
     }
+
+    # 5. Layout Engine Test
+    $layoutExe = "$outDir\layout_clang_$s.exe"
+    & $clangPath "-std=$s" -O2 -I include -I include/compat tests\layout_engine_test.cpp src\core\Visual.cpp src\core\UIElement.cpp src\layout\Panel.cpp src\layout\StackPanel.cpp src\layout\Border.cpp src\layout\Canvas.cpp src\layout\LayoutManager.cpp src\controls\TextBlock.cpp src\text\FontManager.cpp src\text\TextShaper.cpp src\text\BiDiAnalyzer.cpp src\text\LineBreaker.cpp src\text\TextLayout.cpp src\text\TextLayoutEngine.cpp src\text\DirectWriteTextEngine.cpp src\rendering\DisplayListRenderer.cpp src\rendering\backend\SoftwareRenderContext.cpp -ldwrite -lgdi32 -luser32 -lole32 -o $layoutExe
+    if ($LASTEXITCODE -eq 0) {
+        $output = & $layoutExe
+        $runOk = if ($LASTEXITCODE -eq 0) { "PASS" } else { "FAIL" }
+        $match = [regex]::Match($output, "10,000 Elements Initial Layout: ([0-9.]+) ms")
+        $timeStr = if ($match.Success) { "$($match.Groups[1].Value) ms" } else { "PASS" }
+        Record-Result "Clang++" $s "LayoutEngine" "PASS" $runOk $timeStr
+    } else {
+        Record-Result "Clang++" $s "LayoutEngine" "FAIL" "N/A" "N/A"
+    }
 }
 
 # =============================================================================
@@ -151,6 +164,19 @@ foreach ($s in $gccStandards) {
         Record-Result "G++" $s "TextPipeline" "PASS" $runOk "N/A"
     } else {
         Record-Result "G++" $s "TextPipeline" "FAIL" "N/A" "N/A"
+    }
+
+    # 5. Layout Engine Test
+    $layoutExe = "$outDir\layout_gcc_$s.exe"
+    & $gccPath "-std=$s" -O2 -static -I include -I include/compat tests\layout_engine_test.cpp src\core\Visual.cpp src\core\UIElement.cpp src\layout\Panel.cpp src\layout\StackPanel.cpp src\layout\Border.cpp src\layout\Canvas.cpp src\layout\LayoutManager.cpp src\controls\TextBlock.cpp src\text\FontManager.cpp src\text\TextShaper.cpp src\text\BiDiAnalyzer.cpp src\text\LineBreaker.cpp src\text\TextLayout.cpp src\text\TextLayoutEngine.cpp src\text\DirectWriteTextEngine.cpp src\rendering\DisplayListRenderer.cpp src\rendering\backend\SoftwareRenderContext.cpp -ldwrite -lgdi32 -luser32 -lole32 -o $layoutExe
+    if ($LASTEXITCODE -eq 0) {
+        $output = & $layoutExe
+        $runOk = if ($LASTEXITCODE -eq 0) { "PASS" } else { "FAIL" }
+        $match = [regex]::Match($output, "10,000 Elements Initial Layout: ([0-9.]+) ms")
+        $timeStr = if ($match.Success) { "$($match.Groups[1].Value) ms" } else { "PASS" }
+        Record-Result "G++" $s "LayoutEngine" "PASS" $runOk $timeStr
+    } else {
+        Record-Result "G++" $s "LayoutEngine" "FAIL" "N/A" "N/A"
     }
 }
 
@@ -207,6 +233,20 @@ foreach ($s in $msvcStandards) {
         Record-Result "MSVC" $s "TextPipeline" "PASS" $runOk "N/A"
     } else {
         Record-Result "MSVC" $s "TextPipeline" "FAIL" "N/A" "N/A"
+    }
+
+    # 5. Layout Engine Test
+    $layoutExe = "$outDir\layout_msvc_$s.exe"
+    $cmd = "`"$vsDevCmd`" -arch=x64 >nul && cl.exe /nologo /O2 /EHsc /utf-8 /std:$s /I include /I include/compat tests\layout_engine_test.cpp src\core\Visual.cpp src\core\UIElement.cpp src\layout\Panel.cpp src\layout\StackPanel.cpp src\layout\Border.cpp src\layout\Canvas.cpp src\layout\LayoutManager.cpp src\controls\TextBlock.cpp src\text\FontManager.cpp src\text\TextShaper.cpp src\text\BiDiAnalyzer.cpp src\text\LineBreaker.cpp src\text\TextLayout.cpp src\text\TextLayoutEngine.cpp src\text\DirectWriteTextEngine.cpp src\rendering\DisplayListRenderer.cpp src\rendering\backend\SoftwareRenderContext.cpp dwrite.lib gdi32.lib user32.lib ole32.lib /Fe:$layoutExe >nul"
+    cmd.exe /c $cmd
+    if ($LASTEXITCODE -eq 0 -and (Test-Path $layoutExe)) {
+        $output = & $layoutExe
+        $runOk = if ($LASTEXITCODE -eq 0) { "PASS" } else { "FAIL" }
+        $match = [regex]::Match($output, "10,000 Elements Initial Layout: ([0-9.]+) ms")
+        $timeStr = if ($match.Success) { "$($match.Groups[1].Value) ms" } else { "PASS" }
+        Record-Result "MSVC" $s "LayoutEngine" "PASS" $runOk $timeStr
+    } else {
+        Record-Result "MSVC" $s "LayoutEngine" "FAIL" "N/A" "N/A"
     }
 }
 

@@ -35,6 +35,14 @@ target_include_directories(cppui_headers INTERFACE
 # CPPUI 核心與 PAL 實作庫 (cppui_pal)
 # -----------------------------------------------------------------------------
 set(CPPUI_SOURCES
+    src/core/Visual.cpp
+    src/core/UIElement.cpp
+    src/layout/Panel.cpp
+    src/layout/StackPanel.cpp
+    src/layout/Border.cpp
+    src/layout/Canvas.cpp
+    src/layout/LayoutManager.cpp
+    src/controls/TextBlock.cpp
     src/rendering/DisplayListRenderer.cpp
     src/rendering/backend/SoftwareRenderContext.cpp
     src/rendering/backend/SkiaRenderContext.cpp

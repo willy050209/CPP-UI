@@ -69,7 +69,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure --verbose
 
   matrix-verification:
-    name: Multi-Compiler Full Matrix Suite (48/48 Standards Verification)
+    name: Multi-Compiler Full Matrix Suite (60/60 Standards Verification)
     runs-on: windows-latest
     steps:
       - name: Checkout Repository

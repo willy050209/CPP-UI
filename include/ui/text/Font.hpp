@@ -111,6 +111,12 @@ public:
         return m_stretch;
     }
 
+    void SetSize(float size) noexcept { m_size = size; }
+    void SetFamily(compat::string_view family) { m_family.assign(family.data(), family.size()); }
+    void SetWeight(FontWeight weight) noexcept { m_weight = weight; }
+    void SetStyle(FontStyle style) noexcept { m_style = style; }
+    void SetStretch(FontStretch stretch) noexcept { m_stretch = stretch; }
+
     FontDescriptor WithSize(float size) const {
         FontDescriptor copy = *this;
         copy.m_size = size;
@@ -127,6 +133,18 @@ public:
         FontDescriptor copy = *this;
         copy.m_style = style;
         return copy;
+    }
+
+    bool operator==(const FontDescriptor& other) const noexcept {
+        return m_size == other.m_size &&
+               m_weight == other.m_weight &&
+               m_style == other.m_style &&
+               m_stretch == other.m_stretch &&
+               m_family == other.m_family;
+    }
+
+    bool operator!=(const FontDescriptor& other) const noexcept {
+        return !(*this == other);
     }
 
 private:

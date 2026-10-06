@@ -17,3 +17,8 @@ add_test(NAME DisplayListTest COMMAND display_list_test)
 add_executable(text_pipeline_test text_pipeline_test.cpp)
 target_link_libraries(text_pipeline_test PRIVATE cppui_core)
 add_test(NAME TextPipelineTest COMMAND text_pipeline_test)
+
+# M4 視覺樹與雙階段排版引擎測試
+add_executable(layout_engine_test layout_engine_test.cpp)
+target_link_libraries(layout_engine_test PRIVATE cppui_core)
+add_test(NAME LayoutEngineTest COMMAND layout_engine_test)
