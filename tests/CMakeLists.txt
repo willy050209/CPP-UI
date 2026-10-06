@@ -1,4 +1,9 @@
+# 基礎冒煙測試
 add_executable(smoke_test smoke_test.cpp)
 target_link_libraries(smoke_test PRIVATE cppui_headers)
-
 add_test(NAME SmokeTest COMMAND smoke_test)
+
+# PAL 與後端單元測試
+add_executable(pal_test pal_test.cpp)
+target_link_libraries(pal_test PRIVATE cppui_core)
+add_test(NAME PalTest COMMAND pal_test)

@@ -1,0 +1,2 @@
+add_executable(m1_window_demo m1_window_demo/main.cpp)
+target_link_libraries(m1_window_demo PRIVATE cppui_core)

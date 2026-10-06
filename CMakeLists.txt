@@ -11,6 +11,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # -----------------------------------------------------------------------------
 # 編譯器與平台旗標
 # -----------------------------------------------------------------------------
+if(WIN32)
+    add_compile_definitions(UNICODE _UNICODE)
+endif()
+
 if(MSVC)
     add_compile_options(/W4 /utf-8 /permissive- /Zc:__cplusplus)
 else()
@@ -18,7 +22,7 @@ else()
 endif()
 
 # -----------------------------------------------------------------------------
-# 核心標頭檔介面 (Interface Library)
+# 核心公共標頭檔介面 (Interface Library)
 # -----------------------------------------------------------------------------
 add_library(cppui_headers INTERFACE)
 target_include_directories(cppui_headers INTERFACE
@@ -26,6 +30,32 @@ target_include_directories(cppui_headers INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/compat>
     $<INSTALL_INTERFACE:include>
 )
+
+# -----------------------------------------------------------------------------
+# CPPUI 核心與 PAL 實作庫 (cppui_pal)
+# -----------------------------------------------------------------------------
+set(CPPUI_SOURCES
+    src/rendering/backend/SoftwareRenderContext.cpp
+    src/rendering/backend/SkiaRenderContext.cpp
+)
+
+if(WIN32)
+    list(APPEND CPPUI_SOURCES
+        src/pal/win32/PlatformWindowWin32.cpp
+    )
+endif()
+
+add_library(cppui_core STATIC ${CPPUI_SOURCES})
+target_link_libraries(cppui_core PUBLIC cppui_headers)
+
+if(WIN32)
+    target_link_libraries(cppui_core PRIVATE
+        user32
+        gdi32
+        dwmapi
+        shcore
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # 測試與範例
@@ -36,4 +66,8 @@ option(CPPUI_BUILD_EXAMPLES "Build CPPUI example applications" ON)
 if(CPPUI_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+if(CPPUI_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
