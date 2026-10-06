@@ -1,13 +1,15 @@
 #include "ui/rendering/DisplayListRenderer.hpp"
+#include "compat/compat.hpp"
 #include <vector>
 #include <cmath>
 #include <algorithm>
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 namespace {
 
-inline core::Rect IntersectRect(const core::Rect& a, const core::Rect& b) {
+COMPAT_NODISCARD inline COMPAT_CONSTEXPR_14 core::Rect IntersectRect(const core::Rect& a, const core::Rect& b) {
     float left   = std::max(a.Left(), b.Left());
     float top    = std::max(a.Top(), b.Top());
     float right  = std::min(a.Right(), b.Right());
@@ -19,7 +21,7 @@ inline core::Rect IntersectRect(const core::Rect& a, const core::Rect& b) {
     return core::Rect(left, top, right - left, bottom - top);
 }
 
-inline core::Color ApplyOpacity(core::Color c, float opacity) {
+COMPAT_NODISCARD inline COMPAT_CONSTEXPR_14 core::Color ApplyOpacity(core::Color c, float opacity) {
     if (opacity >= 1.0f) return c;
     if (opacity <= 0.0f) return core::Color(c.r, c.g, c.b, 0);
     uint8_t a = static_cast<uint8_t>(static_cast<float>(c.a) * opacity);
@@ -66,7 +68,7 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
 
             case DrawOpType::PushOpacity: {
                 const auto* op = static_cast<const PushOpacityOp*>(payload);
-                float newOpacity = std::clamp(currentOpacity * op->opacity, 0.0f, 1.0f);
+                float newOpacity = compat::clamp(currentOpacity * op->opacity, 0.0f, 1.0f);
                 opacityStack.push_back(newOpacity);
                 break;
             }
@@ -246,4 +248,5 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
     return stats;
 }
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

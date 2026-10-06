@@ -4,7 +4,8 @@
 #include "ui/core/Geometry.hpp"
 #include "ui/rendering/DisplayList.hpp"
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 /// <summary>
 /// 公開畫布錄製抽象介面 (DrawingContext)
@@ -108,4 +109,5 @@ private:
     DisplayList& m_displayList;
 };
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

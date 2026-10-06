@@ -3,7 +3,8 @@
 #include <cstdint>
 #include "ui/core/Geometry.hpp"
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 /// <summary>
 /// 繪圖操作類型列舉
@@ -76,4 +77,5 @@ struct PushOpacityOp {
 
 #pragma pack(pop)
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

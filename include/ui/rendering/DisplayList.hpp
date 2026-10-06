@@ -6,7 +6,8 @@
 #include "ui/rendering/LinearArena.hpp"
 #include "ui/rendering/DrawOp.hpp"
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 /// <summary>
 /// 輕量繪圖指令串流容器 (DisplayList)
@@ -113,4 +114,5 @@ private:
     size_t      m_opCount = 0;
 };
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

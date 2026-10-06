@@ -5,7 +5,8 @@
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 /// <summary>
 /// 像素像素格式列舉
@@ -67,4 +68,5 @@ public:
     virtual void Destroy() = 0;
 };
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

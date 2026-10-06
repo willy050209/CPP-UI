@@ -2,7 +2,8 @@
 
 #include "compat/compat.hpp"
 
-namespace cppui::core {
+namespace cppui {
+namespace core {
 
 /// <summary>
 /// 2D 浮點數座標點
@@ -11,14 +12,14 @@ struct Point {
     float x = 0.0f;
     float y = 0.0f;
 
-    constexpr Point() noexcept = default;
-    constexpr Point(float px, float py) noexcept : x(px), y(py) {}
+    COMPAT_CONSTEXPR_14 Point() noexcept = default;
+    COMPAT_CONSTEXPR_14 Point(float px, float py) noexcept : x(px), y(py) {}
 
-    constexpr bool operator==(const Point& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const Point& other) const noexcept {
         return x == other.x && y == other.y;
     }
 
-    constexpr bool operator!=(const Point& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const Point& other) const noexcept {
         return !(*this == other);
     }
 };
@@ -30,18 +31,18 @@ struct Size {
     float width = 0.0f;
     float height = 0.0f;
 
-    constexpr Size() noexcept = default;
-    constexpr Size(float w, float h) noexcept : width(w), height(h) {}
+    COMPAT_CONSTEXPR_14 Size() noexcept = default;
+    COMPAT_CONSTEXPR_14 Size(float w, float h) noexcept : width(w), height(h) {}
 
-    constexpr bool IsEmpty() const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool IsEmpty() const noexcept {
         return width <= 0.0f || height <= 0.0f;
     }
 
-    constexpr bool operator==(const Size& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const Size& other) const noexcept {
         return width == other.width && height == other.height;
     }
 
-    constexpr bool operator!=(const Size& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const Size& other) const noexcept {
         return !(*this == other);
     }
 };
@@ -55,25 +56,25 @@ struct Rect {
     float width = 0.0f;
     float height = 0.0f;
 
-    constexpr Rect() noexcept = default;
-    constexpr Rect(float px, float py, float w, float h) noexcept
+    COMPAT_CONSTEXPR_14 Rect() noexcept = default;
+    COMPAT_CONSTEXPR_14 Rect(float px, float py, float w, float h) noexcept
         : x(px), y(py), width(w), height(h) {}
-    constexpr Rect(const Point& origin, const Size& size) noexcept
+    COMPAT_CONSTEXPR_14 Rect(const Point& origin, const Size& size) noexcept
         : x(origin.x), y(origin.y), width(size.width), height(size.height) {}
 
-    constexpr float Left() const noexcept { return x; }
-    constexpr float Top() const noexcept { return y; }
-    constexpr float Right() const noexcept { return x + width; }
-    constexpr float Bottom() const noexcept { return y + height; }
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 float Left() const noexcept { return x; }
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 float Top() const noexcept { return y; }
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 float Right() const noexcept { return x + width; }
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 float Bottom() const noexcept { return y + height; }
 
-    constexpr Point Origin() const noexcept { return Point(x, y); }
-    constexpr Size GetSize() const noexcept { return Size(width, height); }
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 Point Origin() const noexcept { return Point(x, y); }
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 Size GetSize() const noexcept { return Size(width, height); }
 
-    constexpr bool IsEmpty() const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool IsEmpty() const noexcept {
         return width <= 0.0f || height <= 0.0f;
     }
 
-    constexpr Rect Intersect(const Rect& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 Rect Intersect(const Rect& other) const noexcept {
         float l = (x > other.x) ? x : other.x;
         float t = (y > other.y) ? y : other.y;
         float r = (Right() < other.Right()) ? Right() : other.Right();
@@ -84,15 +85,15 @@ struct Rect {
         return Rect(l, t, r - l, b - t);
     }
 
-    constexpr bool Contains(const Point& p) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool Contains(const Point& p) const noexcept {
         return p.x >= x && p.x <= Right() && p.y >= y && p.y <= Bottom();
     }
 
-    constexpr bool operator==(const Rect& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const Rect& other) const noexcept {
         return x == other.x && y == other.y && width == other.width && height == other.height;
     }
 
-    constexpr bool operator!=(const Rect& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const Rect& other) const noexcept {
         return !(*this == other);
     }
 };
@@ -106,12 +107,12 @@ struct Thickness {
     float right = 0.0f;
     float bottom = 0.0f;
 
-    constexpr Thickness() noexcept = default;
-    constexpr Thickness(float uniform) noexcept
+    COMPAT_CONSTEXPR_14 Thickness() noexcept = default;
+    COMPAT_CONSTEXPR_14 Thickness(float uniform) noexcept
         : left(uniform), top(uniform), right(uniform), bottom(uniform) {}
-    constexpr Thickness(float horizontal, float vertical) noexcept
+    COMPAT_CONSTEXPR_14 Thickness(float horizontal, float vertical) noexcept
         : left(horizontal), top(vertical), right(horizontal), bottom(vertical) {}
-    constexpr Thickness(float l, float t, float r, float b) noexcept
+    COMPAT_CONSTEXPR_14 Thickness(float l, float t, float r, float b) noexcept
         : left(l), top(t), right(r), bottom(b) {}
 };
 
@@ -124,23 +125,24 @@ struct Color {
     uint8_t b = 0;
     uint8_t a = 255;
 
-    constexpr Color() noexcept = default;
-    constexpr Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) noexcept
+    COMPAT_CONSTEXPR_14 Color() noexcept = default;
+    COMPAT_CONSTEXPR_14 Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) noexcept
         : r(red), g(green), b(blue), a(alpha) {}
 
-    static constexpr Color FromArgb(uint8_t a, uint8_t r, uint8_t g, uint8_t b) noexcept {
+    COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint8_t a, uint8_t r, uint8_t g, uint8_t b) noexcept {
         return Color(r, g, b, a);
     }
 };
 
 namespace Colors {
-    inline constexpr Color Transparent = Color(0, 0, 0, 0);
-    inline constexpr Color Black       = Color(0, 0, 0, 255);
-    inline constexpr Color White       = Color(255, 255, 255, 255);
-    inline constexpr Color Red         = Color(255, 0, 0, 255);
-    inline constexpr Color Green       = Color(0, 255, 0, 255);
-    inline constexpr Color Blue        = Color(0, 0, 255, 255);
-    inline constexpr Color SteelBlue   = Color(70, 130, 180, 255);
+    COMPAT_INLINE_VAR constexpr Color Transparent = Color(0, 0, 0, 0);
+    COMPAT_INLINE_VAR constexpr Color Black       = Color(0, 0, 0, 255);
+    COMPAT_INLINE_VAR constexpr Color White       = Color(255, 255, 255, 255);
+    COMPAT_INLINE_VAR constexpr Color Red         = Color(255, 0, 0, 255);
+    COMPAT_INLINE_VAR constexpr Color Green       = Color(0, 255, 0, 255);
+    COMPAT_INLINE_VAR constexpr Color Blue        = Color(0, 0, 255, 255);
+    COMPAT_INLINE_VAR constexpr Color SteelBlue   = Color(70, 130, 180, 255);
 } // namespace Colors
 
-} // namespace cppui::core
+} // namespace core
+} // namespace cppui

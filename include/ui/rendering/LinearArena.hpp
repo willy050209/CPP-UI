@@ -7,7 +7,8 @@
 #include <algorithm>
 #include "compat/compat.hpp"
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 /// <summary>
 /// 高效連續平坦記憶體池 (Linear Arena Allocator)
@@ -114,4 +115,5 @@ private:
     size_t               m_offset = 0;
 };
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

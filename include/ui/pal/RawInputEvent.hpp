@@ -3,7 +3,8 @@
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 
-namespace cppui::pal {
+namespace cppui {
+namespace pal {
 
 /// <summary>
 /// 原始事件類型列舉
@@ -54,15 +55,15 @@ enum class KeyModifiers : uint8_t {
     CapsLock = 1 << 4
 };
 
-inline constexpr KeyModifiers operator|(KeyModifiers a, KeyModifiers b) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline KeyModifiers operator|(KeyModifiers a, KeyModifiers b) noexcept {
     return static_cast<KeyModifiers>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
 }
 
-inline constexpr KeyModifiers operator&(KeyModifiers a, KeyModifiers b) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline KeyModifiers operator&(KeyModifiers a, KeyModifiers b) noexcept {
     return static_cast<KeyModifiers>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
 }
 
-inline constexpr bool HasModifier(KeyModifiers mods, KeyModifiers target) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool HasModifier(KeyModifiers mods, KeyModifiers target) noexcept {
     return (mods & target) == target;
 }
 
@@ -123,7 +124,7 @@ struct RawInputEvent {
         window = {};
     }
 
-    static RawInputEvent MakeMouseMove(core::Point logicalPos, core::Point physicalPos, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseMove(core::Point logicalPos, core::Point physicalPos, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseMove;
         e.modifiers = mods;
@@ -132,11 +133,11 @@ struct RawInputEvent {
         return e;
     }
 
-    static RawInputEvent MakeMouseMove(core::Point pos, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseMove(core::Point pos, KeyModifiers mods, uint64_t ts = 0) noexcept {
         return MakeMouseMove(pos, pos, mods, ts);
     }
 
-    static RawInputEvent MakeMouseDown(core::Point logicalPos, core::Point physicalPos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point logicalPos, core::Point physicalPos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseDown;
         e.modifiers = mods;
@@ -145,11 +146,11 @@ struct RawInputEvent {
         return e;
     }
 
-    static RawInputEvent MakeMouseDown(core::Point pos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point pos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
         return MakeMouseDown(pos, pos, btn, clicks, mods, ts);
     }
 
-    static RawInputEvent MakeMouseUp(core::Point logicalPos, core::Point physicalPos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseUp(core::Point logicalPos, core::Point physicalPos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseUp;
         e.modifiers = mods;
@@ -158,11 +159,11 @@ struct RawInputEvent {
         return e;
     }
 
-    static RawInputEvent MakeMouseUp(core::Point pos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseUp(core::Point pos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept {
         return MakeMouseUp(pos, pos, btn, mods, ts);
     }
 
-    static RawInputEvent MakeMouseWheel(core::Point logicalPos, core::Point physicalPos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point logicalPos, core::Point physicalPos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseWheel;
         e.modifiers = mods;
@@ -171,11 +172,11 @@ struct RawInputEvent {
         return e;
     }
 
-    static RawInputEvent MakeMouseWheel(core::Point pos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point pos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
         return MakeMouseWheel(pos, pos, deltaY, deltaX, mods, ts);
     }
 
-    static RawInputEvent MakeResize(uint32_t w, uint32_t h, float dpi, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeResize(uint32_t w, uint32_t h, float dpi, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::WindowResize;
         e.timestampMs = ts;
@@ -183,7 +184,7 @@ struct RawInputEvent {
         return e;
     }
 
-    static RawInputEvent MakeClose(uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeClose(uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::WindowClose;
         e.timestampMs = ts;
@@ -191,4 +192,5 @@ struct RawInputEvent {
     }
 };
 
-} // namespace cppui::pal
+} // namespace pal
+} // namespace cppui

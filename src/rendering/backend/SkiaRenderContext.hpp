@@ -3,7 +3,8 @@
 #include "ui/rendering/backend/IRenderContext.hpp"
 #include "SoftwareRenderContext.hpp"
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 /// <summary>
 /// Skia 渲染後端封裝
@@ -38,4 +39,5 @@ private:
     SoftwareRenderContext m_fallbackContext;
 };
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

@@ -14,7 +14,9 @@
 #include <chrono>
 #include "ui/pal/IPlatformWindow.hpp"
 
-namespace cppui::pal::win32 {
+namespace cppui {
+namespace pal {
+namespace win32 {
 
 class PlatformWindowWin32 : public IPlatformWindow {
 public:
@@ -66,6 +68,8 @@ private:
     EventCallback m_eventCallback;
 };
 
-} // namespace cppui::pal::win32
+} // namespace win32
+} // namespace pal
+} // namespace cppui
 
 #endif // _WIN32

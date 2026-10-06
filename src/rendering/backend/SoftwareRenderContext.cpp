@@ -1,6 +1,7 @@
 #include "SoftwareRenderContext.hpp"
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 bool SoftwareRenderContext::Init(void* nativeWindowHandle, uint32_t width, uint32_t height) {
     m_nativeWindowHandle = nativeWindowHandle;
@@ -72,4 +73,5 @@ void SoftwareRenderContext::Destroy() {
     m_height = 0;
 }
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

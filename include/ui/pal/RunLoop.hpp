@@ -7,7 +7,8 @@
 #include "compat/compat.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 
-namespace cppui::pal {
+namespace cppui {
+namespace pal {
 
 /// <summary>
 /// 主執行緒低延遲事件循環 (RunLoop)
@@ -55,7 +56,7 @@ public:
     /// <summary>
     /// 查詢是否正在運行
     /// </summary>
-    bool IsRunning() const noexcept {
+    COMPAT_NODISCARD bool IsRunning() const noexcept {
         return m_running;
     }
 
@@ -99,4 +100,5 @@ private:
     bool                             m_needsRedraw = true;
 };
 
-} // namespace cppui::pal
+} // namespace pal
+} // namespace cppui

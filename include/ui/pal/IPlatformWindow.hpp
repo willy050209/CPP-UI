@@ -6,7 +6,8 @@
 #include "ui/core/Geometry.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 
-namespace cppui::pal {
+namespace cppui {
+namespace pal {
 
 /// <summary>
 /// 視窗建構描述符
@@ -31,17 +32,17 @@ public:
     virtual void Show() = 0;
     virtual void Hide() = 0;
     virtual void Close() = 0;
-    virtual bool IsClosed() const noexcept = 0;
+    COMPAT_NODISCARD virtual bool IsClosed() const noexcept = 0;
 
     // 幾何與標題
-    virtual core::Size GetSize() const noexcept = 0;
+    COMPAT_NODISCARD virtual core::Size GetSize() const noexcept = 0;
     virtual void SetSize(uint32_t width, uint32_t height) = 0;
-    virtual core::Size GetFramebufferSize() const noexcept = 0;
-    virtual float GetDpiScale() const noexcept = 0;
+    COMPAT_NODISCARD virtual core::Size GetFramebufferSize() const noexcept = 0;
+    COMPAT_NODISCARD virtual float GetDpiScale() const noexcept = 0;
     virtual void SetTitle(compat::string_view title) = 0;
 
     // 原生控制代碼 (例如 Win32 HWND, Cocoa NSWindow, Wayland wl_surface)
-    virtual void* GetNativeHandle() const noexcept = 0;
+    COMPAT_NODISCARD virtual void* GetNativeHandle() const noexcept = 0;
 
     // 事件通知回呼
     using EventCallback = std::function<void(const RawInputEvent&)>;
@@ -55,4 +56,5 @@ public:
     virtual void RequestRedraw() = 0;
 };
 
-} // namespace cppui::pal
+} // namespace pal
+} // namespace cppui

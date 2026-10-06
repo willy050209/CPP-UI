@@ -14,7 +14,8 @@
 #include <windows.h>
 #endif
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 class SoftwareRenderTarget : public IRenderTarget {
 public:
@@ -97,4 +98,5 @@ private:
 #endif
 };
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

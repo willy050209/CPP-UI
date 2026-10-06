@@ -3,7 +3,8 @@
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/rendering/backend/IRenderContext.hpp"
 
-namespace cppui::rendering {
+namespace cppui {
+namespace rendering {
 
 /// <summary>
 /// 渲染統計資訊
@@ -29,4 +30,5 @@ public:
     RenderStats Render(const DisplayList& displayList, IRenderTarget* target);
 };
 
-} // namespace cppui::rendering
+} // namespace rendering
+} // namespace cppui

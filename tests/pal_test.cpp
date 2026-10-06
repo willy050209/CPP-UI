@@ -2,7 +2,7 @@
 #include "compat/compat.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 #include "ui/rendering/backend/IRenderContext.hpp"
-#include "../../src/rendering/backend/SoftwareRenderContext.hpp"
+#include "../src/rendering/backend/SoftwareRenderContext.hpp"
 
 int main() {
     using namespace cppui::pal;

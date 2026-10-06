@@ -5,15 +5,14 @@
 #include <windowsx.h>
 #include <shellscalingapi.h>
 
-namespace cppui::pal {
+namespace cppui {
+namespace pal {
 
 std::shared_ptr<IPlatformWindow> PlatformWindowFactory::Create(const WindowDesc& desc) {
     return std::make_shared<win32::PlatformWindowWin32>(desc);
 }
 
-} // namespace cppui::pal
-
-namespace cppui::pal::win32 {
+namespace win32 {
 
 namespace {
     const wchar_t* WINDOW_CLASS_NAME = L"CPPUI_PlatformWindowClass";
@@ -400,6 +399,8 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
     return DefWindowProcW(m_hwnd, msg, wParam, lParam);
 }
 
-} // namespace cppui::pal::win32
+} // namespace win32
+} // namespace pal
+} // namespace cppui
 
 #endif // _WIN32

@@ -61,3 +61,39 @@ CPPUI 專案全面引入自行研發的 [`compat.hpp`](file:///D:/P/CPP/CPPUI/in
      - 子節點指向父節點一律使用裸觀察指標 `Visual* m_parent = nullptr;`，避免循環引用與引用計數負擔。
 2. **生命週期與移動語意 (Move Semantics)**：
    - Fluent DSL 鏈式構建器廣泛使用移動語意（`std::move`）傳遞子樹，消除額外堆積分配。
+
+---
+
+## 5. 跨標準巨集與微架構最佳化規範 (Macros & Micro-Architecture)
+
+為了確保在 C++14、C++17、C++20、C++23 下零語法報錯、零擴展警告（`-Wc++17-extensions`、`error C2429`、`error C7525`），專案強制遵循以下巨集契約：
+
+### 5.1 `constexpr` 規範
+- 函式/方法具備 C++14 合法分支或局部變數時：**強制使用 `COMPAT_CONSTEXPR_14`**。
+- C++17 合法語法（如 lambda / if constexpr）：**使用 `COMPAT_CONSTEXPR_17`**。
+- C++20 合法語法：**使用 `COMPAT_CONSTEXPR_20`**。
+- 純數值常數或 POD 結構成員：若編譯期可計算，使用 `constexpr`。
+
+### 5.2 `inline` 與常數宣告規範
+- **全域/命名空間常數**：嚴禁裸寫 `inline constexpr`。**強制使用 `COMPAT_INLINE_VAR constexpr`**（在 C++17+ 展開為 `inline`；在 C++14/11 降級為 `static`，徹底根絕 ODR 碰撞與 C7525 錯誤）。
+- **關鍵小函式/內聯**：
+  - 微架構熱點：**強制使用 `COMPAT_ALWAYS_INLINE`**。
+  - 一般內聯函式：使用 `inline`，且若有回傳值建議搭配 `COMPAT_NODISCARD`。
+
+### 5.3 命名空間巢狀宣告規範
+- **禁止寫法**：`namespace cppui::core { ... }`（C++17 語法，C++14 MSVC 報 `error C2429`）。
+- **強制標準寫法**：
+  ```cpp
+  namespace cppui {
+  namespace core {
+      // 模組定義
+  } // namespace core
+  } // namespace cppui
+  ```
+
+### 5.4 跨標準演算法與微架構提示
+- **數值夾取**：禁止呼叫 C++17 的 `std::clamp`，**一律使用 `compat::clamp`**。
+- **分支預測**：高頻核心路徑使用 `COMPAT_LIKELY(expr)` / `COMPAT_UNLIKELY(expr)`。
+- **不可達程式碼**：使用 `COMPAT_UNREACHABLE()`。
+- **傳回值檢查**：所有狀態查詢與純計算函式強制標記 `COMPAT_NODISCARD`。
+

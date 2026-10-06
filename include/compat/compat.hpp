@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // CPP-Compat: Zero-Dependency Modern C++ Backward Compatibility Shim Layer
 // Single-Header Distribution (dist/compat.hpp)
 //
@@ -16721,21 +16721,33 @@ inline void println() {
 // Zero external dependencies, downward compatible from C++23 to C++11.
 
 // ============================================================================
-// Internal Preprocessor Cleanup
-// Undefine internal helper macros to prevent macro leakage into consumer code,
-// while retaining public API macros (e.g. COMPAT_NODISCARD).
+// Public Compatibility & Microarchitecture Macros
+// These macros are explicitly retained as part of the public consumer API:
+// - COMPAT_CPLUSPLUS, COMPAT_CXX_11..26
+// - COMPAT_CONSTEXPR_14, COMPAT_CONSTEXPR_17, COMPAT_CONSTEXPR_20
+// - COMPAT_ALWAYS_INLINE, COMPAT_INLINE_VAR, COMPAT_NODISCARD
+// - COMPAT_LIKELY, COMPAT_UNLIKELY, COMPAT_UNREACHABLE
 // ============================================================================
-#undef COMPAT_CPLUSPLUS
-#undef COMPAT_CXX_11
-#undef COMPAT_CXX_14
-#undef COMPAT_CXX_17
-#undef COMPAT_CXX_20
-#undef COMPAT_CXX_23
-#undef COMPAT_CXX_26
+
+#if (COMPAT_CPLUSPLUS >= COMPAT_CXX_17)
+#  define COMPAT_INLINE_VAR inline
+#else
+#  define COMPAT_INLINE_VAR static
+#endif
+
+namespace compat {
+    /// <summary>
+    /// 跨 C++14/17/20/23 相容的 clamp 函式
+    /// </summary>
+    template <typename T>
+    COMPAT_NODISCARD inline COMPAT_CONSTEXPR_14 const T& clamp(const T& v, const T& lo, const T& hi) {
+        return (v < lo) ? lo : (hi < v) ? hi : v;
+    }
+} // namespace compat
+
+// Undefine strictly internal private implementation details only
 #undef COMPAT_HAS_EXCEPTIONS
 #undef COMPAT_THROW_OR_ABORT
-#undef COMPAT_CONSTEXPR_14
-#undef COMPAT_CONSTEXPR_17
 #undef COMPAT_ABI_TAG
 #undef COMPAT_HAS_STD_EXPECTED
 #undef COMPAT_HAS_STD_PRINT
