@@ -232,6 +232,11 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
     hr = dwriteRes.pGdiInterop->CreateBitmapRenderTarget(nullptr, textW, textH, &pBitmapTarget);
     if (FAILED(hr) || !pBitmapTarget) return;
 
+    // 強制將點陣渲染目標的 PixelsPerDip 鎖定為 1.0f。
+    // 若未設定，DirectWrite 在高 DPI（如 125%、150%、200%）螢幕下會自動繼承螢幕 DC 之 DPI 縮放比率，
+    // 導致光柵化字形片面膨脹 1.25x~2.0x，不僅右側筆畫超出 textW 被裁切，亦會造成文字嚴重超出 UI 排版容器。
+    pBitmapTarget->SetPixelsPerDip(1.0f);
+
     HDC memDC = pBitmapTarget->GetMemoryDC();
     RECT rc = { 0, 0, textW, textH };
     ::FillRect(memDC, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
