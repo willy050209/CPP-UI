@@ -247,8 +247,9 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
                 DispatchEvent(enterEvt);
             }
 
+            core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
             core::Point logicalPos(static_cast<float>(x) / m_dpiScale, static_cast<float>(y) / m_dpiScale);
-            DispatchEvent(RawInputEvent::MakeMouseMove(logicalPos, mods, ts));
+            DispatchEvent(RawInputEvent::MakeMouseMove(logicalPos, physicalPos, mods, ts));
             return 0;
         }
 
@@ -267,13 +268,14 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             SetCapture(m_hwnd);
             int x = GET_X_LPARAM(lParam);
             int y = GET_Y_LPARAM(lParam);
-            core::Point pos(static_cast<float>(x) / m_dpiScale, static_cast<float>(y) / m_dpiScale);
+            core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
+            core::Point logicalPos(static_cast<float>(x) / m_dpiScale, static_cast<float>(y) / m_dpiScale);
 
             RawMouseButton btn = RawMouseButton::Left;
             if (msg == WM_RBUTTONDOWN) btn = RawMouseButton::Right;
             else if (msg == WM_MBUTTONDOWN) btn = RawMouseButton::Middle;
 
-            DispatchEvent(RawInputEvent::MakeMouseDown(pos, btn, 1, mods, ts));
+            DispatchEvent(RawInputEvent::MakeMouseDown(logicalPos, physicalPos, btn, 1, mods, ts));
             return 0;
         }
 
@@ -283,23 +285,25 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             ReleaseCapture();
             int x = GET_X_LPARAM(lParam);
             int y = GET_Y_LPARAM(lParam);
-            core::Point pos(static_cast<float>(x) / m_dpiScale, static_cast<float>(y) / m_dpiScale);
+            core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
+            core::Point logicalPos(static_cast<float>(x) / m_dpiScale, static_cast<float>(y) / m_dpiScale);
 
             RawMouseButton btn = RawMouseButton::Left;
             if (msg == WM_RBUTTONUP) btn = RawMouseButton::Right;
             else if (msg == WM_MBUTTONUP) btn = RawMouseButton::Middle;
 
-            DispatchEvent(RawInputEvent::MakeMouseUp(pos, btn, mods, ts));
+            DispatchEvent(RawInputEvent::MakeMouseUp(logicalPos, physicalPos, btn, mods, ts));
             return 0;
         }
 
         case WM_MOUSEWHEEL: {
             POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
             ScreenToClient(m_hwnd, &pt);
-            core::Point pos(static_cast<float>(pt.x) / m_dpiScale, static_cast<float>(pt.y) / m_dpiScale);
+            core::Point physicalPos(static_cast<float>(pt.x), static_cast<float>(pt.y));
+            core::Point logicalPos(static_cast<float>(pt.x) / m_dpiScale, static_cast<float>(pt.y) / m_dpiScale);
             int deltaY = GET_WHEEL_DELTA_WPARAM(wParam);
 
-            DispatchEvent(RawInputEvent::MakeMouseWheel(pos, deltaY, 0, mods, ts));
+            DispatchEvent(RawInputEvent::MakeMouseWheel(logicalPos, physicalPos, deltaY, 0, mods, ts));
             return 0;
         }
 

@@ -70,7 +70,8 @@ inline constexpr bool HasModifier(KeyModifiers mods, KeyModifiers target) noexce
 /// 原始滑鼠事件資料
 /// </summary>
 struct RawMouseEventData {
-    core::Point  position;       // 相對於視窗客戶區的邏輯座標
+    core::Point  position;         // 相對於視窗客戶區的邏輯座標 (DIP: Device Independent Pixels)
+    core::Point  physicalPosition; // 相對於視窗客戶區的物理像素座標 (Physical Pixels)
     RawMouseButton button = RawMouseButton::None;
     int32_t      wheelDeltaX = 0; // 滾輪水平滾動量
     int32_t      wheelDeltaY = 0; // 滾輪垂直滾動量
@@ -122,40 +123,56 @@ struct RawInputEvent {
         window = {};
     }
 
-    static RawInputEvent MakeMouseMove(core::Point pos, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    static RawInputEvent MakeMouseMove(core::Point logicalPos, core::Point physicalPos, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseMove;
         e.modifiers = mods;
         e.timestampMs = ts;
-        e.mouse = { pos, RawMouseButton::None, 0, 0, 0 };
+        e.mouse = { logicalPos, physicalPos, RawMouseButton::None, 0, 0, 0 };
         return e;
     }
 
-    static RawInputEvent MakeMouseDown(core::Point pos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    static RawInputEvent MakeMouseMove(core::Point pos, KeyModifiers mods, uint64_t ts = 0) noexcept {
+        return MakeMouseMove(pos, pos, mods, ts);
+    }
+
+    static RawInputEvent MakeMouseDown(core::Point logicalPos, core::Point physicalPos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseDown;
         e.modifiers = mods;
         e.timestampMs = ts;
-        e.mouse = { pos, btn, 0, 0, clicks };
+        e.mouse = { logicalPos, physicalPos, btn, 0, 0, clicks };
         return e;
     }
 
-    static RawInputEvent MakeMouseUp(core::Point pos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    static RawInputEvent MakeMouseDown(core::Point pos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
+        return MakeMouseDown(pos, pos, btn, clicks, mods, ts);
+    }
+
+    static RawInputEvent MakeMouseUp(core::Point logicalPos, core::Point physicalPos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseUp;
         e.modifiers = mods;
         e.timestampMs = ts;
-        e.mouse = { pos, btn, 0, 0, 0 };
+        e.mouse = { logicalPos, physicalPos, btn, 0, 0, 0 };
         return e;
     }
 
-    static RawInputEvent MakeMouseWheel(core::Point pos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    static RawInputEvent MakeMouseUp(core::Point pos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept {
+        return MakeMouseUp(pos, pos, btn, mods, ts);
+    }
+
+    static RawInputEvent MakeMouseWheel(core::Point logicalPos, core::Point physicalPos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseWheel;
         e.modifiers = mods;
         e.timestampMs = ts;
-        e.mouse = { pos, RawMouseButton::None, deltaX, deltaY, 0 };
+        e.mouse = { logicalPos, physicalPos, RawMouseButton::None, deltaX, deltaY, 0 };
         return e;
+    }
+
+    static RawInputEvent MakeMouseWheel(core::Point pos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
+        return MakeMouseWheel(pos, pos, deltaY, deltaX, mods, ts);
     }
 
     static RawInputEvent MakeResize(uint32_t w, uint32_t h, float dpi, uint64_t ts = 0) noexcept {
