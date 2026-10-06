@@ -37,8 +37,8 @@ int main() {
     // 1. 建立視窗
     WindowDesc desc;
     desc.title = "CPPUI M4 - Visual Tree & Two-Pass Layout Engine Demo";
-    desc.width = 1040;
-    desc.height = 720;
+    desc.width = 1160;
+    desc.height = 760;
     desc.resizable = true;
 
     auto window = PlatformWindowFactory::Create(desc);
@@ -97,9 +97,9 @@ int main() {
     toolbarBorder->SetBorderBrush(Color(55, 62, 78, 255));
     toolbarBorder->SetBorderThickness(Thickness(1.0f));
     toolbarBorder->SetCornerRadius(6.0f);
-    toolbarBorder->SetPadding(Thickness(12.0f, 8.0f, 12.0f, 8.0f));
+    toolbarBorder->SetPadding(Thickness(14.0f, 10.0f, 14.0f, 10.0f));
 
-    auto toolbarText = std::make_shared<TextBlock>("【快捷鍵控制】[A] 新增動態卡片 | [D] 刪除卡片 | [C] 切換標題色彩 (純Visual刷新，零排版計算) | [H] 切換對齊 | 拖曳視窗即時響應式排版");
+    auto toolbarText = std::make_shared<TextBlock>("【快捷鍵控制】[A] 新增動態卡片 | [D] 刪除卡片 | [C] 切換標題色彩 (純 Visual 刷新，零排版計算) | [H] 切換對齊 | 拖曳視窗即時響應式排版");
     toolbarText->SetFontSize(13.0f);
     toolbarText->SetForeground(Color(140, 200, 255, 255));
     toolbarBorder->SetChild(toolbarText);
@@ -113,16 +113,15 @@ int main() {
 
     // [左欄]: 垂直 StackPanel，包含動態新增的卡片
     auto leftColumnBorder = std::make_shared<Border>();
-    leftColumnBorder->SetWidth(460.0f);
     leftColumnBorder->SetBackground(Color(28, 31, 39, 255));
     leftColumnBorder->SetBorderBrush(Color(48, 54, 68, 255));
     leftColumnBorder->SetBorderThickness(Thickness(1.0f));
     leftColumnBorder->SetCornerRadius(8.0f);
-    leftColumnBorder->SetPadding(Thickness(14.0f));
+    leftColumnBorder->SetPadding(Thickness(16.0f));
 
     auto cardStack = std::make_shared<StackPanel>();
     cardStack->SetOrientation(Orientation::Vertical);
-    cardStack->SetSpacing(10.0f);
+    cardStack->SetSpacing(12.0f);
     leftColumnBorder->SetChild(cardStack);
 
     auto leftTitle = std::make_shared<TextBlock>("動態線性列表 (StackPanel 垂直流式排列)");
@@ -133,28 +132,28 @@ int main() {
 
     contentPanel->AddChild(leftColumnBorder);
 
-    // 輔助函式: 建立卡片元件
+    // 輔助函式: 建立卡片元件 (黃金比例：寬敞內距、清晰字體層級、良好行距)
     int cardCounter = 0;
     auto createCard = [&](const std::string& title, const std::string& descText, Color accent) {
         auto card = std::make_shared<Border>();
         card->SetBackground(Color(36, 40, 52, 255));
         card->SetBorderBrush(accent);
         card->SetBorderThickness(Thickness(1.5f));
-        card->SetCornerRadius(6.0f);
-        card->SetPadding(Thickness(10.0f, 8.0f, 10.0f, 8.0f));
+        card->SetCornerRadius(8.0f);
+        card->SetPadding(Thickness(16.0f, 12.0f, 16.0f, 12.0f));
 
         auto cStack = std::make_shared<StackPanel>();
         cStack->SetOrientation(Orientation::Vertical);
-        cStack->SetSpacing(4.0f);
+        cStack->SetSpacing(6.0f);
 
         auto tBlock = std::make_shared<TextBlock>(title);
-        tBlock->SetFontSize(14.0f);
+        tBlock->SetFontSize(15.0f);
         tBlock->SetFontWeight(text::FontWeight::SemiBold);
-        tBlock->SetForeground(Color(240, 240, 240, 255));
+        tBlock->SetForeground(Color(245, 245, 250, 255));
 
         auto dBlock = std::make_shared<TextBlock>(descText);
-        dBlock->SetFontSize(12.0f);
-        dBlock->SetForeground(Color(170, 180, 195, 255));
+        dBlock->SetFontSize(13.0f);
+        dBlock->SetForeground(Color(175, 185, 200, 255));
 
         cStack->AddChild(tBlock);
         cStack->AddChild(dBlock);
@@ -170,13 +169,11 @@ int main() {
 
     // [右欄]: Canvas 絕對定位畫布
     auto rightColumnBorder = std::make_shared<Border>();
-    rightColumnBorder->SetWidth(480.0f);
-    rightColumnBorder->SetHeight(400.0f);
     rightColumnBorder->SetBackground(Color(28, 31, 39, 255));
     rightColumnBorder->SetBorderBrush(Color(48, 54, 68, 255));
     rightColumnBorder->SetBorderThickness(Thickness(1.0f));
     rightColumnBorder->SetCornerRadius(8.0f);
-    rightColumnBorder->SetPadding(Thickness(14.0f));
+    rightColumnBorder->SetPadding(Thickness(16.0f));
 
     auto canvasLayout = std::make_shared<Canvas>();
     rightColumnBorder->SetChild(canvasLayout);
@@ -189,25 +186,34 @@ int main() {
     Canvas::SetTop(canvasTitle, 0.0f);
     canvasLayout->AddChild(canvasTitle);
 
-    auto floatCard1 = createCard("Canvas Item A", "位置: Left=20, Top=40", Color(255, 100, 150, 255));
-    floatCard1->SetWidth(200.0f);
-    Canvas::SetLeft(floatCard1, 20.0f);
+    auto floatCard1 = createCard("Canvas Item A", "位置: Left=24, Top=40 (浮動元件)", Color(255, 100, 150, 255));
+    floatCard1->SetWidth(260.0f);
+    Canvas::SetLeft(floatCard1, 24.0f);
     Canvas::SetTop(floatCard1, 40.0f);
     canvasLayout->AddChild(floatCard1);
 
-    auto floatCard2 = createCard("Canvas Item B", "位置: Left=180, Top=140", Color(255, 210, 80, 255));
-    floatCard2->SetWidth(220.0f);
-    Canvas::SetLeft(floatCard2, 180.0f);
-    Canvas::SetTop(floatCard2, 140.0f);
+    auto floatCard2 = createCard("Canvas Item B", "位置: Left=190, Top=155 (二維圖層)", Color(255, 210, 80, 255));
+    floatCard2->SetWidth(260.0f);
+    Canvas::SetLeft(floatCard2, 190.0f);
+    Canvas::SetTop(floatCard2, 155.0f);
     canvasLayout->AddChild(floatCard2);
 
-    auto floatCard3 = createCard("Canvas Item C", "位置: Left=60, Top=250", Color(60, 220, 220, 255));
-    floatCard3->SetWidth(210.0f);
+    auto floatCard3 = createCard("Canvas Item C", "位置: Left=60, Top=270 (自由定位)", Color(60, 220, 220, 255));
+    floatCard3->SetWidth(260.0f);
     Canvas::SetLeft(floatCard3, 60.0f);
-    Canvas::SetTop(floatCard3, 250.0f);
+    Canvas::SetTop(floatCard3, 270.0f);
     canvasLayout->AddChild(floatCard3);
 
     contentPanel->AddChild(rightColumnBorder);
+
+    // 依據視窗尺寸即時計算雙欄佈局尺寸 (響應式均分)
+    auto updateColumnLayout = [&](uint32_t w, uint32_t h) {
+        float availableColWidth = std::max(320.0f, (static_cast<float>(w) - 42.0f - 20.0f) * 0.5f);
+        leftColumnBorder->SetWidth(availableColWidth);
+        rightColumnBorder->SetWidth(availableColWidth);
+        rightColumnBorder->SetHeight(std::max(420.0f, static_cast<float>(h) - 250.0f));
+    };
+    updateColumnLayout(currentWidth, currentHeight);
 
     // --- 底部即時狀態監控欄 ---
     auto footerBorder = std::make_shared<Border>();
@@ -215,7 +221,7 @@ int main() {
     footerBorder->SetBorderBrush(Color(36, 40, 50, 255));
     footerBorder->SetBorderThickness(Thickness(1.0f));
     footerBorder->SetCornerRadius(4.0f);
-    footerBorder->SetPadding(Thickness(12.0f, 6.0f, 12.0f, 6.0f));
+    footerBorder->SetPadding(Thickness(14.0f, 8.0f, 14.0f, 8.0f));
 
     auto statusText = std::make_shared<TextBlock>("準備中...");
     statusText->SetFontSize(12.0f);
@@ -254,6 +260,7 @@ int main() {
                 currentWidth = e.window.width;
                 currentHeight = e.window.height;
                 renderContext->Resize(currentWidth, currentHeight);
+                updateColumnLayout(currentWidth, currentHeight);
                 layoutMgr.UpdateLayout(*rootBorder, Size(static_cast<float>(currentWidth), static_cast<float>(currentHeight)));
                 loop.RequestRedraw();
                 break;
@@ -307,6 +314,7 @@ int main() {
         statusText->SetText(statStr);
 
         // 2. 執行排版更新 (雙階段管線)
+        updateColumnLayout(currentWidth, currentHeight);
         layoutMgr.UpdateLayout(*rootBorder, Size(static_cast<float>(currentWidth), static_cast<float>(currentHeight)));
 
         // 3. 錄製視覺樹繪製指令流

@@ -206,8 +206,20 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
     HRESULT hr = pLayout->GetMetrics(&tm);
     if (FAILED(hr)) return;
 
-    float boundW = (std::max)(tm.layoutWidth > 8000.0f ? 0.0f : tm.layoutWidth, tm.width + (std::max)(0.0f, tm.left));
-    float boundH = (std::max)(tm.layoutHeight > 8000.0f ? 0.0f : tm.layoutHeight, tm.height + (std::max)(0.0f, tm.top));
+    DWRITE_OVERHANG_METRICS om = {};
+    pLayout->GetOverhangMetrics(&om);
+
+    // 補償負向 Overhang，確保頂端（如漢字頂部筆畫）、左端（如括號【）與底端（下伸部 g, p, y, q）零像素截斷
+    float leftPad   = (std::max)(0.0f, -om.left) + 2.0f;
+    float topPad    = (std::max)(0.0f, -om.top) + 2.0f;
+    float rightPad  = (std::max)(0.0f, om.right) + 2.0f;
+    float bottomPad = (std::max)(0.0f, om.bottom) + 2.0f;
+
+    float layoutW = (std::max)(tm.layoutWidth > 8000.0f ? 0.0f : tm.layoutWidth, tm.width + (std::max)(0.0f, tm.left));
+    float layoutH = (std::max)(tm.layoutHeight > 8000.0f ? 0.0f : tm.layoutHeight, tm.height + (std::max)(0.0f, tm.top));
+
+    float boundW = layoutW + leftPad + rightPad;
+    float boundH = layoutH + topPad + bottomPad;
     int textW = static_cast<int>(std::ceil(boundW));
     int textH = static_cast<int>(std::ceil(boundH));
     if (textW <= 0 || textH <= 0) return;
@@ -225,15 +237,17 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
     ::FillRect(memDC, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
 
     DWriteLayoutRenderer renderer(pBitmapTarget, dwriteRes.pRenderingParams, RGB(255, 255, 255));
-    hr = pLayout->Draw(nullptr, &renderer, 0, 0);
+    // 於點陣圖內部以 (leftPad, topPad) 為原點偏移繪製，使負向字形溢出安全保留於點陣圖內
+    hr = pLayout->Draw(nullptr, &renderer, leftPad, topPad);
 
     if (SUCCEEDED(hr)) {
         HGDIOBJ hbm = GetCurrentObject(memDC, OBJ_BITMAP);
         DIBSECTION ds = {};
         if (GetObject(hbm, sizeof(ds), &ds) == sizeof(ds) && ds.dsBm.bmBits) {
             const uint32_t* mask = static_cast<const uint32_t*>(ds.dsBm.bmBits);
-            int32_t dstX0 = static_cast<int32_t>(origin.x);
-            int32_t dstY0 = static_cast<int32_t>(origin.y);
+            // 貼圖時校正減去 leftPad 與 topPad，使字形基準線（Baseline）精準還原至排版原點
+            int32_t dstX0 = static_cast<int32_t>(origin.x - leftPad);
+            int32_t dstY0 = static_cast<int32_t>(origin.y - topPad);
             float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
             for (int y = 0; y < textH; ++y) {
