@@ -58,6 +58,7 @@ graph TD
 | [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 座標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，支援編譯期求值 (`constexpr`)。 | [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
 | [`cppui::pal`](namespaces/cppui_pal.md) | **平台抽象層 (PAL)** | 封裝作業系統原生視窗生命週期、主執行緒低延遲事件循環 (RunLoop) 以及統一輸入事件模型。 | [`IPlatformWindow`](classes/pal_iplatformwindow.md), [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md), [`RunLoop`](classes/pal_runloop.md), [`RawInputEvent`](classes/pal_rawinputevent.md) |
 | [`cppui::rendering`](namespaces/cppui_rendering.md) | **繪圖與渲染管線** | 實作高效命令錄製架構，透過自研二進位 DisplayList 與連續平坦 LinearArena 徹底隔離 UI 與光柵化後端。 | [`DrawingContext`](classes/rendering_drawingcontext.md), [`DisplayList`](classes/rendering_displaylist.md), [`DisplayListRenderer`](classes/rendering_displaylistrenderer.md), [`LinearArena`](classes/rendering_lineararena.md), [`DrawOp`](classes/rendering_drawop.md) |
+| [`cppui::text`](namespaces/cppui_text.md) | **文字排版與塑形管線** | 雙軌架構文字引擎，支援系統字型匹配、OpenType 字形塑形、BiDi 雙向分析、UAX #14 斷行、多行折行、省略號與雙向命中測試。 | [`FontDescriptor`](classes/text_font.md), [`FontManager`](classes/text_fontmanager.md), [`TextShaper`](classes/text_textshaper.md), [`BiDiAnalyzer`](classes/text_bidianalyzer.md), [`LineBreaker`](classes/text_linebreaker.md), [`TextLayout`](classes/text_textlayout.md), [`TextLayoutEngine`](classes/text_textlayoutengine.md) |
 | [`compat`](namespaces/compat.md) | **向下相容與微架構層** | 提供零依賴現代 C++ Polyfill（C++14/17/20/23/26 雙軌切換）與 12 大功能模組。<br>- [視圖與管道 (`compat::views`)](namespaces/compat_views.md)<br>- [範圍與演算法 (`compat::ranges`)](namespaces/compat_ranges.md)<br>- [錯誤處理 (`compat::expected`)](namespaces/compat_expected.md)<br>- [格式化與終端 (`compat::format/print`)](namespaces/compat_format_print.md) | `compat::string_view`, `compat::span`, `compat::views::*`, `compat::optional`, `compat::expected`, `compat::format`, `COMPAT_CONSTEXPR_14` |
 
 ---
@@ -85,6 +86,15 @@ graph TD
 * [`DrawOp`](classes/rendering_drawop.md)：二進位命令協定（`DrawOpHeader` 與各負載結構）。
 * [`IRenderContext`](classes/rendering_irendercontext.md)：渲染後端介面與雙緩衝光柵化目標 (`IRenderTarget`)。
 
+### 文字排版與字型 (Text Pipeline & Typography)
+* [`FontDescriptor`](classes/text_font.md)：字型規格與樣式描述（字號、粗細 `FontWeight`、傾斜 `FontStyle`、字型度量 `FontMetrics`）。
+* [`FontManager`](classes/text_fontmanager.md)：系統字型匹配與快取中樞（預設 UI 字型、繁中字型、等寬字型）。
+* [`TextShaper`](classes/text_textshaper.md)：OpenType 字符塑形器與連續塑形切片 (`ShapedRun`, `ShapedGlyph`)。
+* [`BiDiAnalyzer`](classes/text_bidianalyzer.md)：Unicode UAX #9 雙向文字段落分析器（LTR / RTL 區段切分與視覺重排）。
+* [`LineBreaker`](classes/text_linebreaker.md)：Unicode UAX #14 換行斷詞分析器（支援 CJK 標點禁則規範）。
+* [`TextLayout`](classes/text_textlayout.md)：多行排版模型，支援多行折行、居中/靠右對齊、省略號裁切與雙向精準命中測試 (`HitTestPoint`, `HitTestTextPosition`)。
+* [`TextLayoutEngine`](classes/text_textlayoutengine.md)：高階排版求解器與每秒百萬次高速文字度量工廠 (`MeasureText`)。
+
 ---
 
 ## 4. 實戰與概念指南 (Guides & Tutorials)
@@ -92,12 +102,13 @@ graph TD
 * [**快速入門 (Quickstart)**](guides/quickstart.md)：從零建立第一個 CPPUI 原生視窗、綁定事件循環並完成每秒 60 FPS 畫面繪製。
 * [**DisplayList 二進位錄製深度解析**](guides/display_list_recording.md)：深入探討命令錄製架構、記憶體池重用、Clip Stack 矩形剪裁與每秒數千萬次操作之微架構調優。
 * [**高分屏 DPI 與座標轉換指南**](guides/dpi_and_coordinates.md)：說明設備獨立像素 (DIP)、物理像素與 Windows 多螢幕動態 DPI 縮放的計算原理與事件對接。
+* [**工業級文字排版與雙向命中測試指南**](guides/text_shaping_and_layout.md)：詳解文字塑形、多行折行、CJK 標點禁則、省略號裁切與文字編輯器游標定位技術。
 
 ---
 
 ## 5. 跨標準相容性契約 (Compatibility Matrix)
 
-本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（36/36 通過，零報錯、零警告）：
+本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（48/48 通過，零報錯、零警告）：
 
 | 編譯器 | C++14 | C++17 | C++20 | C++23 / Latest |
 | :--- | :---: | :---: | :---: | :---: |

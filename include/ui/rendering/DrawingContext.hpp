@@ -3,6 +3,8 @@
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/rendering/DisplayList.hpp"
+#include "ui/text/Font.hpp"
+#include "ui/text/TextLayout.hpp"
 
 namespace cppui {
 namespace rendering {
@@ -43,6 +45,44 @@ public:
         if (color.a == 0 || strokeWidth <= 0.0f) return;
         DrawLineOp op{ p1, p2, color, strokeWidth };
         m_displayList.PushOp(DrawOpType::DrawLine, op);
+    }
+
+    /// <summary>
+    /// 繪製單行純文字
+    /// </summary>
+    void DrawText(compat::string_view text, core::Point origin, const text::FontDescriptor& font, core::Color color) {
+        if (text.empty() || color.a == 0) return;
+        DrawTextOp op;
+        op.origin = origin;
+        op.color = color;
+        op.fontSize = font.GetSize();
+        op.fontWeight = static_cast<uint16_t>(font.GetWeight());
+        op.fontStyle = static_cast<uint8_t>(font.GetStyle());
+        op.reserved = 0;
+        op.familyLength = static_cast<uint32_t>(font.GetFamily().size());
+        op.textLength = static_cast<uint32_t>(text.size());
+
+        size_t totalExtra = op.familyLength + op.textLength;
+        std::vector<char> extra(totalExtra);
+        if (op.familyLength > 0) {
+            std::memcpy(extra.data(), font.GetFamily().data(), op.familyLength);
+        }
+        if (op.textLength > 0) {
+            std::memcpy(extra.data() + op.familyLength, text.data(), op.textLength);
+        }
+        m_displayList.PushOpWithData(DrawOpType::DrawText, op, extra.data(), totalExtra);
+    }
+
+    /// <summary>
+    /// 繪製多行排版 TextLayout
+    /// </summary>
+    void DrawTextLayout(const text::TextLayout& layout, core::Point origin, core::Color color) {
+        if (layout.GetLineCount() == 0 || color.a == 0) return;
+        DrawTextLayoutOp op;
+        op.origin = origin;
+        op.color = color;
+        op.nativeLayoutHandle = layout.GetNativeHandle();
+        m_displayList.PushOp(DrawOpType::DrawTextLayout, op);
     }
 
     /// <summary>

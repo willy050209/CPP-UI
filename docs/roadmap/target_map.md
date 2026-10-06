@@ -25,7 +25,8 @@ graph TD
 
     classDef done fill:#d4edda,stroke:#28a745,stroke-width:2px;
     classDef planned fill:#e2e3e5,stroke:#6c757d,stroke-width:2px;
-    class M1,M2,M3,M4,M5,M6 planned;
+    class M1,M2,M3 done;
+    class M4,M5,M6 planned;
 ```
 
 ---
@@ -67,9 +68,9 @@ graph TD
 
 ---
 
-### 里程碑 3 (M3)：ICU + HarfBuzz 文字整形與排版管線 (Text Pipeline)
+### 里程碑 3 (M3)：文字整形與多行排版管線 (Text Pipeline) [已完成]
 * **核心目標**：實現支援多語言、複合字形、Emoji、雙向文字（BiDi）與多行折行的工業級排版管線。
-* **技術選型**：ICU（斷詞與 BiDi）+ HarfBuzz（字形塑形）+ 系統字型匹配（DirectWrite/CoreText）。
+* **技術選型**：DirectWrite 原生工業級引擎（Windows 零額外依賴）+ ICU/HarfBuzz 跨平台雙軌插槽。
 * **核心交付物**：
   * `FontManager`：快取管理 `hb_face_t`、`hb_font_t`，跨平台匹配系統字型家族。
   * `TextShaper`：封裝 `hb_buffer_t` 與 `hb_shape()`，轉換 UTF-8 字串為 Shaped Runs（包含 Glyph ID、X/Y Advance 與 Offset）。

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include "compat/compat.hpp"
 #include "ui/rendering/LinearArena.hpp"
 #include "ui/rendering/DrawOp.hpp"
@@ -55,6 +56,30 @@ public:
 
         auto* destPayload = reinterpret_cast<PayloadType*>(mem + sizeof(DrawOpHeader));
         *destPayload = payload;
+
+        m_opCount++;
+    }
+
+    /// <summary>
+    /// 將帶有變長二進位資料的繪圖操作寫入平坦記憶體池 (保證 8 字節對齊)
+    /// </summary>
+    template <typename PayloadType>
+    void PushOpWithData(DrawOpType type, const PayloadType& payload, const void* extraData, size_t extraBytes, uint16_t flags = 0) {
+        size_t rawSize = sizeof(DrawOpHeader) + sizeof(PayloadType) + extraBytes;
+        size_t alignedSize = (rawSize + 7) & ~static_cast<size_t>(7);
+        uint8_t* mem = static_cast<uint8_t*>(m_arena.Allocate(alignedSize, 8));
+
+        auto* header = reinterpret_cast<DrawOpHeader*>(mem);
+        header->type = type;
+        header->flags = flags;
+        header->size = static_cast<uint32_t>(alignedSize);
+
+        auto* destPayload = reinterpret_cast<PayloadType*>(mem + sizeof(DrawOpHeader));
+        *destPayload = payload;
+
+        if (extraData && extraBytes > 0) {
+            std::memcpy(mem + sizeof(DrawOpHeader) + sizeof(PayloadType), extraData, extraBytes);
+        }
 
         m_opCount++;
     }

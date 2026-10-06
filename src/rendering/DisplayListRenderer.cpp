@@ -240,6 +240,34 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 break;
             }
 
+            case DrawOpType::DrawText: {
+                if (currentClip.IsEmpty() || currentOpacity <= 0.0f) {
+                    stats.culledOps++;
+                    break;
+                }
+                const auto* op = static_cast<const DrawTextOp*>(payload);
+                const char* extraData = reinterpret_cast<const char*>(op) + sizeof(DrawTextOp);
+                compat::string_view family(extraData, op->familyLength);
+                compat::string_view text(extraData + op->familyLength, op->textLength);
+
+                core::Color finalColor = ApplyOpacity(op->color, currentOpacity);
+                target->DrawText(text, op->origin, family, op->fontSize, op->fontWeight, op->fontStyle, finalColor);
+                stats.renderedOps++;
+                break;
+            }
+
+            case DrawOpType::DrawTextLayout: {
+                if (currentClip.IsEmpty() || currentOpacity <= 0.0f) {
+                    stats.culledOps++;
+                    break;
+                }
+                const auto* op = static_cast<const DrawTextLayoutOp*>(payload);
+                core::Color finalColor = ApplyOpacity(op->color, currentOpacity);
+                target->DrawTextLayout(op->nativeLayoutHandle, op->origin, finalColor);
+                stats.renderedOps++;
+                break;
+            }
+
             default:
                 break;
         }

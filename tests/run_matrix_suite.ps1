@@ -59,6 +59,17 @@ foreach ($s in $clangStandards) {
     } else {
         Record-Result "Clang++" $s "PAL_Backend" "FAIL" "N/A" "N/A"
     }
+
+    # 4. Text Pipeline Test
+    $textExe = "$outDir\text_clang_$s.exe"
+    & $clangPath "-std=$s" -O2 -I include -I include/compat tests\text_pipeline_test.cpp src\text\FontManager.cpp src\text\TextShaper.cpp src\text\BiDiAnalyzer.cpp src\text\LineBreaker.cpp src\text\TextLayout.cpp src\text\TextLayoutEngine.cpp src\text\DirectWriteTextEngine.cpp src\rendering\DisplayListRenderer.cpp src\rendering\backend\SoftwareRenderContext.cpp -ldwrite -lgdi32 -luser32 -lole32 -o $textExe
+    if ($LASTEXITCODE -eq 0) {
+        & $textExe | Out-Null
+        $runOk = if ($LASTEXITCODE -eq 0) { "PASS" } else { "FAIL" }
+        Record-Result "Clang++" $s "TextPipeline" "PASS" $runOk "N/A"
+    } else {
+        Record-Result "Clang++" $s "TextPipeline" "FAIL" "N/A" "N/A"
+    }
 }
 
 # =============================================================================
@@ -99,6 +110,17 @@ foreach ($s in $gccStandards) {
         Record-Result "G++" $s "PAL_Backend" "PASS" $runOk "N/A"
     } else {
         Record-Result "G++" $s "PAL_Backend" "FAIL" "N/A" "N/A"
+    }
+
+    # 4. Text Pipeline Test
+    $textExe = "$outDir\text_gcc_$s.exe"
+    & $gccPath "-std=$s" -O2 -static -I include -I include/compat tests\text_pipeline_test.cpp src\text\FontManager.cpp src\text\TextShaper.cpp src\text\BiDiAnalyzer.cpp src\text\LineBreaker.cpp src\text\TextLayout.cpp src\text\TextLayoutEngine.cpp src\text\DirectWriteTextEngine.cpp src\rendering\DisplayListRenderer.cpp src\rendering\backend\SoftwareRenderContext.cpp -ldwrite -lgdi32 -luser32 -lole32 -o $textExe
+    if ($LASTEXITCODE -eq 0) {
+        & $textExe | Out-Null
+        $runOk = if ($LASTEXITCODE -eq 0) { "PASS" } else { "FAIL" }
+        Record-Result "G++" $s "TextPipeline" "PASS" $runOk "N/A"
+    } else {
+        Record-Result "G++" $s "TextPipeline" "FAIL" "N/A" "N/A"
     }
 }
 
@@ -143,6 +165,18 @@ foreach ($s in $msvcStandards) {
         Record-Result "MSVC" $s "PAL_Backend" "PASS" $runOk "N/A"
     } else {
         Record-Result "MSVC" $s "PAL_Backend" "FAIL" "N/A" "N/A"
+    }
+
+    # 4. Text Pipeline Test
+    $textExe = "$outDir\text_msvc_$s.exe"
+    $cmd = "`"$vsDevCmd`" -arch=x64 >nul && cl.exe /nologo /O2 /EHsc /utf-8 /std:$s /I include /I include/compat tests\text_pipeline_test.cpp src\text\FontManager.cpp src\text\TextShaper.cpp src\text\BiDiAnalyzer.cpp src\text\LineBreaker.cpp src\text\TextLayout.cpp src\text\TextLayoutEngine.cpp src\text\DirectWriteTextEngine.cpp src\rendering\DisplayListRenderer.cpp src\rendering\backend\SoftwareRenderContext.cpp dwrite.lib gdi32.lib user32.lib ole32.lib /Fe:$textExe >nul"
+    cmd.exe /c $cmd
+    if ($LASTEXITCODE -eq 0 -and (Test-Path $textExe)) {
+        & $textExe | Out-Null
+        $runOk = if ($LASTEXITCODE -eq 0) { "PASS" } else { "FAIL" }
+        Record-Result "MSVC" $s "TextPipeline" "PASS" $runOk "N/A"
+    } else {
+        Record-Result "MSVC" $s "TextPipeline" "FAIL" "N/A" "N/A"
     }
 }
 

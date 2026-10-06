@@ -20,7 +20,8 @@ enum class DrawOpType : uint16_t {
     DrawRectangle,
     DrawRoundedRectangle,
     DrawLine,
-    DrawTextRun // 預留 M3 HarfBuzz/ICU 文字圖元
+    DrawText,
+    DrawTextLayout
 };
 
 #pragma pack(push, 4)
@@ -73,6 +74,29 @@ struct PushClipRectOp {
 /// </summary>
 struct PushOpacityOp {
     float opacity = 1.0f;
+};
+
+/// <summary>
+/// 文字繪製操作負載 (含 UTF-8 字串內容與字型規格)
+/// </summary>
+struct DrawTextOp {
+    core::Point origin;
+    core::Color color;
+    float       fontSize     = 14.0f;
+    uint16_t    fontWeight   = 400;
+    uint8_t     fontStyle    = 0;
+    uint8_t     reserved     = 0;
+    uint32_t    familyLength = 0;
+    uint32_t    textLength   = 0;
+};
+
+/// <summary>
+/// 多行 TextLayout 排版繪製操作負載
+/// </summary>
+struct DrawTextLayoutOp {
+    core::Point origin;
+    core::Color color;
+    void*       nativeLayoutHandle = nullptr;
 };
 
 #pragma pack(pop)

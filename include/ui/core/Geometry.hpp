@@ -141,7 +141,11 @@ namespace Colors {
     COMPAT_INLINE_VAR constexpr Color Red         = Color(255, 0, 0, 255);
     COMPAT_INLINE_VAR constexpr Color Green       = Color(0, 255, 0, 255);
     COMPAT_INLINE_VAR constexpr Color Blue        = Color(0, 0, 255, 255);
-    COMPAT_INLINE_VAR constexpr Color SteelBlue   = Color(70, 130, 180, 255);
+    COMPAT_INLINE_VAR constexpr Color SteelBlue     = Color(70, 130, 180, 255);
+    COMPAT_INLINE_VAR constexpr Color Yellow        = Color(255, 255, 0, 255);
+    COMPAT_INLINE_VAR constexpr Color DarkSlateGray = Color(47, 79, 79, 255);
+    COMPAT_INLINE_VAR constexpr Color Gray          = Color(128, 128, 128, 255);
+    COMPAT_INLINE_VAR constexpr Color LightGray     = Color(211, 211, 211, 255);
 } // namespace Colors
 
 } // namespace core

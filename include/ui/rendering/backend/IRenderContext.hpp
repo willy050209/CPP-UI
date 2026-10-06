@@ -33,6 +33,15 @@ public:
 
     // 取得底層像素記憶體指標 (若為軟體緩衝區)
     virtual uint32_t* GetPixelBuffer() noexcept = 0;
+
+    // 繪製文字與文字排版
+    virtual void DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color) {
+        (void)text; (void)origin; (void)family; (void)size; (void)weight; (void)style; (void)color;
+    }
+
+    virtual void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color) {
+        (void)nativeLayoutHandle; (void)origin; (void)color;
+    }
 };
 
 /// <summary>

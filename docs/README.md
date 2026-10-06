@@ -11,6 +11,7 @@
   * [幾何與核心型別 (`cppui::core`)](api/namespaces/cppui_core.md)
   * [平台抽象層 (`cppui::pal`)](api/namespaces/cppui_pal.md)
   * [繪圖與命令錄製管線 (`cppui::rendering`)](api/namespaces/cppui_rendering.md)
+  * [文字排版與塑形管線 (`cppui::text`)](api/namespaces/cppui_text.md)
   * [向下相容性與微架構巨集 (`compat`)](api/namespaces/compat.md)
     * [視圖適配器與惰性管道 (`compat::views`)](api/namespaces/compat_views.md)
     * [受約束範圍與演算法 (`compat::ranges`)](api/namespaces/compat_ranges.md)
@@ -19,6 +20,7 @@
   * [🚀 快速入門指南 (Quickstart Guide)](api/guides/quickstart.md)
   * [⚙️ DisplayList 二進位錄製深度解析](api/guides/display_list_recording.md)
   * [🖥️ 高分屏 DPI 與座標轉換指南](api/guides/dpi_and_coordinates.md)
+  * [📝 工業級文字排版與雙向命中測試指南](api/guides/text_shaping_and_layout.md)
 
 ---
 
