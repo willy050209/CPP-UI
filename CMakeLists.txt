@@ -55,6 +55,8 @@ if(WIN32)
         gdi32
         dwmapi
         shcore
+        dwrite
+        ole32
     )
 endif()
 

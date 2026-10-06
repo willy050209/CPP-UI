@@ -181,9 +181,7 @@ public:
 #endif
     }
 
-    void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color) override {
-        (void)nativeLayoutHandle; (void)origin; (void)color;
-    }
+    void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color) override;
 
 private:
     uint32_t m_width = 0;

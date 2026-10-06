@@ -180,7 +180,24 @@ int main() {
     rendering::DisplayListRenderer renderer;
     rendering::RenderStats stats = renderer.Render(dl, &target);
     assert(stats.renderedOps >= 3);
-    compat::println("  [PASS] DisplayList rendered {} ops successfully to target", stats.renderedOps);
+
+    // 驗證 DrawTextLayout 實際光柵化出非背景像素 (黃色文字 R, G 較高)
+    compat::span<const uint32_t> pixels = target.GetPixelSpan();
+    size_t yellowTextPixels = 0;
+    for (size_t y = 60; y < 200; ++y) {
+        for (size_t x = 20; x < 250; ++x) {
+            uint32_t p = pixels[y * 400 + x];
+            uint8_t r = static_cast<uint8_t>((p >> 16) & 0xFF);
+            uint8_t b = static_cast<uint8_t>(p & 0xFF);
+            // 黃色文字混色後 R 會明顯高於背景且高於 B
+            if (r > 150 && b < 100) {
+                yellowTextPixels++;
+            }
+        }
+    }
+    assert(yellowTextPixels > 0);
+    compat::println("  [PASS] DisplayList rendered {} ops successfully to target ({} text pixels rasterized)",
+                    stats.renderedOps, yellowTextPixels);
 
     compat::println("=================================================");
     compat::println(" [CPPUI M3] All Text Pipeline Tests PASSED!     ");
