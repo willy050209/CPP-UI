@@ -1,9 +1,12 @@
 #pragma once
 
 #include "ui/text/TextLayout.hpp"
+#ifdef _WIN32
 #include "DirectWriteTextEngine.hpp"
+#endif
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace cppui {
 namespace text {
@@ -47,10 +50,50 @@ struct TextLayout::Impl {
             }
         }
 #endif
-        res.textPosition = 0;
-        res.isInside = false;
+        // 純 C++ 跨平台等寬模型備援命中測試
+        float fontSize = font.GetSize();
+        float charW = fontSize * 0.6f;
+        float lineH = fontSize * 1.3f;
+
+        if (lines.empty() || text.empty()) {
+            res.textPosition = 0;
+            res.isInside = false;
+            res.isTrailingHit = false;
+            res.cursorRect = core::Rect(0.0f, 0.0f, 2.0f, lineH);
+            return res;
+        }
+
+        // 查找對應行
+        const TextLine* targetLine = &lines.front();
+        for (const auto& l : lines) {
+            if (pt.y >= l.bounds.Top() && pt.y < l.bounds.Bottom()) {
+                targetLine = &l;
+                break;
+            }
+            if (pt.y >= l.bounds.Bottom()) {
+                targetLine = &l;
+            }
+        }
+
+        float relX = pt.x - targetLine->bounds.Left();
+        if (relX <= 0.0f) {
+            res.textPosition = targetLine->startIndex;
+            res.isInside = (pt.y >= targetLine->bounds.Top() && pt.y <= targetLine->bounds.Bottom());
+            res.isTrailingHit = false;
+            res.cursorRect = core::Rect(targetLine->bounds.Left(), targetLine->bounds.Top(), 2.0f, targetLine->bounds.height);
+            return res;
+        }
+
+        size_t col = static_cast<size_t>(std::round(relX / charW));
+        if (col >= targetLine->length) {
+            col = targetLine->length;
+        }
+
+        res.textPosition = targetLine->startIndex + col;
+        res.isInside = (relX <= targetLine->bounds.width && pt.y >= targetLine->bounds.Top() && pt.y <= targetLine->bounds.Bottom());
         res.isTrailingHit = false;
-        res.cursorRect = core::Rect(0.0f, 0.0f, 2.0f, font.GetSize());
+        float cursorX = targetLine->bounds.Left() + static_cast<float>(col) * charW;
+        res.cursorRect = core::Rect(cursorX, targetLine->bounds.Top(), 2.0f, targetLine->bounds.height);
         return res;
     }
 
@@ -66,7 +109,24 @@ struct TextLayout::Impl {
             }
         }
 #endif
-        return core::Rect(0.0f, 0.0f, 2.0f, font.GetSize());
+        float fontSize = font.GetSize();
+        float charW = fontSize * 0.6f;
+        float lineH = fontSize * 1.3f;
+
+        if (lines.empty() || text.empty()) {
+            return core::Rect(0.0f, 0.0f, 2.0f, lineH);
+        }
+
+        for (const auto& l : lines) {
+            if (pos >= l.startIndex && pos <= l.startIndex + l.length) {
+                float col = static_cast<float>(pos - l.startIndex);
+                return core::Rect(l.bounds.Left() + col * charW, l.bounds.Top(), 2.0f, l.bounds.height);
+            }
+        }
+
+        const auto& lastLine = lines.back();
+        float col = static_cast<float>(lastLine.length);
+        return core::Rect(lastLine.bounds.Left() + col * charW, lastLine.bounds.Top(), 2.0f, lastLine.bounds.height);
     }
 };
 

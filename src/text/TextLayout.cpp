@@ -58,10 +58,11 @@ const FontDescriptor& TextLayout::GetFont() const noexcept {
 
 void* TextLayout::GetNativeHandle() const noexcept {
 #ifdef _WIN32
-    return m_impl ? static_cast<void*>(m_impl->nativeLayout) : nullptr;
-#else
-    return nullptr;
+    if (m_impl && m_impl->nativeLayout) {
+        return static_cast<void*>(m_impl->nativeLayout);
+    }
 #endif
+    return m_impl ? static_cast<void*>(m_impl.get()) : nullptr;
 }
 
 } // namespace text

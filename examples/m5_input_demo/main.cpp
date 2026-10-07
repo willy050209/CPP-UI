@@ -29,10 +29,6 @@
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/InputManager.hpp"
 
-#ifdef _WIN32
-#include "../../src/pal/win32/PlatformWindowWin32.hpp"
-#endif
-
 using namespace cppui;
 using namespace cppui::core;
 using namespace cppui::layout;
@@ -519,25 +515,7 @@ int main() {
 
     window->SetPaintCallback([&]() {
         updateLayoutAndRender();
-
-        #ifdef _WIN32
-        HWND hwnd = static_cast<HWND>(window->GetNativeHandle());
-        HDC hdc = ::GetDC(hwnd);
-        BITMAPINFO bmi = {};
-        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bmi.bmiHeader.biWidth = static_cast<LONG>(currentWidth);
-        bmi.bmiHeader.biHeight = -static_cast<LONG>(currentHeight);
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = BI_RGB;
-
-        ::StretchDIBits(
-            hdc, 0, 0, currentWidth, currentHeight,
-            0, 0, currentWidth, currentHeight,
-            target.GetPixelBuffer(), &bmi, DIB_RGB_COLORS, SRCCOPY
-        );
-        ::ReleaseDC(hwnd, hdc);
-        #endif
+        window->PresentFramebuffer(target.GetPixelSpan(), currentWidth, currentHeight);
     });
 
     // 平台原生事件接駁

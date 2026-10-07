@@ -201,6 +201,32 @@ struct RawInputEvent {
         return e;
     }
 
+    COMPAT_NODISCARD static RawInputEvent MakeDpiChange(float dpi, uint32_t w, uint32_t h, uint64_t ts = 0) noexcept {
+        RawInputEvent e;
+        e.type = RawEventType::DpiChanged;
+        e.timestampMs = ts;
+        e.window = { w, h, dpi };
+        return e;
+    }
+
+    COMPAT_NODISCARD static RawInputEvent MakeKeyDown(uint32_t virtualKey, uint32_t scanCode, KeyModifiers mods, uint64_t ts = 0) noexcept {
+        RawInputEvent e;
+        e.type = RawEventType::KeyDown;
+        e.modifiers = mods;
+        e.timestampMs = ts;
+        e.key = { virtualKey, scanCode, false };
+        return e;
+    }
+
+    COMPAT_NODISCARD static RawInputEvent MakeKeyUp(uint32_t virtualKey, uint32_t scanCode, KeyModifiers mods, uint64_t ts = 0) noexcept {
+        RawInputEvent e;
+        e.type = RawEventType::KeyUp;
+        e.modifiers = mods;
+        e.timestampMs = ts;
+        e.key = { virtualKey, scanCode, false };
+        return e;
+    }
+
     COMPAT_NODISCARD static RawInputEvent MakeClose(uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::WindowClose;

@@ -43,5 +43,15 @@ add_executable(fluent_dsl_test fluent_dsl_test.cpp)
 target_link_libraries(fluent_dsl_test PRIVATE cppui_core)
 add_test(NAME FluentDslTest COMMAND fluent_dsl_test)
 
+# 跨平台通用 PAL 視窗測試 (無顯卡/Headless/事件注入/離線 Framebuffer)
+add_executable(pal_crossplatform_test pal_crossplatform_test.cpp)
+target_link_libraries(pal_crossplatform_test PRIVATE cppui_core)
+add_test(NAME PalCrossPlatformTest COMMAND pal_crossplatform_test)
+
+# Skia 向量繪圖核心與雙引擎測試
+add_executable(skia_backend_test skia_backend_test.cpp)
+target_link_libraries(skia_backend_test PRIVATE cppui_core)
+add_test(NAME SkiaBackendTest COMMAND skia_backend_test)
+
 
 

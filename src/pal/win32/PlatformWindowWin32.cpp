@@ -7,11 +7,6 @@
 
 namespace cppui {
 namespace pal {
-
-std::shared_ptr<IPlatformWindow> PlatformWindowFactory::Create(const WindowDesc& desc) {
-    return std::make_shared<win32::PlatformWindowWin32>(desc);
-}
-
 namespace win32 {
 
 namespace {
@@ -184,6 +179,31 @@ void PlatformWindowWin32::RequestRedraw() {
     if (m_hwnd && !m_isClosed) {
         InvalidateRect(m_hwnd, nullptr, FALSE);
     }
+}
+
+void PlatformWindowWin32::PresentFramebuffer(compat::span<const uint32_t> pixelBuffer, uint32_t width, uint32_t height) {
+    if (!m_hwnd || pixelBuffer.empty() || width == 0 || height == 0) return;
+    HDC hdc = ::GetDC(m_hwnd);
+    if (!hdc) return;
+
+    BITMAPINFO bmi = {};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = static_cast<LONG>(width);
+    bmi.bmiHeader.biHeight = -static_cast<LONG>(height); // Top-down
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    ::StretchDIBits(
+        hdc,
+        0, 0, static_cast<int>(width), static_cast<int>(height),
+        0, 0, static_cast<int>(width), static_cast<int>(height),
+        pixelBuffer.data(),
+        &bmi,
+        DIB_RGB_COLORS,
+        SRCCOPY
+    );
+    ::ReleaseDC(m_hwnd, hdc);
 }
 
 void PlatformWindowWin32::UpdateDpiScale() {

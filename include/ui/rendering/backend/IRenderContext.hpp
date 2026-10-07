@@ -16,6 +16,10 @@ enum class PixelFormat : uint8_t {
     BGRA8888
 };
 
+#ifdef DrawText
+#undef DrawText
+#endif
+
 /// <summary>
 /// 渲染後端繪圖畫布介面
 /// 提供基本光柵圖元繪製，供 M1 驗證與 M2 DisplayList 重播器對接
@@ -42,6 +46,9 @@ public:
     virtual void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color) {
         (void)nativeLayoutHandle; (void)origin; (void)color;
     }
+
+    // 取得底層 SkCanvas 畫布指標 (若當前 RenderTarget 為 Skia 畫布)
+    virtual void* GetSkCanvas() noexcept { return nullptr; }
 };
 
 /// <summary>

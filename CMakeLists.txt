@@ -58,6 +58,8 @@ set(CPPUI_SOURCES
     src/text/LineBreaker.cpp
     src/text/TextLayout.cpp
     src/text/TextLayoutEngine.cpp
+    src/pal/PlatformWindowFactory.cpp
+    src/pal/generic/PlatformWindowGeneric.cpp
     src/input/RoutedEvent.cpp
     src/input/EventRoute.cpp
     src/input/FocusManager.cpp
@@ -71,8 +73,30 @@ if(WIN32)
     )
 endif()
 
+# -----------------------------------------------------------------------------
+# Skia 向量繪圖核心偵測與設定
+# -----------------------------------------------------------------------------
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+option(CPPUI_ENABLE_SKIA "Enable Google Skia 2D rendering engine" ON)
+set(CPPUI_HAS_SKIA 0)
+
+if(CPPUI_ENABLE_SKIA)
+    find_package(Skia QUIET)
+    if(Skia_FOUND)
+        set(CPPUI_HAS_SKIA 1)
+        message(STATUS "Google Skia detected: ${SKIA_LIBRARIES}")
+    else()
+        message(STATUS "Google Skia not found. Using SoftwareRenderTarget fallback.")
+    endif()
+endif()
+
 add_library(cppui_core STATIC ${CPPUI_SOURCES})
 target_link_libraries(cppui_core PUBLIC cppui_headers)
+target_compile_definitions(cppui_core PUBLIC CPPUI_HAS_SKIA=${CPPUI_HAS_SKIA})
+
+if(Skia_FOUND)
+    target_link_libraries(cppui_core PUBLIC Skia::Skia)
+endif()
 
 if(WIN32)
     target_link_libraries(cppui_core PRIVATE

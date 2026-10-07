@@ -1,5 +1,7 @@
 #include "ui/text/TextShaper.hpp"
+#ifdef _WIN32
 #include "DirectWriteTextEngine.hpp"
+#endif
 
 #ifdef _WIN32
 

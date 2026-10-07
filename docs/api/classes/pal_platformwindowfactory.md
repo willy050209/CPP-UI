@@ -22,6 +22,7 @@ namespace pal {
 class PlatformWindowFactory {
 public:
     COMPAT_NODISCARD static std::shared_ptr<IPlatformWindow> Create(const WindowDesc& desc);
+    COMPAT_NODISCARD static std::shared_ptr<IPlatformWindow> CreateGeneric(const WindowDesc& desc);
 };
 
 } // namespace pal
@@ -32,22 +33,33 @@ public:
 
 ## 簡介 (Description)
 
-`PlatformWindowFactory` 採用簡單工廠模式 (Simple Factory Pattern)，提供單一靜態建立入口 `Create()`。它內部依據作業系統條件編譯巨集（如 `_WIN32`、`__APPLE__`、`__linux__`）實例化對應的視窗實作類別：
-* **Windows**：實例化 `PlatformWindowWin32`（內部向 Windows 註冊視窗類別、啟用 Per-Monitor V2 高分屏 DPI 感知，並建立 64-bit 視窗指標映射）。
-* **未來平台**：將無縫對接 SDL3 / Wayland / Cocoa。
+`PlatformWindowFactory` 採用簡單工廠模式 (Simple Factory Pattern)，提供單一靜態建立入口 `Create()` 以及無介面/通用視窗入口 `CreateGeneric()`：
+* **`Create()`**：依據作業系統條件編譯巨集動態實例化原生視窗：
+  * **Windows (`_WIN32`)**：實例化 `PlatformWindowWin32`（向 Windows 註冊視窗類別、啟用 Per-Monitor V2 高分屏 DPI 感知、64-bit 視窗指標映射、支援 GDI DIBits 呈現）。
+  * **非 Windows (Linux / macOS)**：預設回退實例化 [`PlatformWindowGeneric`](pal_platformwindowgeneric.md) 通用記憶體視窗，提供無依賴跨平台運行。
+* **`CreateGeneric()`**：強制在任何作業系統上建立純 C++ 通用記憶體視窗 [`PlatformWindowGeneric`](pal_platformwindowgeneric.md)，專為 CI 無介面測試、離線渲染、單元測試而設計。
 
 ---
 
 ## 靜態方法 (Static Methods)
 
 ### `Create(const WindowDesc& desc)`
-依據傳入的視窗描述符建立原生視窗實例。
+依據傳入的視窗描述符建立最佳原生視窗實例。
 ```cpp
 COMPAT_NODISCARD static std::shared_ptr<IPlatformWindow> Create(const WindowDesc& desc);
 ```
 * **參數**：
   * `desc`：[`WindowDesc`](pal_iplatformwindow.md#windowdesc-結構) 結構，指定視窗標題、寬高、可縮放性等初始屬性。
 * **傳回值**：指向 [`IPlatformWindow`](pal_iplatformwindow.md) 介面的 `std::shared_ptr` 智慧指標；若平台不支援或建立失敗則回傳 `nullptr`。
+
+### `CreateGeneric(const WindowDesc& desc)`
+強制建立跨平台純記憶體通用視窗實例（無須作業系統 GUI 伺服器）。
+```cpp
+COMPAT_NODISCARD static std::shared_ptr<IPlatformWindow> CreateGeneric(const WindowDesc& desc);
+```
+* **參數**：
+  * `desc`：[`WindowDesc`](pal_iplatformwindow.md#windowdesc-結構) 結構。
+* **傳回值**：指向 [`PlatformWindowGeneric`](pal_platformwindowgeneric.md) 實例的 `std::shared_ptr<IPlatformWindow>` 智慧指標。可用於 Headless 離線畫面渲染與模擬事件輸入。
 
 ---
 

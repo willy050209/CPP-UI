@@ -58,6 +58,16 @@ public:
     // 即時重繪渲染回呼 (用於視窗尺寸拖曳變更與系統繪製通知)
     using PaintCallback = std::function<void()>;
     virtual void SetPaintCallback(PaintCallback callback) = 0;
+
+    // 幀緩衝呈現 (將 32-bit BGRA/RGBA 像素緩衝區呈現在視窗表面)
+    virtual void PresentFramebuffer(compat::span<const uint32_t> pixelBuffer, uint32_t width, uint32_t height) = 0;
+
+    // 幀緩衝呈現指標重載
+    void PresentFramebuffer(const uint32_t* pixelBuffer, uint32_t width, uint32_t height) {
+        if (pixelBuffer && width > 0 && height > 0) {
+            PresentFramebuffer(compat::span<const uint32_t>(pixelBuffer, static_cast<size_t>(width) * height), width, height);
+        }
+    }
 };
 
 } // namespace pal

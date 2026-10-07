@@ -1,5 +1,7 @@
 #include "ui/text/FontManager.hpp"
+#ifdef _WIN32
 #include "DirectWriteTextEngine.hpp"
+#endif
 
 namespace cppui {
 namespace text {

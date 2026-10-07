@@ -12,6 +12,9 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#ifdef DrawText
+#undef DrawText
+#endif
 #endif
 
 namespace cppui {
@@ -76,111 +79,7 @@ public:
         }
     }
 
-    void DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color) override {
-        if (text.empty() || m_width == 0 || m_height == 0 || color.a == 0) return;
-#ifdef _WIN32
-        int wideLen = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0);
-        if (wideLen <= 0) return;
-        std::vector<wchar_t> wideText(static_cast<size_t>(wideLen));
-        MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), wideText.data(), wideLen);
-
-        std::vector<wchar_t> wideFamily(family.size() + 1, 0);
-        MultiByteToWideChar(CP_UTF8, 0, family.data(), static_cast<int>(family.size()), wideFamily.data(), static_cast<int>(family.size()));
-
-        HDC memDC = CreateCompatibleDC(nullptr);
-        if (!memDC) return;
-
-        int fontH = static_cast<int>(size);
-        HFONT hFont = CreateFontW(
-            fontH, 0, 0, 0,
-            weight,
-            (style == 2) ? TRUE : FALSE,
-            FALSE, FALSE,
-            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-            ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
-            wideFamily.data()
-        );
-        HGDIOBJ oldFont = SelectObject(memDC, hFont);
-
-        SIZE textSize = {};
-        GetTextExtentPoint32W(memDC, wideText.data(), wideLen, &textSize);
-
-        int textW = textSize.cx;
-        int textH = textSize.cy;
-        if (textW <= 0 || textH <= 0) {
-            SelectObject(memDC, oldFont);
-            DeleteObject(hFont);
-            DeleteDC(memDC);
-            return;
-        }
-
-        BITMAPINFO bmi = {};
-        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        bmi.bmiHeader.biWidth = textW;
-        bmi.bmiHeader.biHeight = -textH;
-        bmi.bmiHeader.biPlanes = 1;
-        bmi.bmiHeader.biBitCount = 32;
-        bmi.bmiHeader.biCompression = BI_RGB;
-
-        void* bits = nullptr;
-        HBITMAP hbm = CreateDIBSection(memDC, &bmi, DIB_RGB_COLORS, &bits, nullptr, 0);
-        if (!hbm || !bits) {
-            SelectObject(memDC, oldFont);
-            DeleteObject(hFont);
-            DeleteDC(memDC);
-            return;
-        }
-        HGDIOBJ oldBm = SelectObject(memDC, hbm);
-
-        RECT rc = { 0, 0, textW, textH };
-        ::FillRect(memDC, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
-        SetBkMode(memDC, TRANSPARENT);
-        SetTextColor(memDC, RGB(255, 255, 255));
-        TextOutW(memDC, 0, 0, wideText.data(), wideLen);
-
-        const uint32_t* mask = static_cast<const uint32_t*>(bits);
-        int32_t dstX0 = static_cast<int32_t>(origin.x);
-        int32_t dstY0 = static_cast<int32_t>(origin.y);
-
-        float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
-
-        for (int y = 0; y < textH; ++y) {
-            int dstY = dstY0 + y;
-            if (dstY < 0 || dstY >= static_cast<int>(m_height)) continue;
-
-            for (int x = 0; x < textW; ++x) {
-                int dstX = dstX0 + x;
-                if (dstX < 0 || dstX >= static_cast<int>(m_width)) continue;
-
-                uint32_t maskVal = mask[y * textW + x] & 0xFF;
-                if (maskVal == 0) continue;
-
-                float alpha = (static_cast<float>(maskVal) / 255.0f) * srcAlphaNorm;
-                if (alpha <= 0.0f) continue;
-
-                size_t dstIdx = static_cast<size_t>(dstY) * m_width + dstX;
-                uint32_t dstPixel = m_pixels[dstIdx];
-
-                uint8_t dstB = static_cast<uint8_t>(dstPixel & 0xFF);
-                uint8_t dstG = static_cast<uint8_t>((dstPixel >> 8) & 0xFF);
-                uint8_t dstR = static_cast<uint8_t>((dstPixel >> 16) & 0xFF);
-
-                uint8_t outR = static_cast<uint8_t>(color.r * alpha + dstR * (1.0f - alpha));
-                uint8_t outG = static_cast<uint8_t>(color.g * alpha + dstG * (1.0f - alpha));
-                uint8_t outB = static_cast<uint8_t>(color.b * alpha + dstB * (1.0f - alpha));
-
-                m_pixels[dstIdx] = (0xFF << 24) | (outR << 16) | (outG << 8) | outB;
-            }
-        }
-
-        SelectObject(memDC, oldFont);
-        DeleteObject(hFont);
-        SelectObject(memDC, oldBm);
-        DeleteObject(hbm);
-        DeleteDC(memDC);
-#endif
-    }
-
+    void DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color) override;
     void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color) override;
 
 private:

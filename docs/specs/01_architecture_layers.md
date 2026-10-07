@@ -53,9 +53,9 @@ graph TD
 
 ### Layer 1: 平台抽象與繪圖後端 (PAL & Render Backend)
 * **職責**：
-  * **Window PAL (`cppui::pal`)**：封裝作業系統的原生視窗控制代碼（Win32 `HWND`、macOS `NSWindow`、Linux `wl_surface`/`XID`），統一由 `IPlatformWindow` 介面提供視窗尺寸、標題、DPI 縮放與全螢幕狀態控制。
-  * **Event Loop (`cppui::pal::RunLoop`)**：統一處理原生 Message Pump，將作業系統原生訊息轉化為框架內部的 `RawInputEvent`，整合垂直同步（VSync）或休眠等待機制避免 CPU 空轉。
-  * **Render Backend (`cppui::rendering::backend`)**：持有 Skia 的 `GrDirectContext`（D3D12/Vulkan/Metal/OpenGL），綁定視窗的 Framebuffer 產生 `SkSurface`，並將 DisplayList 重播於 `SkCanvas` 上。
+  * **Window PAL (`cppui::pal`)**：封裝作業系統的原生視窗控制代碼（Win32 `HWND`、macOS `NSWindow`、Linux `wl_surface`/`XID`）與跨平台純記憶體通用視窗（`PlatformWindowGeneric`），統一由 `IPlatformWindow` 介面提供視窗尺寸、標題、DPI 縮放、全螢幕狀態控制與跨平台幀緩衝輸出（`PresentFramebuffer`）。
+  * **Event Loop (`cppui::pal::RunLoop`)**：統一處理原生 Message Pump 與通用事件隊列，將作業系統原生訊息轉化為框架內部的 `RawInputEvent`，整合垂直同步（VSync）或休眠等待機制避免 CPU 空轉。
+  * **Render Backend (`cppui::rendering::backend`)**：持有 Google Skia (m151) 渲染核心（`SkiaRenderContext` / `SkSurface` / `SkCanvas`）並具備純 C++ 軟體光柵化引擎（`SoftwareRenderContext` 內含 8x8 ASCII 字符字模）之無縫優雅回退機制，將 DisplayList 錄製之圖元高效呈現在畫布上。
 
 ### Layer 2: 命令錄製與視覺排版核心 (Command Buffer & Visual Tree)
 * **職責**：

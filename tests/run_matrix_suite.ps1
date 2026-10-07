@@ -168,6 +168,10 @@ $frameworkSources = @(
     "src\text\DirectWriteTextEngine.cpp",
     "src\rendering\DisplayListRenderer.cpp",
     "src\rendering\backend\SoftwareRenderContext.cpp",
+    "src\rendering\backend\SkiaRenderContext.cpp",
+    "src\pal\PlatformWindowFactory.cpp",
+    "src\pal\generic\PlatformWindowGeneric.cpp",
+    "src\pal\win32\PlatformWindowWin32.cpp",
     "src\input\RoutedEvent.cpp",
     "src\input\EventRoute.cpp",
     "src\input\FocusManager.cpp",
@@ -290,6 +294,30 @@ $testTargets = @(
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "CrossPlatformPAL"
+        Source         = "tests\pal_crossplatform_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32",
+            "SoftwareRenderContext", "FontManager", "TextShaper", "BiDiAnalyzer",
+            "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "SkiaBackend"
+        Source         = "tests\skia_backend_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @("SkiaRenderContext", "SoftwareRenderContext", "DisplayListRenderer")
+        MsvcLibs       = @("gdi32.lib", "user32.lib")
+        GnuLibs        = @("-lgdi32", "-luser32")
         HasBench       = $false
         BenchRegex     = ""
     }

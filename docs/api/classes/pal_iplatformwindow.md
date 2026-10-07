@@ -58,6 +58,14 @@ public:
 
     // 觸發視窗重繪請求
     virtual void RequestRedraw() = 0;
+
+    // 幀緩衝呈現 (跨平台軟體渲染呈現到視窗畫面)
+    virtual void PresentFramebuffer(compat::span<const uint32_t> pixels, uint32_t width, uint32_t height) = 0;
+    virtual void PresentFramebuffer(const uint32_t* pixels, uint32_t width, uint32_t height) {
+        if (pixels && width > 0 && height > 0) {
+            PresentFramebuffer(compat::span<const uint32_t>(pixels, static_cast<size_t>(width) * height), width, height);
+        }
+    }
 };
 
 } // namespace pal
@@ -124,6 +132,18 @@ COMPAT_NODISCARD virtual float GetDpiScale() const noexcept = 0;
 
 ### `RequestRedraw()`
 通知視窗系統與 `RunLoop` 在下一幀觸發重繪回呼。
+
+### `PresentFramebuffer(compat::span<const uint32_t> pixels, uint32_t width, uint32_t height)`
+```cpp
+virtual void PresentFramebuffer(compat::span<const uint32_t> pixels, uint32_t width, uint32_t height) = 0;
+virtual void PresentFramebuffer(const uint32_t* pixels, uint32_t width, uint32_t height);
+```
+* **參數**：
+  * `pixels`：唯讀 32-bit ARGB/BGRA 像素緩衝區視圖（型別為 `compat::span<const uint32_t>`）。
+  * `width`：像素緩衝區的水平寬度（像素）。
+  * `height`：像素緩衝區的垂直高度（像素）。
+* **說明**：
+  跨平台軟體渲染輸出核心函式。將 CPU 記憶體中光柵化的像素資料直接呈現到平台原生視窗（例如在 Win32 下使用 `StretchDIBits`，在通用視窗 `PlatformWindowGeneric` 下儲存至內部像素緩衝區，在 Linux 下送交 XImage/wl_shm）。此方法使上層繪圖管線與 Demo 完全解耦作業系統專屬的 Device Context (DC) 與 GDI API。
 
 ---
 

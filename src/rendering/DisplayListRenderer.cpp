@@ -4,6 +4,18 @@
 #include <cmath>
 #include <algorithm>
 
+#if defined(CPPUI_HAS_SKIA) && CPPUI_HAS_SKIA
+#include "include/core/SkCanvas.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkRRect.h"
+#include "include/core/SkRect.h"
+#include "include/core/SkColor.h"
+#endif
+
+#ifdef DrawText
+#undef DrawText
+#endif
+
 namespace cppui {
 namespace rendering {
 
@@ -37,6 +49,85 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
     float targetW = static_cast<float>(target->GetWidth());
     float targetH = static_cast<float>(target->GetHeight());
     if (targetW <= 0.0f || targetH <= 0.0f) return stats;
+
+#if defined(CPPUI_HAS_SKIA) && CPPUI_HAS_SKIA
+    if (void* canvasPtr = target->GetSkCanvas()) {
+        auto* skCanvas = static_cast<SkCanvas*>(canvasPtr);
+        displayList.ForEach([&](const DrawOpHeader& header, const void* payload) {
+            stats.totalOps++;
+            switch (header.type) {
+                case DrawOpType::PushClipRect: {
+                    const auto* op = static_cast<const PushClipRectOp*>(payload);
+                    skCanvas->save();
+                    skCanvas->clipRect(SkRect::MakeXYWH(op->rect.x, op->rect.y, op->rect.width, op->rect.height), SkClipOp::kIntersect, true);
+                    break;
+                }
+                case DrawOpType::PopClip: {
+                    skCanvas->restore();
+                    break;
+                }
+                case DrawOpType::PushOpacity: {
+                    const auto* op = static_cast<const PushOpacityOp*>(payload);
+                    skCanvas->saveLayerAlphaf(nullptr, op->opacity);
+                    break;
+                }
+                case DrawOpType::PopOpacity: {
+                    skCanvas->restore();
+                    break;
+                }
+                case DrawOpType::DrawRect: {
+                    const auto* op = static_cast<const DrawRectOp*>(payload);
+                    SkPaint paint;
+                    paint.setColor(SkColorSetARGB(op->color.a, op->color.r, op->color.g, op->color.b));
+                    paint.setStyle(SkPaint::kFill_Style);
+                    paint.setAntiAlias(true);
+                    skCanvas->drawRect(SkRect::MakeXYWH(op->rect.x, op->rect.y, op->rect.width, op->rect.height), paint);
+                    stats.renderedOps++;
+                    break;
+                }
+                case DrawOpType::DrawRoundedRect: {
+                    const auto* op = static_cast<const DrawRoundedRectOp*>(payload);
+                    SkPaint paint;
+                    paint.setColor(SkColorSetARGB(op->color.a, op->color.r, op->color.g, op->color.b));
+                    paint.setStyle(SkPaint::kFill_Style);
+                    paint.setAntiAlias(true);
+                    skCanvas->drawRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(op->rect.x, op->rect.y, op->rect.width, op->rect.height), op->radius, op->radius), paint);
+                    stats.renderedOps++;
+                    break;
+                }
+                case DrawOpType::DrawLine: {
+                    const auto* op = static_cast<const DrawLineOp*>(payload);
+                    SkPaint paint;
+                    paint.setColor(SkColorSetARGB(op->color.a, op->color.r, op->color.g, op->color.b));
+                    paint.setStrokeWidth(op->strokeWidth);
+                    paint.setStyle(SkPaint::kStroke_Style);
+                    paint.setAntiAlias(true);
+                    skCanvas->drawLine(op->p0.x, op->p0.y, op->p1.x, op->p1.y, paint);
+                    stats.renderedOps++;
+                    break;
+                }
+                case DrawOpType::DrawText: {
+                    const auto* op = static_cast<const DrawTextOp*>(payload);
+                    const char* extraData = reinterpret_cast<const char*>(op) + sizeof(DrawTextOp);
+                    compat::string_view family(extraData, op->familyLength);
+                    compat::string_view text(extraData + op->familyLength, op->textLength);
+                    target->DrawText(text, op->origin, family, op->fontSize, op->fontWeight, op->fontStyle, op->color);
+                    stats.renderedOps++;
+                    break;
+                }
+                case DrawOpType::DrawTextLayout: {
+                    const auto* op = static_cast<const DrawTextLayoutOp*>(payload);
+                    target->DrawTextLayout(op->nativeLayoutHandle, op->origin, op->color);
+                    stats.renderedOps++;
+                    break;
+                }
+                default:
+                    break;
+            }
+        });
+        return stats;
+    }
+#endif
 
     // 狀態棧初始化
     std::vector<core::Rect> clipStack;

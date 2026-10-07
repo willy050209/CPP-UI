@@ -6,6 +6,10 @@
 namespace cppui {
 namespace rendering {
 
+#ifdef DrawText
+#undef DrawText
+#endif
+
 /// <summary>
 /// 繪圖操作類型列舉
 /// </summary>

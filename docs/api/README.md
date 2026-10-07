@@ -100,8 +100,8 @@ graph TD
 | [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 坐標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，座標轉換中樞 [`CoordinateTransform`](classes/core_coordinatetransform.md)，以及視覺樹根基 [`Visual`](classes/core_visual.md) 與排版核心 [`UIElement`](classes/core_uielement.md)。 | [`Visual`](classes/core_visual.md), [`UIElement`](classes/core_uielement.md), [`CoordinateTransform`](classes/core_coordinatetransform.md), [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
 | [`cppui::input`](namespaces/cppui_input.md) | **輸入管線與路由事件** | 實作微軟 WPF / Avalonia 風格之雙向（隧道 Tunneling + 冒泡 Bubbling）事件路由系統、游標懸停追蹤、指標捕獲與鍵盤 Tab 焦點巡訪中樞。 | [`RoutedEvent`](classes/input_routedevent.md), [`RoutedEventArgs`](classes/input_routedeventargs.md), [`EventRoute`](classes/input_eventroute.md), [`PointerEventArgs`](classes/input_pointereventargs.md), [`KeyEventArgs`](classes/input_keyeventargs.md), [`FocusManager`](classes/input_focusmanager.md), [`InputManager`](classes/input_inputmanager.md) |
 | [`cppui::layout`](namespaces/cppui_layout.md) | **排版容器與調度** | 提供雙階段微架構排版管線容器（`Grid`、`StackPanel`、`Border`、`Canvas`）與頂層排版調度管理器 `LayoutManager`。 | [`Grid`](classes/layout_grid.md), [`Panel`](classes/layout_panel.md), [`StackPanel`](classes/layout_stackpanel.md), [`Border`](classes/layout_border.md), [`Canvas`](classes/layout_canvas.md), [`LayoutManager`](classes/layout_layoutmanager.md) |
-| [`cppui::pal`](namespaces/cppui_pal.md) | **平台抽象層 (PAL)** | 封裝作業系統原生視窗生命週期、主執行緒低延遲事件循環 (RunLoop) 以及統一輸入事件模型。 | [`IPlatformWindow`](classes/pal_iplatformwindow.md), [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md), [`RunLoop`](classes/pal_runloop.md), [`RawInputEvent`](classes/pal_rawinputevent.md) |
-| [`cppui::rendering`](namespaces/cppui_rendering.md) | **繪圖與渲染管線** | 實作高效命令錄製架構，透過自研二進位 DisplayList 與連續平坦 LinearArena 徹底隔離 UI 與光柵化後端。 | [`DrawingContext`](classes/rendering_drawingcontext.md), [`DisplayList`](classes/rendering_displaylist.md), [`DisplayListRenderer`](classes/rendering_displaylistrenderer.md), [`LinearArena`](classes/rendering_lineararena.md), [`DrawOp`](classes/rendering_drawop.md) |
+| [`cppui::pal`](namespaces/cppui_pal.md) | **平台抽象層 (PAL)** | 封裝作業系統原生視窗生命週期、主執行緒低延遲事件循環 (RunLoop)、跨平台記憶體通用視窗與統一輸入事件模型。 | [`IPlatformWindow`](classes/pal_iplatformwindow.md), [`PlatformWindowGeneric`](classes/pal_platformwindowgeneric.md), [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md), [`RunLoop`](classes/pal_runloop.md), [`RawInputEvent`](classes/pal_rawinputevent.md) |
+| [`cppui::rendering`](namespaces/cppui_rendering.md) | **繪圖與渲染管線** | 實作高效命令錄製架構，透過自研二進位 DisplayList 與連續平坦 LinearArena 徹底隔離 UI 與光柵化後端，支援 Google Skia (m151) 向量核心與純 C++ 軟體回退。 | [`DrawingContext`](classes/rendering_drawingcontext.md), [`DisplayList`](classes/rendering_displaylist.md), [`DisplayListRenderer`](classes/rendering_displaylistrenderer.md), [`LinearArena`](classes/rendering_lineararena.md), [`DrawOp`](classes/rendering_drawop.md), [`SkiaRenderContext`](classes/rendering_skiarendercontext.md) |
 | [`cppui::text`](namespaces/cppui_text.md) | **文字排版與塑形管線** | 雙軌架構文字引擎，支援系統字型匹配、OpenType 字形塑形、BiDi 雙向分析、UAX #14 斷行、多行折行、省略號與雙向命中測試。 | [`FontDescriptor`](classes/text_font.md), [`FontManager`](classes/text_fontmanager.md), [`TextShaper`](classes/text_textshaper.md), [`BiDiAnalyzer`](classes/text_bidianalyzer.md), [`LineBreaker`](classes/text_linebreaker.md), [`TextLayout`](classes/text_textlayout.md), [`TextLayoutEngine`](classes/text_textlayoutengine.md) |
 | [`compat`](namespaces/compat.md) | **向下相容與微架構層** | 提供零依賴現代 C++ Polyfill（C++14/17/20/23/26 雙軌切換）與 12 大功能模組。<br>- [視圖與管道 (`compat::views`)](namespaces/compat_views.md)<br>- [範圍與演算法 (`compat::ranges`)](namespaces/compat_ranges.md)<br>- [錯誤處理 (`compat::expected`)](namespaces/compat_expected.md)<br>- [格式化與終端 (`compat::format/print`)](namespaces/compat_format_print.md) | `compat::string_view`, `compat::span`, `compat::views::*`, `compat::optional`, `compat::expected`, `compat::format`, `compat::print`, `COMPAT_CONSTEXPR_14` |
 
@@ -148,7 +148,8 @@ graph TD
 
 ### 平台與視窗 (Platform & Windowing)
 * [`IPlatformWindow`](classes/pal_iplatformwindow.md)：跨平台原生視窗抽象介面。
-* [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md)：原生視窗實例建構工廠。
+* [`PlatformWindowGeneric`](classes/pal_platformwindowgeneric.md)：跨平台純 C++ 記憶體通用視窗，支援 Headless 離線渲染與事件注入。
+* [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md)：原生與通用視窗實例建構工廠。
 * [`RunLoop`](classes/pal_runloop.md)：主執行緒低延遲事件循環與重繪驅動器。
 * [`RawInputEvent`](classes/pal_rawinputevent.md)：平台統一原生事件封裝（滑鼠客戶區排版坐標、物理坐標、邏輯坐標、鍵盤、視窗幾何、DPI 變更）。
 
@@ -156,6 +157,7 @@ graph TD
 * [`DrawingContext`](classes/rendering_drawingcontext.md)：公開畫布錄製介面，提供矩形、圓角矩形、線段繪製與剪裁棧操作。
 * [`DisplayList`](classes/rendering_displaylist.md)：二進位繪圖命令串流容器，提供 $O(1)$ 重設與連續記憶體迭代。
 * [`DisplayListRenderer`](classes/rendering_displaylistrenderer.md)：命令重播器，負責 Clip Stack 與 Opacity Stack 狀態機維護並分發至後端。
+* [`SkiaRenderContext`](classes/rendering_skiarendercontext.md)：Google Skia (m151) 向量繪圖核心後端，具備雙引擎無縫優雅回退能力。
 * [`LinearArena`](classes/rendering_lineararena.md)：高速連續平坦記憶體池，保證 8 字節對齊與零鎖定指標位移分配。
 * [`DrawOp`](classes/rendering_drawop.md)：二進位命令協定（`DrawOpHeader` 與各負載結構）。
 * [`IRenderContext`](classes/rendering_irendercontext.md)：渲染後端介面與雙緩衝光柵化目標 (`IRenderTarget`)。
@@ -174,6 +176,8 @@ graph TD
 ## 4. 實戰與概念指南 (Guides & Tutorials)
 
 * [**宣告式 Fluent RAD DSL 與響應式信號開發指南**](guides/fluent_rad_dsl_and_signals.md)：詳解以 `< 50` 行程式碼使用 `VStack`, `HStack`, `Grid`, `Button`, `TextBox` 與 `Signal<T>` 快速宣告桌面 UI、自動雙向資料綁定與事件串接。
+* [**跨平台抽象架構指南**](guides/cross_platform_architecture.md)：詳解 PAL 視窗抽象、純 C++ 記憶體視窗、無外部依賴文字多行排版與 8x8 ASCII 軟體光柵字模庫。
+* [**Skia 向量渲染管線指南**](guides/skia_rendering_pipeline.md)：介紹 Google Skia (m151) 向量繪圖核心整合、DisplayList 指令原生回放與雙引擎優雅回退機制。
 * [**快速入門 (Quickstart)**](guides/quickstart.md)：從零建立第一個 CPPUI 原生視窗、綁定事件循環並完成每秒 60 FPS 畫面繪製。
 * [**輸入管線、路由事件與焦點管理實戰指南**](guides/input_and_routed_events.md)：深入探討雙向路由事件體系（Tunneling + Bubbling）、`e.Handled` 短路阻斷、游標懸停追蹤、指標捕獲與鍵盤 TabIndex 尋路演算法。
 * [**高分屏 DPI 與座標轉換指南**](guides/dpi_and_coordinates.md)：說明設備獨立像素 (DIP)、物理像素、客戶區排版空間與 `CoordinateTransform` 類別的最佳實踐。
@@ -185,11 +189,11 @@ graph TD
 
 ## 5. 跨標準相容性契約 (Compatibility Matrix)
 
-本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（**108/108 通過，12 賽道 x 9 標靶，零報錯、零警告**）：
+本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（**132/132 通過，12 賽道 x 11 標靶，零報錯、零警告**）：
 
 | 編譯器 | C++14 | C++17 | C++20 | C++23 / Latest | 通過率 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Clang++ (LLVM 19)** | ✔ 通過 (9/9) | ✔ 通過 (9/9) | ✔ 通過 (9/9) | ✔ 通過 (9/9) | 36/36 (100%) |
-| **G++ (MinGW UCRT64 14.2)** | ✔ 通過 (9/9) | ✔ 通過 (9/9) | ✔ 通過 (9/9) | ✔ 通過 (9/9) | 36/36 (100%) |
-| **MSVC (cl.exe 19.50)** | ✔ 通過 (9/9) | ✔ 通過 (9/9) | ✔ 通過 (9/9) | ✔ 通過 (9/9) | 36/36 (100%) |
-| **矩陣合計** | **27/27 PASS** | **27/27 PASS** | **27/27 PASS** | **27/27 PASS** | **108/108 (100%)** |
+| **Clang++ (LLVM 19)** | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | 44/44 (100%) |
+| **G++ (MinGW UCRT64 14.2)** | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | 44/44 (100%) |
+| **MSVC (cl.exe 19.50)** | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | 44/44 (100%) |
+| **矩陣合計** | **33/33 PASS** | **33/33 PASS** | **33/33 PASS** | **33/33 PASS** | **132/132 (100%)** |
