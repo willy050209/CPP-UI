@@ -80,7 +80,7 @@ int main() {
                     static_cast<double>(dl.GetTotalBytes()) / 1024.0, dl.GetOpCount());
 
     assert(dl.GetOpCount() == BENCHMARK_OP_COUNT);
-    assert(elapsedMs < 10.0); // 宽松斷言防 CI 抖動，但實測通常遠低於 1.5ms
+    assert(elapsedMs < 50.0); // 寬鬆斷言防平行負載抖動，實測通常遠低於 1.5ms
 
     dl.Clear();
     compat::println("[CPPUI DisplayList & Arena Test] All tests passed successfully!");

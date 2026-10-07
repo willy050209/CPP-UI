@@ -28,3 +28,9 @@ add_executable(input_events_test input_events_test.cpp)
 target_link_libraries(input_events_test PRIVATE cppui_core)
 add_test(NAME InputEventsTest COMMAND input_events_test)
 
+# 坐標轉換管理類別測試
+add_executable(coordinate_transform_test coordinate_transform_test.cpp)
+target_link_libraries(coordinate_transform_test PRIVATE cppui_headers)
+add_test(NAME CoordinateTransformTest COMMAND coordinate_transform_test)
+
+

@@ -129,8 +129,8 @@ void PlatformWindowWin32::Close() {
 
 core::Size PlatformWindowWin32::GetSize() const noexcept {
     // 傳回以邏輯像素表示的尺寸 (考量 DPI 縮放)
-    return core::Size(static_cast<float>(m_width) / m_dpiScale,
-                      static_cast<float>(m_height) / m_dpiScale);
+    return m_coordTransform.ToLogical(core::Size(static_cast<float>(m_width),
+                                                 static_cast<float>(m_height)));
 }
 
 core::Size PlatformWindowWin32::GetFramebufferSize() const noexcept {
@@ -190,6 +190,7 @@ void PlatformWindowWin32::UpdateDpiScale() {
     if (m_hwnd) {
         UINT dpi = GetDpiForWindow(m_hwnd);
         m_dpiScale = (dpi > 0) ? (static_cast<float>(dpi) / 96.0f) : 1.0f;
+        m_coordTransform.SetDpiScale(m_dpiScale);
     }
 }
 
@@ -246,9 +247,10 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
                 DispatchEvent(enterEvt);
             }
 
+            core::Point clientPos(static_cast<float>(x), static_cast<float>(y));
             core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
-            core::Point logicalPos(static_cast<float>(x) / m_dpiScale, static_cast<float>(y) / m_dpiScale);
-            DispatchEvent(RawInputEvent::MakeMouseMove(logicalPos, physicalPos, mods, ts));
+            core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
+            DispatchEvent(RawInputEvent::MakeMouseMove(clientPos, physicalPos, logicalPos, mods, ts));
             return 0;
         }
 
@@ -267,14 +269,15 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             SetCapture(m_hwnd);
             int x = GET_X_LPARAM(lParam);
             int y = GET_Y_LPARAM(lParam);
+            core::Point clientPos(static_cast<float>(x), static_cast<float>(y));
             core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
-            core::Point logicalPos(static_cast<float>(x) / m_dpiScale, static_cast<float>(y) / m_dpiScale);
+            core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
 
             RawMouseButton btn = RawMouseButton::Left;
             if (msg == WM_RBUTTONDOWN) btn = RawMouseButton::Right;
             else if (msg == WM_MBUTTONDOWN) btn = RawMouseButton::Middle;
 
-            DispatchEvent(RawInputEvent::MakeMouseDown(logicalPos, physicalPos, btn, 1, mods, ts));
+            DispatchEvent(RawInputEvent::MakeMouseDown(clientPos, physicalPos, logicalPos, btn, 1, mods, ts));
             return 0;
         }
 
@@ -284,25 +287,27 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             ReleaseCapture();
             int x = GET_X_LPARAM(lParam);
             int y = GET_Y_LPARAM(lParam);
+            core::Point clientPos(static_cast<float>(x), static_cast<float>(y));
             core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
-            core::Point logicalPos(static_cast<float>(x) / m_dpiScale, static_cast<float>(y) / m_dpiScale);
+            core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
 
             RawMouseButton btn = RawMouseButton::Left;
             if (msg == WM_RBUTTONUP) btn = RawMouseButton::Right;
             else if (msg == WM_MBUTTONUP) btn = RawMouseButton::Middle;
 
-            DispatchEvent(RawInputEvent::MakeMouseUp(logicalPos, physicalPos, btn, mods, ts));
+            DispatchEvent(RawInputEvent::MakeMouseUp(clientPos, physicalPos, logicalPos, btn, mods, ts));
             return 0;
         }
 
         case WM_MOUSEWHEEL: {
             POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
             ScreenToClient(m_hwnd, &pt);
+            core::Point clientPos(static_cast<float>(pt.x), static_cast<float>(pt.y));
             core::Point physicalPos(static_cast<float>(pt.x), static_cast<float>(pt.y));
-            core::Point logicalPos(static_cast<float>(pt.x) / m_dpiScale, static_cast<float>(pt.y) / m_dpiScale);
+            core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
             int deltaY = GET_WHEEL_DELTA_WPARAM(wParam);
 
-            DispatchEvent(RawInputEvent::MakeMouseWheel(logicalPos, physicalPos, deltaY, 0, mods, ts));
+            DispatchEvent(RawInputEvent::MakeMouseWheel(clientPos, physicalPos, logicalPos, deltaY, 0, mods, ts));
             return 0;
         }
 

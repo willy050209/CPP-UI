@@ -13,6 +13,7 @@
 #include <string>
 #include <chrono>
 #include "ui/pal/IPlatformWindow.hpp"
+#include "ui/core/CoordinateTransform.hpp"
 
 namespace cppui {
 namespace pal {
@@ -65,9 +66,10 @@ private:
     HDC           m_hdc = nullptr;
     bool          m_isClosed = false;
     bool          m_isTrackingMouse = false;
-    float         m_dpiScale = 1.0f;
-    uint32_t      m_width = 800;
-    uint32_t      m_height = 600;
+    float                    m_dpiScale = 1.0f;
+    core::CoordinateTransform m_coordTransform{ 1.0f };
+    uint32_t                 m_width = 800;
+    uint32_t                 m_height = 600;
     EventCallback m_eventCallback;
     PaintCallback m_paintCallback;
 };

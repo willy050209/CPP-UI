@@ -244,6 +244,16 @@ $testTargets = @(
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
         HasBench       = $false
         BenchRegex     = ""
+    },
+    @{
+        Name           = "CoordinateTransform"
+        Source         = "tests\coordinate_transform_test.cpp"
+        IsSmoke        = $true
+        NeedObjs       = @()
+        MsvcLibs       = @()
+        GnuLibs        = @()
+        HasBench       = $false
+        BenchRegex     = ""
     }
 )
 
