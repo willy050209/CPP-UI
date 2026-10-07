@@ -9,3 +9,7 @@ target_link_libraries(m3_text_demo PRIVATE cppui_core)
 
 add_executable(m4_layout_demo m4_layout_demo/main.cpp)
 target_link_libraries(m4_layout_demo PRIVATE cppui_core)
+
+add_executable(m5_input_demo m5_input_demo/main.cpp)
+target_link_libraries(m5_input_demo PRIVATE cppui_core)
+

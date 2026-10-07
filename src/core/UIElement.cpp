@@ -1,8 +1,16 @@
 #include "ui/core/UIElement.hpp"
+#include "ui/input/EventRoute.hpp"
+#include "ui/input/FocusManager.hpp"
+#include "ui/input/InputManager.hpp"
 #include <algorithm>
 
 namespace cppui {
 namespace core {
+
+UIElement::~UIElement() {
+    input::FocusManager::Get().NotifyElementDestroyed(this);
+    input::InputManager::Get().NotifyElementDestroyed(this);
+}
 
 void UIElement::SetMargin(const Thickness& margin) {
     if (m_margin.left != margin.left || m_margin.top != margin.top ||
@@ -263,6 +271,181 @@ void UIElement::ArrangeOverride(Size finalSize) {
         if (childUI && childUI->IsVisible()) {
             childUI->Arrange(childRect);
         }
+    }
+}
+
+void UIElement::AddHandler(const input::RoutedEvent& routedEvent, RoutedEventHandler handler, bool handledEventsToo) {
+    if (!handler) return;
+    m_eventHandlers.push_back({ routedEvent.GetId(), std::move(handler), handledEventsToo });
+}
+
+void UIElement::RemoveHandler(const input::RoutedEvent& routedEvent) {
+    uint32_t id = routedEvent.GetId();
+    m_eventHandlers.erase(
+        std::remove_if(m_eventHandlers.begin(), m_eventHandlers.end(),
+                       [id](const HandlerEntry& e) { return e.eventId == id; }),
+        m_eventHandlers.end()
+    );
+}
+
+void UIElement::RaiseEvent(input::RoutedEventArgs& e) {
+    if (!e.GetRoutedEvent()) return;
+    input::EventRoute route(this);
+    if (e.GetRoutedEvent()->GetStrategy() == input::RoutingStrategy::Direct) {
+        route.DispatchDirect(*e.GetRoutedEvent(), e);
+    } else if (e.GetRoutedEvent()->GetStrategy() == input::RoutingStrategy::Bubble) {
+        route.DispatchBubble(*e.GetRoutedEvent(), e);
+    } else {
+        route.DispatchTunnel(*e.GetRoutedEvent(), e);
+    }
+}
+
+void UIElement::RaiseEventInternal(const input::RoutedEvent& routedEvent, input::RoutedEventArgs& e) {
+    uint32_t id = routedEvent.GetId();
+
+    // 1. 呼叫虛擬掛載點
+    if (id == input::StandardEvents::PointerPressed.GetId() || id == input::StandardEvents::PreviewPointerPressed.GetId()) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            OnPointerPressedCore(*pe);
+        }
+    } else if (id == input::StandardEvents::PointerReleased.GetId() || id == input::StandardEvents::PreviewPointerReleased.GetId()) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            OnPointerReleasedCore(*pe);
+        }
+    } else if (id == input::StandardEvents::PointerMoved.GetId() || id == input::StandardEvents::PreviewPointerMoved.GetId()) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            OnPointerMovedCore(*pe);
+        }
+    } else if (id == input::StandardEvents::PointerEntered.GetId()) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            OnPointerEnteredCore(*pe);
+        }
+    } else if (id == input::StandardEvents::PointerExited.GetId()) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            OnPointerExitedCore(*pe);
+        }
+    } else if (id == input::StandardEvents::KeyDown.GetId() || id == input::StandardEvents::PreviewKeyDown.GetId()) {
+        if (auto* ke = dynamic_cast<input::KeyEventArgs*>(&e)) {
+            OnKeyDownCore(*ke);
+        }
+    } else if (id == input::StandardEvents::KeyUp.GetId() || id == input::StandardEvents::PreviewKeyUp.GetId()) {
+        if (auto* ke = dynamic_cast<input::KeyEventArgs*>(&e)) {
+            OnKeyUpCore(*ke);
+        }
+    } else if (id == input::StandardEvents::TextInput.GetId()) {
+        if (auto* te = dynamic_cast<input::TextInputEventArgs*>(&e)) {
+            OnTextInputCore(*te);
+        }
+    } else if (id == input::StandardEvents::GotFocus.GetId()) {
+        if (auto* fe = dynamic_cast<input::FocusEventArgs*>(&e)) {
+            OnGotFocusCore(*fe);
+        }
+    } else if (id == input::StandardEvents::LostFocus.GetId()) {
+        if (auto* fe = dynamic_cast<input::FocusEventArgs*>(&e)) {
+            OnLostFocusCore(*fe);
+        }
+    }
+
+    // 2. 派發給註冊的監聽器列表 (複製一份避免回呼中修改容器引發迭代器失效)
+    auto handlersCopy = m_eventHandlers;
+    for (auto& entry : handlersCopy) {
+        if (entry.eventId == id) {
+            if (!e.IsHandled() || entry.handledEventsToo) {
+                entry.handler(e);
+            }
+        }
+    }
+}
+
+void UIElement::OnPointerPressed(PointerEventHandler handler) {
+    AddHandler(input::StandardEvents::PointerPressed, [handler](input::RoutedEventArgs& e) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            handler(*pe);
+        }
+    });
+}
+
+void UIElement::OnPointerReleased(PointerEventHandler handler) {
+    AddHandler(input::StandardEvents::PointerReleased, [handler](input::RoutedEventArgs& e) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            handler(*pe);
+        }
+    });
+}
+
+void UIElement::OnPointerMoved(PointerEventHandler handler) {
+    AddHandler(input::StandardEvents::PointerMoved, [handler](input::RoutedEventArgs& e) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            handler(*pe);
+        }
+    });
+}
+
+void UIElement::OnPointerEntered(PointerEventHandler handler) {
+    AddHandler(input::StandardEvents::PointerEntered, [handler](input::RoutedEventArgs& e) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            handler(*pe);
+        }
+    });
+}
+
+void UIElement::OnPointerExited(PointerEventHandler handler) {
+    AddHandler(input::StandardEvents::PointerExited, [handler](input::RoutedEventArgs& e) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            handler(*pe);
+        }
+    });
+}
+
+void UIElement::OnKeyDown(KeyEventHandler handler) {
+    AddHandler(input::StandardEvents::KeyDown, [handler](input::RoutedEventArgs& e) {
+        if (auto* ke = dynamic_cast<input::KeyEventArgs*>(&e)) {
+            handler(*ke);
+        }
+    });
+}
+
+void UIElement::OnKeyUp(KeyEventHandler handler) {
+    AddHandler(input::StandardEvents::KeyUp, [handler](input::RoutedEventArgs& e) {
+        if (auto* ke = dynamic_cast<input::KeyEventArgs*>(&e)) {
+            handler(*ke);
+        }
+    });
+}
+
+void UIElement::OnTextInput(TextInputEventHandler handler) {
+    AddHandler(input::StandardEvents::TextInput, [handler](input::RoutedEventArgs& e) {
+        if (auto* te = dynamic_cast<input::TextInputEventArgs*>(&e)) {
+            handler(*te);
+        }
+    });
+}
+
+void UIElement::OnGotFocus(FocusEventHandler handler) {
+    AddHandler(input::StandardEvents::GotFocus, [handler](input::RoutedEventArgs& e) {
+        if (auto* fe = dynamic_cast<input::FocusEventArgs*>(&e)) {
+            handler(*fe);
+        }
+    });
+}
+
+void UIElement::OnLostFocus(FocusEventHandler handler) {
+    AddHandler(input::StandardEvents::LostFocus, [handler](input::RoutedEventArgs& e) {
+        if (auto* fe = dynamic_cast<input::FocusEventArgs*>(&e)) {
+            handler(*fe);
+        }
+    });
+}
+
+Visual* UIElement::HitTest(Point localPoint) {
+    if (!m_isHitTestVisible) return nullptr;
+    return Visual::HitTest(localPoint);
+}
+
+void UIElement::SetFocusedInternal(bool focused) noexcept {
+    if (m_isFocused != focused) {
+        m_isFocused = focused;
+        InvalidateVisual();
     }
 }
 

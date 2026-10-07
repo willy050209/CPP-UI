@@ -52,6 +52,10 @@ set(CPPUI_SOURCES
     src/text/LineBreaker.cpp
     src/text/TextLayout.cpp
     src/text/TextLayoutEngine.cpp
+    src/input/RoutedEvent.cpp
+    src/input/EventRoute.cpp
+    src/input/FocusManager.cpp
+    src/input/InputManager.cpp
 )
 
 if(WIN32)

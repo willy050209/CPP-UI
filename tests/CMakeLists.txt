@@ -22,3 +22,9 @@ add_test(NAME TextPipelineTest COMMAND text_pipeline_test)
 add_executable(layout_engine_test layout_engine_test.cpp)
 target_link_libraries(layout_engine_test PRIVATE cppui_core)
 add_test(NAME LayoutEngineTest COMMAND layout_engine_test)
+
+# M5 輸入分發、焦點管理與路由事件測試
+add_executable(input_events_test input_events_test.cpp)
+target_link_libraries(input_events_test PRIVATE cppui_core)
+add_test(NAME InputEventsTest COMMAND input_events_test)
+
