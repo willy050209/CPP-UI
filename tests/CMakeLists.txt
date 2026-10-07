@@ -33,4 +33,15 @@ add_executable(coordinate_transform_test coordinate_transform_test.cpp)
 target_link_libraries(coordinate_transform_test PRIVATE cppui_headers)
 add_test(NAME CoordinateTransformTest COMMAND coordinate_transform_test)
 
+# M6 核心控制項與網格排版測試
+add_executable(controls_test controls_test.cpp)
+target_link_libraries(controls_test PRIVATE cppui_core)
+add_test(NAME ControlsTest COMMAND controls_test)
+
+# M6 宣告式 Fluent RAD DSL 與響應式信號測試
+add_executable(fluent_dsl_test fluent_dsl_test.cpp)
+target_link_libraries(fluent_dsl_test PRIVATE cppui_core)
+add_test(NAME FluentDslTest COMMAND fluent_dsl_test)
+
+
 

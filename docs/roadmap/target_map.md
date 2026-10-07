@@ -25,8 +25,7 @@ graph TD
 
     classDef done fill:#d4edda,stroke:#28a745,stroke-width:2px;
     classDef planned fill:#e2e3e5,stroke:#6c757d,stroke-width:2px;
-    class M1,M2,M3,M4,M5 done;
-    class M6 planned;
+    class M1,M2,M3,M4,M5,M6 done;
 ```
 
 ---
@@ -121,7 +120,7 @@ graph TD
 
 ---
 
-### 里程碑 6 (M6)：控制項庫與 Fluent RAD API 封裝 (Modern C++ DSL)
+### 里程碑 6 (M6)：控制項庫與 Fluent RAD API 封裝 (Modern C++ DSL) [已完成]
 * **核心目標**：結合 Avalonia 架構實力與 WinForms 的極速代碼直覺，提供零 XML 的宣告式 Fluent Builder 開發體驗。
 * **技術選型**：現代 C++ 移動語意、鏈式呼叫 Builder、Lambda 事件回呼、輕量信號綁定。
 * **核心交付物**：
@@ -130,9 +129,10 @@ graph TD
   * Lambda 事件連結器：如 `.OnClick([](auto& e) { ... })`。
   * 屬性信號（Signals / Reactive Binding）：支援動態值變更自動觸發 UI 更新。
 * **驗收標準 (Acceptance Criteria)**：
-  1. 能夠在 15 行 C++ 代碼內宣告一個包含標題、文字輸入框、按鈕與點擊計數器的完整視窗應用程式。
-  2. 代碼完全型別安全，具備編譯期型別檢查，無字串弱型別解析。
-  3. 開發手感流暢直覺，重現 WinForms 的神速生產力。
+  1. 能夠在 15 行 C++ 代碼內宣告一個包含標題、文字輸入框、按鈕與點擊計數器的完整視窗應用程式。[✔ 已通過]
+  2. 代碼完全型別安全，具備編譯期型別檢查，無字串弱型別解析。[✔ 已通過]
+  3. 開發手感流暢直覺，重現 WinForms 的神速生產力。[✔ 已通過]
+  4. 通過全編譯器多標準 108/108 矩陣測試與 `m6_fluent_rad_demo` 互動展示。[✔ 已通過]
 
 ---
 

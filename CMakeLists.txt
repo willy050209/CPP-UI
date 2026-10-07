@@ -41,8 +41,14 @@ set(CPPUI_SOURCES
     src/layout/StackPanel.cpp
     src/layout/Border.cpp
     src/layout/Canvas.cpp
+    src/layout/Grid.cpp
     src/layout/LayoutManager.cpp
     src/controls/TextBlock.cpp
+    src/controls/Control.cpp
+    src/controls/ContentControl.cpp
+    src/controls/Button.cpp
+    src/controls/CheckBox.cpp
+    src/controls/TextBox.cpp
     src/rendering/DisplayListRenderer.cpp
     src/rendering/backend/SoftwareRenderContext.cpp
     src/rendering/backend/SkiaRenderContext.cpp

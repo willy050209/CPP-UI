@@ -115,6 +115,9 @@ struct Thickness {
     COMPAT_CONSTEXPR_14 Thickness(float l, float t, float r, float b) noexcept
         : left(l), top(t), right(r), bottom(b) {}
 
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 float Horizontal() const noexcept { return left + right; }
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 float Vertical() const noexcept { return top + bottom; }
+
     COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const Thickness& other) const noexcept {
         return left == other.left && top == other.top && right == other.right && bottom == other.bottom;
     }

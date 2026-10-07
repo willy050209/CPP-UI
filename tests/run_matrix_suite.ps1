@@ -151,8 +151,14 @@ $frameworkSources = @(
     "src\layout\StackPanel.cpp",
     "src\layout\Border.cpp",
     "src\layout\Canvas.cpp",
+    "src\layout\Grid.cpp",
     "src\layout\LayoutManager.cpp",
     "src\controls\TextBlock.cpp",
+    "src\controls\Control.cpp",
+    "src\controls\ContentControl.cpp",
+    "src\controls\Button.cpp",
+    "src\controls\CheckBox.cpp",
+    "src\controls\TextBox.cpp",
     "src\text\FontManager.cpp",
     "src\text\TextShaper.cpp",
     "src\text\BiDiAnalyzer.cpp",
@@ -252,6 +258,38 @@ $testTargets = @(
         NeedObjs       = @()
         MsvcLibs       = @()
         GnuLibs        = @()
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Controls"
+        Source         = "tests\controls_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Visual", "UIElement", "Panel", "StackPanel", "Border", "Canvas", "Grid",
+            "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox",
+            "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "FluentDSL"
+        Source         = "tests\fluent_dsl_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Visual", "UIElement", "Panel", "StackPanel", "Border", "Canvas", "Grid",
+            "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox",
+            "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
         HasBench       = $false
         BenchRegex     = ""
     }
