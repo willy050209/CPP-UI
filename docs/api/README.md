@@ -6,12 +6,30 @@
 
 ## 1. 架構分層與模組索引 (Architecture & Module Index)
 
-CPPUI 採用嚴格解耦的分層架構設計，自底向上分為平台抽象層 (PAL)、繪圖與命令錄製層 (Rendering)、核心幾何資料型別 (Core) 以及向下相容層 (Compat)：
+CPPUI 採用嚴格解耦的分層架構設計，自底向上分為平台抽象層 (PAL)、繪圖與命令錄製層 (Rendering)、核心幾何資料型別 (Core)、排版容器 (Layout)、文字管線 (Text)、路由輸入與焦點中樞 (Input) 以及向下相容層 (Compat)：
 
 ```mermaid
 graph TD
     subgraph Consumer["應用程式與控制項層"]
         App["UI 元件與自訂控制項"]
+    end
+
+    subgraph InputLayer["輸入與事件路由層 (cppui::input)"]
+        InputMgr["InputManager (事件分流/懸停/捕獲)"]
+        FocusMgr["FocusManager (焦點/Tab導航)"]
+        Route["EventRoute (隧道/冒泡派發)"]
+        EventDef["RoutedEvent / RoutedEventArgs"]
+    end
+
+    subgraph LayoutLayer["排版與視覺樹層 (cppui::layout & core)"]
+        Tree["Visual / UIElement"]
+        Containers["StackPanel / Border / Canvas"]
+        LayoutMgr["LayoutManager (Measure/Arrange)"]
+    end
+
+    subgraph TextLayer["文字排版層 (cppui::text)"]
+        TextLayout["TextLayout / TextLayoutEngine"]
+        Typography["FontManager / TextShaper / BiDi / LineBreaker"]
     end
 
     subgraph RenderingLayer["繪圖與命令串流層 (cppui::rendering)"]
@@ -24,28 +42,35 @@ graph TD
 
     subgraph CoreLayer["核心型別層 (cppui::core)"]
         Geo["Point / Size / Rect / Thickness / Color"]
+        CT["CoordinateTransform (DIP / 物理轉換)"]
     end
 
     subgraph PALLayer["平台抽象層 (cppui::pal)"]
         Win["IPlatformWindow (原生視窗)"]
         Loop["RunLoop (訊息泵與重繪調度)"]
-        Event["RawInputEvent (滑鼠/鍵盤/DPI)"]
+        RawEvent["RawInputEvent (滑鼠/鍵盤/DPI)"]
     end
 
     subgraph CompatLayer["相容性墊片層 (compat)"]
-        Compat["compat::string_view / optional / expected / clamp"]
+        Compat["compat::string_view / optional / expected / clamp / print"]
         Macros["COMPAT_CONSTEXPR_14 / COMPAT_INLINE_VAR / COMPAT_NODISCARD"]
     end
 
-    App --> DC
-    App --> Loop
+    Win --> RawEvent
+    RawEvent --> InputMgr
+    InputMgr --> Tree
+    InputMgr --> Route
+    Route --> Tree
+    Tree --> LayoutMgr
+    Tree --> DC
     DC --> DL
     DL --> Arena
     DLR --> DL
     DLR --> IR
-    DC --> Geo
-    Win --> Event
-    Loop --> Win
+    Tree --> TextLayout
+    TextLayout --> Typography
+    Tree --> Geo
+    Win --> CT
     App --> Compat
 ```
 
@@ -55,20 +80,31 @@ graph TD
 
 | 命名空間 (Namespace) | 模組標題 | 簡述與職責 | 核心型別導覽 |
 | :--- | :--- | :--- | :--- |
-| [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 座標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，以及視覺樹根基 [`Visual`](classes/core_visual.md) 與排版核心 [`UIElement`](classes/core_uielement.md)。 | [`Visual`](classes/core_visual.md), [`UIElement`](classes/core_uielement.md), [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
+| [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 坐標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，座標轉換中樞 [`CoordinateTransform`](classes/core_coordinatetransform.md)，以及視覺樹根基 [`Visual`](classes/core_visual.md) 與排版核心 [`UIElement`](classes/core_uielement.md)。 | [`Visual`](classes/core_visual.md), [`UIElement`](classes/core_uielement.md), [`CoordinateTransform`](classes/core_coordinatetransform.md), [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
+| [`cppui::input`](namespaces/cppui_input.md) | **輸入管線與路由事件** | 實作微軟 WPF / Avalonia 風格之雙向（隧道 Tunneling + 冒泡 Bubbling）事件路由系統、游標懸停追蹤、指標捕獲與鍵盤 Tab 焦點巡訪中樞。 | [`RoutedEvent`](classes/input_routedevent.md), [`RoutedEventArgs`](classes/input_routedeventargs.md), [`EventRoute`](classes/input_eventroute.md), [`PointerEventArgs`](classes/input_pointereventargs.md), [`KeyEventArgs`](classes/input_keyeventargs.md), [`FocusManager`](classes/input_focusmanager.md), [`InputManager`](classes/input_inputmanager.md) |
 | [`cppui::layout`](namespaces/cppui_layout.md) | **排版容器與調度** | 提供雙階段微架構排版管線容器（`StackPanel`、`Border`、`Canvas`）與頂層排版調度管理器 `LayoutManager`。 | [`Panel`](classes/layout_panel.md), [`StackPanel`](classes/layout_stackpanel.md), [`Border`](classes/layout_border.md), [`Canvas`](classes/layout_canvas.md), [`LayoutManager`](classes/layout_layoutmanager.md) |
 | [`cppui::pal`](namespaces/cppui_pal.md) | **平台抽象層 (PAL)** | 封裝作業系統原生視窗生命週期、主執行緒低延遲事件循環 (RunLoop) 以及統一輸入事件模型。 | [`IPlatformWindow`](classes/pal_iplatformwindow.md), [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md), [`RunLoop`](classes/pal_runloop.md), [`RawInputEvent`](classes/pal_rawinputevent.md) |
 | [`cppui::rendering`](namespaces/cppui_rendering.md) | **繪圖與渲染管線** | 實作高效命令錄製架構，透過自研二進位 DisplayList 與連續平坦 LinearArena 徹底隔離 UI 與光柵化後端。 | [`DrawingContext`](classes/rendering_drawingcontext.md), [`DisplayList`](classes/rendering_displaylist.md), [`DisplayListRenderer`](classes/rendering_displaylistrenderer.md), [`LinearArena`](classes/rendering_lineararena.md), [`DrawOp`](classes/rendering_drawop.md) |
 | [`cppui::text`](namespaces/cppui_text.md) | **文字排版與塑形管線** | 雙軌架構文字引擎，支援系統字型匹配、OpenType 字形塑形、BiDi 雙向分析、UAX #14 斷行、多行折行、省略號與雙向命中測試。 | [`FontDescriptor`](classes/text_font.md), [`FontManager`](classes/text_fontmanager.md), [`TextShaper`](classes/text_textshaper.md), [`BiDiAnalyzer`](classes/text_bidianalyzer.md), [`LineBreaker`](classes/text_linebreaker.md), [`TextLayout`](classes/text_textlayout.md), [`TextLayoutEngine`](classes/text_textlayoutengine.md) |
-| [`compat`](namespaces/compat.md) | **向下相容與微架構層** | 提供零依賴現代 C++ Polyfill（C++14/17/20/23/26 雙軌切換）與 12 大功能模組。<br>- [視圖與管道 (`compat::views`)](namespaces/compat_views.md)<br>- [範圍與演算法 (`compat::ranges`)](namespaces/compat_ranges.md)<br>- [錯誤處理 (`compat::expected`)](namespaces/compat_expected.md)<br>- [格式化與終端 (`compat::format/print`)](namespaces/compat_format_print.md) | `compat::string_view`, `compat::span`, `compat::views::*`, `compat::optional`, `compat::expected`, `compat::format`, `COMPAT_CONSTEXPR_14` |
+| [`compat`](namespaces/compat.md) | **向下相容與微架構層** | 提供零依賴現代 C++ Polyfill（C++14/17/20/23/26 雙軌切換）與 12 大功能模組。<br>- [視圖與管道 (`compat::views`)](namespaces/compat_views.md)<br>- [範圍與演算法 (`compat::ranges`)](namespaces/compat_ranges.md)<br>- [錯誤處理 (`compat::expected`)](namespaces/compat_expected.md)<br>- [格式化與終端 (`compat::format/print`)](namespaces/compat_format_print.md) | `compat::string_view`, `compat::span`, `compat::views::*`, `compat::optional`, `compat::expected`, `compat::format`, `compat::print`, `COMPAT_CONSTEXPR_14` |
 
 ---
 
 ## 3. 核心類別快速索引 (Type Quick Reference)
 
+### 輸入事件與焦點 (Input & Routed Events System)
+* [`RoutedEvent`](classes/input_routedevent.md)：路由事件標識元與傳播策略（Tunnel, Bubble, Direct），包含 `StandardEvents` 集合。
+* [`RoutedEventArgs`](classes/input_routedeventargs.md)：路由事件參數基底，支援 `SetHandled(true)` 傳播短路。
+* [`EventRoute`](classes/input_eventroute.md)：路由管線執行器，依序執行「由根向葉隧道派發」與「由葉向根冒泡派發」。
+* [`PointerEventArgs`](classes/input_pointereventargs.md)：指標事件參數，提供客戶區座標、局部座標轉換 (`GetPosition`)、按鍵與滾輪數值。
+* [`KeyEventArgs` / `TextInputEventArgs`](classes/input_keyeventargs.md)：實體按鍵（VirtualKey/ScanCode）與文字合成輸入參數。
+* [`FocusEventArgs`](classes/input_focuseventargs.md)：焦點轉移參數，提供 `GetOldFocus` 與 `GetNewFocus`。
+* [`FocusManager`](classes/input_focusmanager.md)：全域焦點中樞，提供 Tab / Shift+Tab 鍵盤導航與解構保護。
+* [`InputManager`](classes/input_inputmanager.md)：輸入中樞，連接 PAL 與視覺樹，管理 Hover 狀態與指標捕獲 (Pointer Capture)。
+
 ### 視覺樹與排版 (Visual Tree & Layout Engine)
 * [`Visual`](classes/core_visual.md)：視覺樹基底類別，維護親緣關係、局部位移、邊界、座標轉換 (`PointToScreen`)、反向 Z-Order 命中測試與指令流派發。
-* [`UIElement`](classes/core_uielement.md)：具備 Margin、Alignment、Min/Max 幾何約束，`Measure` / `Arrange` 雙階段排版管線與髒標記冒泡追蹤。
+* [`UIElement`](classes/core_uielement.md)：具備 Margin、Alignment、Min/Max 幾何約束，`Measure` / `Arrange` 雙階段排版管線、髒標記追蹤、事件註冊 (`AddHandler`) 與焦點屬性。
 * [`Panel`](classes/layout_panel.md)：多子元件排版容器抽象基底。
 * [`StackPanel`](classes/layout_stackpanel.md)：垂直/水平流式排版容器，支援 Spacing 間距與 Collapsed 忽略。
 * [`Border`](classes/layout_border.md)：裝飾容器，支援 BorderBrush、BorderThickness、CornerRadius、Background 與 Padding 內縮。
@@ -77,7 +113,8 @@ graph TD
 * [`TextBlock`](classes/controls_textblock.md)：文字展示控制項，橋接 M3 文字排版管線並實作顏色修改之純 Visual 髒標記隔離。
 
 ### 幾何與數值 (Core Types)
-* [`Point`](classes/core_point.md)：2D 浮點數座標結構。
+* [`CoordinateTransform`](classes/core_coordinatetransform.md)：坐標轉換類別，提供物理像素與設備無關邏輯像素（DIP）的雙向安全換算。
+* [`Point`](classes/core_point.md)：2D 浮點數坐標結構。
 * [`Size`](classes/core_size.md)：2D 寬高尺寸結構。
 * [`Rect`](classes/core_rect.md)：2D 矩形區域結構，支援交集運算 (`Intersect`) 與點包含測試 (`Contains`)。
 * [`Color`](classes/core_color.md)：32-bit RGBA 顏色結構，包含 `Colors` 預設調色盤常數。
@@ -87,7 +124,7 @@ graph TD
 * [`IPlatformWindow`](classes/pal_iplatformwindow.md)：跨平台原生視窗抽象介面。
 * [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md)：原生視窗實例建構工廠。
 * [`RunLoop`](classes/pal_runloop.md)：主執行緒低延遲事件循環與重繪驅動器。
-* [`RawInputEvent`](classes/pal_rawinputevent.md)：平台統一原生事件封裝（滑鼠、鍵盤、視窗幾何、DPI 變更）。
+* [`RawInputEvent`](classes/pal_rawinputevent.md)：平台統一原生事件封裝（滑鼠客戶區排版坐標、物理坐標、邏輯坐標、鍵盤、視窗幾何、DPI 變更）。
 
 ### 繪圖與命令錄製 (Rendering Pipeline)
 * [`DrawingContext`](classes/rendering_drawingcontext.md)：公開畫布錄製介面，提供矩形、圓角矩形、線段繪製與剪裁棧操作。
@@ -111,8 +148,9 @@ graph TD
 ## 4. 實戰與概念指南 (Guides & Tutorials)
 
 * [**快速入門 (Quickstart)**](guides/quickstart.md)：從零建立第一個 CPPUI 原生視窗、綁定事件循環並完成每秒 60 FPS 畫面繪製。
+* [**輸入管線、路由事件與焦點管理實戰指南**](guides/input_and_routed_events.md)：深入探討雙向路由事件體系（Tunneling + Bubbling）、`e.Handled` 短路阻斷、游標懸停追蹤、指標捕獲與鍵盤 TabIndex 尋路演算法。
+* [**高分屏 DPI 與座標轉換指南**](guides/dpi_and_coordinates.md)：說明設備獨立像素 (DIP)、物理像素、客戶區排版空間與 `CoordinateTransform` 類別的最佳實踐。
 * [**DisplayList 二進位錄製深度解析**](guides/display_list_recording.md)：深入探討命令錄製架構、記憶體池重用、Clip Stack 矩形剪裁與每秒數千萬次操作之微架構調優。
-* [**高分屏 DPI 與座標轉換指南**](guides/dpi_and_coordinates.md)：說明設備獨立像素 (DIP)、物理像素與 Windows 多螢幕動態 DPI 縮放的計算原理與事件對接。
 * [**工業級文字排版與雙向命中測試指南**](guides/text_shaping_and_layout.md)：詳解文字塑形、多行折行、CJK 標點禁則、省略號裁切與文字編輯器游標定位技術。
 * [**雙階段排版管線與髒標記追蹤指南**](guides/layout_pipeline_and_dirty_tracking.md)：詳解 Measure / Arrange 雙階段排版微架構、容器約束、對齊求解與精確髒標記隔離機制。
 
@@ -120,10 +158,11 @@ graph TD
 
 ## 5. 跨標準相容性契約 (Compatibility Matrix)
 
-本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（60/60 通過，零報錯、零警告）：
+本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（**84/84 通過，12 賽道 x 7 標靶，零報錯、零警告**）：
 
-| 編譯器 | C++14 | C++17 | C++20 | C++23 / Latest |
-| :--- | :---: | :---: | :---: | :---: |
-| **Clang++ (LLVM)** | ✔ 通過 | ✔ 通過 | ✔ 通過 | ✔ 通過 |
-| **G++ (MinGW UCRT64)** | ✔ 通過 | ✔ 通過 | ✔ 通過 | ✔ 通過 |
-| **MSVC (cl.exe)** | ✔ 通過 | ✔ 通過 | ✔ 通過 | ✔ 通過 |
+| 編譯器 | C++14 | C++17 | C++20 | C++23 / Latest | 通過率 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Clang++ (LLVM 19)** | ✔ 通過 (7/7) | ✔ 通過 (7/7) | ✔ 通過 (7/7) | ✔ 通過 (7/7) | 28/28 (100%) |
+| **G++ (MinGW UCRT64 14.2)** | ✔ 通過 (7/7) | ✔ 通過 (7/7) | ✔ 通過 (7/7) | ✔ 通過 (7/7) | 28/28 (100%) |
+| **MSVC (cl.exe 19.50)** | ✔ 通過 (7/7) | ✔ 通過 (7/7) | ✔ 通過 (7/7) | ✔ 通過 (7/7) | 28/28 (100%) |
+| **矩陣合計** | **21/21 PASS** | **21/21 PASS** | **21/21 PASS** | **21/21 PASS** | **84/84 (100%)** |

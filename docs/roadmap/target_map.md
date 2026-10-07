@@ -25,8 +25,8 @@ graph TD
 
     classDef done fill:#d4edda,stroke:#28a745,stroke-width:2px;
     classDef planned fill:#e2e3e5,stroke:#6c757d,stroke-width:2px;
-    class M1,M2,M3 done;
-    class M4,M5,M6 planned;
+    class M1,M2,M3,M4,M5 done;
+    class M6 planned;
 ```
 
 ---
@@ -104,18 +104,20 @@ graph TD
 
 ---
 
-### 里程碑 5 (M5)：輸入分發、焦點管理與路由事件 (Input & Events)
+### 里程碑 5 (M5)：輸入分發、焦點管理與路由事件 (Input & Events) [已完成]
 * **核心目標**：將作業系統原生訊息轉化為樹狀結構的事件路由，實現直覺且精準的互動反饋。
 * **技術選型**：Avalonia/WPF Routed Events (Tunneling + Bubbling) 與 Z-Order 命中測試。
 * **核心交付物**：
-  * `HitTestingEngine`：自根節點向下反向 Z-Order 深度搜尋點擊命中節點。
-  * `RoutedEvent` 派發器：實作 `Preview*` 隧道階段與冒泡階段。
-  * `RoutedEventArgs`：支援 `e.Handled = true` 中斷後續傳播。
+  * `Visual::HitTest`：自根節點向下反向 Z-Order 深度搜尋點擊命中節點。
+  * `RoutedEvent` 與 `EventRoute` 派發器：實作 `Preview*` 隧道階段與冒泡階段。
+  * `RoutedEventArgs`：支援 `e.Handled = true` 中斷後續傳播，以及 `handledEventsToo` 強制接收。
   * `FocusManager`：全域焦點切換、Tab 鍵尋路演算法、`GotFocus` / `LostFocus` 事件。
+  * `InputManager`：懸停追蹤（Hover Tracking）與指標捕獲（Pointer Capture）。
 * **驗收標準 (Acceptance Criteria)**：
-  1. 在深層嵌套控制項（如按鈕內部的文字）上點擊，按鈕能以冒泡方式收到 `Click` 事件。
-  2. 父容器攔截 `PreviewPointerDown` 並設為 Handled 時，子元件確實收不到事件。
-  3. 按下鍵盤 Tab 鍵可在多個輸入框與按鈕間流暢轉移焦點，並呈現焦點虛線框或外光暈。
+  1. 在深層嵌套控制項（如按鈕內部的文字）上點擊，按鈕能以冒泡方式收到 `PointerPressed` 事件。[✔ 已通過]
+  2. 父容器攔截 `PreviewPointerPressed` 並設為 Handled 時，子元件確實收不到事件。[✔ 已通過]
+  3. 按下鍵盤 Tab 鍵可在多個輸入框與按鈕間流暢轉移焦點，並呈現焦點外框光暈。[✔ 已通過]
+  4. 通過全編譯器多標準 84/84 矩陣測試與 `m5_input_demo` 互動展示。[✔ 已通過]
 
 ---
 

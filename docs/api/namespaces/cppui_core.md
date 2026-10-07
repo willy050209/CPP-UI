@@ -24,6 +24,7 @@
 | [`Rect`](../classes/core_rect.md) | 表示由原點與尺寸所定義的二維軸對齊矩形區域，支援幾何求交集與點包含測試。 |
 | [`Color`](../classes/core_color.md) | 表示 32 位元 RGBA 色彩值，提供數值打包與標準色彩常數。 |
 | [`Thickness`](../classes/core_thickness.md) | 表示四個方向（左、上、右、下）的厚度邊距，用於邊框、外距 (Margin) 與內距 (Padding)。 |
+| [`CoordinateTransform`](../classes/core_coordinatetransform.md) | 坐標轉換管理類別，提供物理像素與設備無關邏輯像素（DIP）間的雙向型別安全轉換。 |
 
 ---
 

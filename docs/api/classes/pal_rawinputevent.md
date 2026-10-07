@@ -46,11 +46,23 @@ struct RawInputEvent {
         RawWindowEventData window;
     };
 
-    // 靜態工廠方法
-    COMPAT_NODISCARD static RawInputEvent MakeMouseMove(core::Point logicalPos, core::Point physicalPos, KeyModifiers mods, uint64_t ts = 0) noexcept;
-    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point logicalPos, core::Point physicalPos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept;
-    COMPAT_NODISCARD static RawInputEvent MakeMouseUp(core::Point logicalPos, core::Point physicalPos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept;
-    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point logicalPos, core::Point physicalPos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    // 靜態工廠方法 (支援 clientPos, physicalPos, logicalPos)
+    COMPAT_NODISCARD static RawInputEvent MakeMouseMove(core::Point clientPos, core::Point physicalPos, core::Point logicalPos, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    COMPAT_NODISCARD static RawInputEvent MakeMouseMove(core::Point clientPos, core::Point physicalPos, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    COMPAT_NODISCARD static RawInputEvent MakeMouseMove(core::Point pos, KeyModifiers mods, uint64_t ts = 0) noexcept;
+
+    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point clientPos, core::Point physicalPos, core::Point logicalPos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point clientPos, core::Point physicalPos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point pos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept;
+
+    COMPAT_NODISCARD static RawInputEvent MakeMouseUp(core::Point clientPos, core::Point physicalPos, core::Point logicalPos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    COMPAT_NODISCARD static RawInputEvent MakeMouseUp(core::Point clientPos, core::Point physicalPos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    COMPAT_NODISCARD static RawInputEvent MakeMouseUp(core::Point pos, RawMouseButton btn, KeyModifiers mods, uint64_t ts = 0) noexcept;
+
+    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point clientPos, core::Point physicalPos, core::Point logicalPos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point clientPos, core::Point physicalPos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept;
+    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point pos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept;
+
     COMPAT_NODISCARD static RawInputEvent MakeResize(uint32_t w, uint32_t h, float dpi, uint64_t ts = 0) noexcept;
     COMPAT_NODISCARD static RawInputEvent MakeClose(uint64_t ts = 0) noexcept;
 };
@@ -65,29 +77,11 @@ struct RawInputEvent {
 
 作業系統底層的原生訊息格式各異（例如 Win32 的 `LPARAM` 封裝游標座標，Cocoa 的 `NSEvent`）。`RawInputEvent` 將其標準化為單一的緊湊 C++ 結構。
 
-### 雙重座標系統設計 (Logical vs Physical)
-在高分屏（如 150%、200% DPI）環境下，滑鼠事件同時攜帶：
-* **`logicalPos` (DIP)**：裝置獨立邏輯座標（像素數除以 DPI 縮放係數），供 UI 元件進行版面佈局與邊界判定。
-* **`physicalPos`**：視窗客戶區的真實物理像素座標，供底層光柵化像素定位或除錯。
-
----
-
-## 列舉型別說明
-
-### `RawEventType`
-表示事件的具體種類：
-* 滑鼠：`MouseMove`, `MouseDown`, `MouseUp`, `MouseWheel`, `MouseEnter`, `MouseLeave`。
-* 鍵盤與文字：`KeyDown`, `KeyUp`, `TextInput`。
-* 視窗：`WindowResize`, `WindowMove`, `WindowClose`, `WindowFocusGained`, `WindowFocusLost`, `DpiChanged`。
-
-### `KeyModifiers` 與位元運算
-修飾鍵支援位元運算子 `|`、`&` 與輔助函式 `HasModifier`：
-```cpp
-KeyModifiers mods = KeyModifiers::Control | KeyModifiers::Shift;
-if (HasModifier(mods, KeyModifiers::Control)) {
-    // 按下了 Ctrl
-}
-```
+### 三重座標空間設計 (Client Layout vs Physical vs Logical)
+在高分屏（如 125%、150%、200% DPI）環境下，滑鼠事件嚴格分離空間定義：
+* **`position` (客戶區排版座標)**：相對於視窗客戶區的排版像素坐標，與視覺樹 [`Visual`](core_visual.md) 的佈局邊界 1:1 精確對齊，保證命中測試 0 像素偏差。
+* **`physicalPosition`**：相對於視窗客戶區的原生物理像素坐標，供底層光柵化緩衝區定位或調試。
+* **`logicalPosition` (DIP)**：透過 [`CoordinateTransform`](core_coordinatetransform.md) 換算之設備無關邏輯坐標（物理像素除以 `dpiScale`）。
 
 ---
 
@@ -96,8 +90,9 @@ if (HasModifier(mods, KeyModifiers::Control)) {
 ### `RawMouseEventData`
 ```cpp
 struct RawMouseEventData {
-    core::Point    position;         // 邏輯座標 (DIP)
-    core::Point    physicalPosition; // 物理像素座標
+    core::Point    position;         // 客戶區排版座標 (與 Visual 佈局對齊)
+    core::Point    physicalPosition; // 物理像素座標 (Physical Pixels)
+    core::Point    logicalPosition;  // 邏輯坐標 (DIP: Device Independent Pixels)
     RawMouseButton button;           // 觸發按鍵
     int32_t        wheelDeltaX;      // 水平滾輪量
     int32_t        wheelDeltaY;      // 垂直滾輪量 (正值向上，負值向下)
@@ -127,8 +122,9 @@ void HandleEvent(const cppui::pal::RawInputEvent& e) {
 
     switch (e.type) {
         case RawEventType::MouseMove:
-            compat::println("滑鼠移動至邏輯點 ({}, {})", 
-                e.mouse.position.x, e.mouse.position.y);
+            compat::println("排版坐標 ({}, {}) | 邏輯 DIP ({}, {})", 
+                e.mouse.position.x, e.mouse.position.y,
+                e.mouse.logicalPosition.x, e.mouse.logicalPosition.y);
             break;
 
         case RawEventType::MouseDown:
@@ -153,6 +149,7 @@ void HandleEvent(const cppui::pal::RawInputEvent& e) {
 ---
 
 ## 請參閱 (See Also)
+* [`CoordinateTransform` 類別參考](core_coordinatetransform.md)
 * [`IPlatformWindow` 介面參考](pal_iplatformwindow.md)
 * [高分屏 DPI 與座標轉換指南](../guides/dpi_and_coordinates.md)
 * [`cppui::pal` 命名空間](../namespaces/cppui_pal.md)
