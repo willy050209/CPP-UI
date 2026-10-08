@@ -1,3 +1,9 @@
+/*
+ * File: LineBreaker.hpp
+ * Purpose: Declares the LineBreaker engine implementing Unicode Standard Annex #14
+ *          line breaking algorithm for soft wraps and mandatory line endings.
+ */
+
 #pragma once
 
 #include <vector>
@@ -26,10 +32,18 @@ struct LineBreak {
 
 /// <summary>
 /// Unicode 換行分析器 (LineBreaker)
+/// 依據 Unicode UAX #14 規範計算段落文字的潛在軟換行與強制換行邊界。
 /// </summary>
 class LineBreaker {
 public:
+    /// <summary>
+    /// 建構換行分析器實例。
+    /// </summary>
     LineBreaker();
+
+    /// <summary>
+    /// 解構換行分析器實例。
+    /// </summary>
     ~LineBreaker();
 
     // 禁止複製
@@ -37,8 +51,10 @@ public:
     LineBreaker& operator=(const LineBreaker&) = delete;
 
     /// <summary>
-    /// 計算 UTF-8 字串中的所有斷行機會點
+    /// 計算 UTF-8 字串中的所有斷行機會點。
     /// </summary>
+    /// <param name="text">待分析之 UTF-8 字串視圖。</param>
+    /// <returns>所有合法換行位置及機會等級之清單。</returns>
     COMPAT_NODISCARD std::vector<LineBreak> FindBreaks(compat::string_view text) const;
 
 private:

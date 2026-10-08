@@ -1,3 +1,8 @@
+/**
+ * @file DisplayList.hpp
+ * @brief 輕量繪圖指令串流容器，支援指令二進位序列化、平坦記憶體池與無鎖迭代重播
+ */
+
 #pragma once
 
 #include <cstddef>
@@ -16,21 +21,28 @@ namespace rendering {
 /// </summary>
 class DisplayList {
 public:
+    /// <summary>
+    /// 建構顯示清單，配置指定初始容量之平坦記憶體池。
+    /// </summary>
+    /// <param name="initialCapacity">初始容量位元組數。</param>
     explicit DisplayList(size_t initialCapacity = LinearArena::DEFAULT_CAPACITY)
         : m_arena(initialCapacity) {}
 
+    /// <summary>預設解構子。</summary>
     ~DisplayList() = default;
 
     // 禁止拷貝，允許移動
     DisplayList(const DisplayList&) = delete;
     DisplayList& operator=(const DisplayList&) = delete;
 
+    /// <summary>移動建構子。</summary>
     DisplayList(DisplayList&& other) noexcept
         : m_arena(std::move(other.m_arena)),
           m_opCount(other.m_opCount) {
         other.m_opCount = 0;
     }
 
+    /// <summary>移動賦值運算子。</summary>
     DisplayList& operator=(DisplayList&& other) noexcept {
         if (this != &other) {
             m_arena = std::move(other.m_arena);
@@ -130,13 +142,22 @@ public:
         m_opCount = 0;
     }
 
+    /// <summary>取得操作指令數量。</summary>
+    /// <returns>操作指令數值。</returns>
     COMPAT_NODISCARD size_t GetOpCount() const noexcept { return m_opCount; }
+
+    /// <summary>取得平坦記憶體池當前已用位元組數。</summary>
+    /// <returns>已用位元組數。</returns>
     COMPAT_NODISCARD size_t GetTotalBytes() const noexcept { return m_arena.GetUsedBytes(); }
+
+    /// <summary>檢查顯示清單是否為空。</summary>
+    /// <returns>若為空傳回 true。</returns>
     COMPAT_NODISCARD bool IsEmpty() const noexcept { return m_opCount == 0; }
 
     /// <summary>
-    /// 取得命令串流底層連續二進位緩衝區切片視圖 (span)
+    /// 取得命令串流底層連續二進位緩衝區切片視圖 (span)。
     /// </summary>
+    /// <returns>唯讀 span 緩衝區切片。</returns>
     COMPAT_NODISCARD compat::span<const uint8_t> GetBufferSpan() const noexcept {
         return m_arena.GetSpan();
     }

@@ -1,3 +1,8 @@
+/**
+ * @file InputTypes.hpp
+ * @brief 輸入系統列舉型別定義 (RoutingStrategy, FocusNavigationDirection)
+ */
+
 #pragma once
 
 #include <cstdint>

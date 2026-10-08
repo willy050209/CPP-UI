@@ -1,3 +1,8 @@
+/**
+ * @file DrawingContext.hpp
+ * @brief 繪圖上下文錄製介面，將圖元繪製命令序列化至 DisplayList
+ */
+
 #pragma once
 
 #include "compat/compat.hpp"
@@ -15,14 +20,21 @@ namespace rendering {
 /// </summary>
 class DrawingContext {
 public:
+    /// <summary>
+    /// 建構畫布錄製上下文。
+    /// </summary>
+    /// <param name="displayList">目標顯示清單引用。</param>
     explicit DrawingContext(DisplayList& displayList) noexcept
         : m_displayList(displayList) {}
 
+    /// <summary>解構子。</summary>
     ~DrawingContext() = default;
 
     /// <summary>
-    /// 繪製填色矩形
+    /// 繪製填色矩形。
     /// </summary>
+    /// <param name="rect">矩形邊界。</param>
+    /// <param name="color">填色色彩。</param>
     void DrawRectangle(const core::Rect& rect, core::Color color) {
         if (rect.IsEmpty() || color.a == 0) return;
         core::Rect offsetRect(rect.x + m_currentOffset.x, rect.y + m_currentOffset.y, rect.width, rect.height);
@@ -31,8 +43,11 @@ public:
     }
 
     /// <summary>
-    /// 繪製圓角矩形
+    /// 繪製圓角矩形。
     /// </summary>
+    /// <param name="rect">矩形邊界。</param>
+    /// <param name="radius">圓角半徑像素值。</param>
+    /// <param name="color">填色色彩。</param>
     void DrawRoundedRectangle(const core::Rect& rect, float radius, core::Color color) {
         if (rect.IsEmpty() || color.a == 0) return;
         core::Rect offsetRect(rect.x + m_currentOffset.x, rect.y + m_currentOffset.y, rect.width, rect.height);
@@ -41,8 +56,12 @@ public:
     }
 
     /// <summary>
-    /// 繪製線段
+    /// 繪製線段。
     /// </summary>
+    /// <param name="p1">起點座標。</param>
+    /// <param name="p2">終點座標。</param>
+    /// <param name="color">線條色彩。</param>
+    /// <param name="strokeWidth">線條粗細，預設為 1.0f。</param>
     void DrawLine(core::Point p1, core::Point p2, core::Color color, float strokeWidth = 1.0f) {
         if (color.a == 0 || strokeWidth <= 0.0f) return;
         core::Point op1(p1.x + m_currentOffset.x, p1.y + m_currentOffset.y);
@@ -52,8 +71,12 @@ public:
     }
 
     /// <summary>
-    /// 繪製單行純文字
+    /// 繪製單行純文字。
     /// </summary>
+    /// <param name="text">文字字串視圖。</param>
+    /// <param name="origin">文字基準原點。</param>
+    /// <param name="font">字型描述項。</param>
+    /// <param name="color">文字色彩。</param>
     void DrawText(compat::string_view text, core::Point origin, const text::FontDescriptor& font, core::Color color) {
         if (text.empty() || color.a == 0) return;
         DrawTextOp op;
@@ -78,8 +101,11 @@ public:
     }
 
     /// <summary>
-    /// 繪製多行排版 TextLayout
+    /// 繪製多行排版 TextLayout。
     /// </summary>
+    /// <param name="layout">TextLayout 物件引用。</param>
+    /// <param name="origin">文字基準原點。</param>
+    /// <param name="color">文字填色。</param>
     void DrawTextLayout(const text::TextLayout& layout, core::Point origin, core::Color color) {
         if (layout.GetLineCount() == 0 || color.a == 0) return;
         DrawTextLayoutOp op;
@@ -90,8 +116,9 @@ public:
     }
 
     /// <summary>
-    /// 壓入局部剪裁矩形 (Clip Rect)
+    /// 壓入局部剪裁矩形 (Clip Rect)。
     /// </summary>
+    /// <param name="rect">剪裁矩形。</param>
     void PushClip(const core::Rect& rect) {
         core::Rect offsetRect(rect.x + m_currentOffset.x, rect.y + m_currentOffset.y, rect.width, rect.height);
         PushClipRectOp op{ offsetRect };
@@ -99,30 +126,32 @@ public:
     }
 
     /// <summary>
-    /// 彈出局部剪裁矩形
+    /// 彈出局部剪裁矩形。
     /// </summary>
     void PopClip() {
         m_displayList.PushHeaderOnly(DrawOpType::PopClip);
     }
 
     /// <summary>
-    /// 壓入透明度 (0.0f ~ 1.0f)
+    /// 壓入透明度 (0.0f ~ 1.0f)。
     /// </summary>
+    /// <param name="opacity">不透明度值。</param>
     void PushOpacity(float opacity) {
         PushOpacityOp op{ opacity };
         m_displayList.PushOp(DrawOpType::PushOpacity, op);
     }
 
     /// <summary>
-    /// 彈出透明度
+    /// 彈出透明度。
     /// </summary>
     void PopOpacity() {
         m_displayList.PushHeaderOnly(DrawOpType::PopOpacity);
     }
 
     /// <summary>
-    /// 壓入局部坐標偏移量 (Offset Translation)
+    /// 壓入局部坐標偏移量 (Offset Translation)。
     /// </summary>
+    /// <param name="offset">坐標偏移向量。</param>
     void PushOffset(core::Point offset) {
         m_offsetStack.push_back(offset);
         m_currentOffset.x += offset.x;
@@ -130,7 +159,7 @@ public:
     }
 
     /// <summary>
-    /// 彈出局部坐標偏移量
+    /// 彈出局部坐標偏移量。
     /// </summary>
     void PopOffset() {
         if (!m_offsetStack.empty()) {
@@ -140,6 +169,10 @@ public:
         }
     }
 
+    /// <summary>
+    /// 取得當前累積坐標偏移量。
+    /// </summary>
+    /// <returns>坐標偏移向量。</returns>
     COMPAT_NODISCARD core::Point GetCurrentOffset() const noexcept {
         return m_currentOffset;
     }

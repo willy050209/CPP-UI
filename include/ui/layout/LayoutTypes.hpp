@@ -1,3 +1,8 @@
+/**
+ * @file LayoutTypes.hpp
+ * @brief 佈局基礎列舉型別定義 (HorizontalAlignment, VerticalAlignment, Visibility, Orientation)
+ */
+
 #pragma once
 
 #include <cstdint>

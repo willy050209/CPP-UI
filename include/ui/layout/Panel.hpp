@@ -21,7 +21,14 @@ namespace layout {
 /// </summary>
 class Panel : public core::UIElement {
 public:
+    /// <summary>
+    /// 預設建構 Panel 實例。
+    /// </summary>
     Panel() = default;
+
+    /// <summary>
+    /// 虛擬解構 Panel 實例。
+    /// </summary>
     ~Panel() override = default;
 
     /// <summary>

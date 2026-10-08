@@ -1,3 +1,8 @@
+/**
+ * @file FormEventArgs.hpp
+ * @brief 表單生命週期事件參數及狀態列舉定義 (DialogResult, WindowState, FormClosingEventArgs)
+ */
+
 #pragma once
 
 #include "compat/compat.hpp"

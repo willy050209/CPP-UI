@@ -1,3 +1,9 @@
+/*
+ * File: BiDiAnalyzer.hpp
+ * Purpose: Declares the Unicode Bidirectional Algorithm (UAX #9) analyzer
+ *          for segmenting mixed LTR/RTL text runs and determining base direction.
+ */
+
 #pragma once
 
 #include <vector>
@@ -28,10 +34,18 @@ struct BiDiRun {
 
 /// <summary>
 /// Unicode 雙向文字分析器 (BiDiAnalyzer)
+/// 實作 Unicode UAX #9 演算法，解析混合阿拉伯文/希伯來文 (RTL) 與拉丁/東亞文字 (LTR) 之排版流向。
 /// </summary>
 class BiDiAnalyzer {
 public:
+    /// <summary>
+    /// 建構雙向文字分析器實例。
+    /// </summary>
     BiDiAnalyzer();
+
+    /// <summary>
+    /// 解構雙向文字分析器實例。
+    /// </summary>
     ~BiDiAnalyzer();
 
     // 禁止複製
@@ -39,13 +53,18 @@ public:
     BiDiAnalyzer& operator=(const BiDiAnalyzer&) = delete;
 
     /// <summary>
-    /// 分析 UTF-8 段落文本並切分出雙向文字切片列表
+    /// 分析 UTF-8 段落文本並切分出雙向文字切片列表。
     /// </summary>
+    /// <param name="text">待分析之 UTF-8 字串視圖。</param>
+    /// <param name="defaultDir">預設段落流向，預設為 LeftToRight。</param>
+    /// <returns>已分割之 BiDiRun 切片清單。</returns>
     COMPAT_NODISCARD std::vector<BiDiRun> Analyze(compat::string_view text, BiDiDirection defaultDir = BiDiDirection::LeftToRight) const;
 
     /// <summary>
-    /// 判定段落的基礎文本流向
+    /// 判定段落的基礎文本流向。
     /// </summary>
+    /// <param name="text">待檢測之文字視圖。</param>
+    /// <returns>判定得出之基礎流向 (LeftToRight, RightToLeft, 或 Mixed)。</returns>
     COMPAT_NODISCARD BiDiDirection DetectBaseDirection(compat::string_view text) const;
 
 private:

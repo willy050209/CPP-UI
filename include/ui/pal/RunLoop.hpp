@@ -1,3 +1,8 @@
+/**
+ * @file RunLoop.hpp
+ * @brief 主執行緒事件循環，管理事件輪詢、畫面重繪與低延遲等待
+ */
+
 #pragma once
 
 #include <chrono>
@@ -15,7 +20,10 @@ namespace pal {
 /// </summary>
 class RunLoop {
 public:
+    /// <summary>預設建構子。</summary>
     RunLoop() = default;
+
+    /// <summary>預設解構子。</summary>
     ~RunLoop() = default;
 
     // 禁止拷貝
@@ -23,23 +31,25 @@ public:
     RunLoop& operator=(const RunLoop&) = delete;
 
     /// <summary>
-    /// 綁定受控視窗
+    /// 綁定受控視窗。
     /// </summary>
+    /// <param name="window">平台視窗智慧指標。</param>
     void AttachWindow(std::shared_ptr<IPlatformWindow> window) {
         m_window = std::move(window);
         UpdateWindowPaintHook();
     }
 
     /// <summary>
-    /// 設定渲染回呼函式 (每次畫面刷新時觸發)
+    /// 設定渲染回呼函式 (每次畫面刷新時觸發)。
     /// </summary>
+    /// <param name="callback">渲染回呼委派。</param>
     void SetRenderCallback(std::function<void()> callback) {
         m_renderCallback = std::move(callback);
         UpdateWindowPaintHook();
     }
 
     /// <summary>
-    /// 請求下一幀重繪
+    /// 請求下一幀重繪。
     /// </summary>
     void RequestRedraw() noexcept {
         m_needsRedraw = true;
@@ -49,15 +59,16 @@ public:
     }
 
     /// <summary>
-    /// 終止事件循環
+    /// 終止事件循環。
     /// </summary>
     void Stop() noexcept {
         m_running = false;
     }
 
     /// <summary>
-    /// 查詢是否正在運行
+    /// 查詢是否正在運行。
     /// </summary>
+    /// <returns>若正運行中傳回 true。</returns>
     COMPAT_NODISCARD bool IsRunning() const noexcept {
         return m_running;
     }

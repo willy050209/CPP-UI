@@ -1,3 +1,8 @@
+/**
+ * @file PlatformBackend.hpp
+ * @brief 應用程式圖形與渲染實作平台列舉定義 (Win32 / Skia)
+ */
+
 #pragma once
 
 #include "compat/compat.hpp"

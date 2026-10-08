@@ -29,6 +29,9 @@ public:
     /// <param name="services">已建構之服務提供者，不可為 nullptr。</param>
     /// <exception cref="std::invalid_argument">當 services 為 nullptr 時擲出。</exception>
     explicit AppHost(std::shared_ptr<ioc::IServiceProvider> services);
+    /// <summary>
+    /// 解構 AppHost 實例。
+    /// </summary>
     ~AppHost() = default;
 
     /// <summary>
@@ -72,7 +75,14 @@ private:
 /// </summary>
 class AppBuilder {
 public:
+    /// <summary>
+    /// 預設建構 AppBuilder 實例。
+    /// </summary>
     AppBuilder() = default;
+
+    /// <summary>
+    /// 解構 AppBuilder 實例。
+    /// </summary>
     ~AppBuilder() = default;
 
     /// <summary>

@@ -22,6 +22,9 @@ namespace controls {
 /// </summary>
 class ContentControl : public Control {
 public:
+    /// <summary>
+    /// 建構空白內容控制項。
+    /// </summary>
     ContentControl();
 
     /// <summary>
@@ -70,8 +73,23 @@ public:
     /// <param name="text">文字字串視圖。</param>
     void SetContentText(compat::string_view text);
 
+    /// <summary>
+    /// 覆寫排版測量階段，計算包含 Padding 與 BorderThickness 之內容所需尺寸。
+    /// </summary>
+    /// <param name="availableSize">父容器提供之可用尺寸。</param>
+    /// <returns>元件期望尺寸。</returns>
     core::Size MeasureOverride(core::Size availableSize) override;
+
+    /// <summary>
+    /// 覆寫排版排列階段，定位單一子內容至除去內距與邊框後之區域。
+    /// </summary>
+    /// <param name="finalSize">配置給控制項之最終尺寸。</param>
     void ArrangeOverride(core::Size finalSize) override;
+
+    /// <summary>
+    /// 繪製背景與邊框外觀。
+    /// </summary>
+    /// <param name="dc">繪圖上下文。</param>
     void OnRender(rendering::DrawingContext& dc) override;
 
 protected:

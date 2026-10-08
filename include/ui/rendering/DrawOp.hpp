@@ -1,3 +1,8 @@
+/**
+ * @file DrawOp.hpp
+ * @brief 繪圖指令與操作負載二進位結構定義 (DrawOpType, DrawOpHeader, DrawRectOp 等)
+ */
+
 #pragma once
 
 #include <cstdint>
