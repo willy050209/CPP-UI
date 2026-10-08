@@ -3,6 +3,8 @@
 #include "ui/ioc/ServiceCollection.hpp"
 #include <cassert>
 #include <string>
+#include <thread>
+#include <vector>
 
 using namespace cppui;
 using namespace cppui::ioc;
@@ -142,6 +144,111 @@ void TestUnregisteredService() {
     compat::println("  ✔ 未註冊服務查詢回傳 nullptr 驗證通過！");
 }
 
+void TestGetRequiredServiceBehavior() {
+    compat::println("[Test] 測試 GetRequiredService 成功與失敗行為...");
+    ServiceCollection services;
+    services.AddSingleton<ILogger, ConsoleLogger>();
+    auto provider = services.BuildServiceProvider();
+
+    // 成功案例
+    auto logger = provider->GetRequiredService<ILogger>();
+    assert(logger != nullptr);
+
+    // 失敗案例：未註冊服務應安全回傳 nullptr（並於控制台輸出警告紀錄，不崩潰）
+    auto unknown = provider->GetRequiredService<IUserService>();
+    assert(unknown == nullptr);
+
+    compat::println("  ✔ GetRequiredService 邊界驗證通過！");
+}
+
+class IDatabase {
+public:
+    virtual ~IDatabase() = default;
+    virtual std::string Query() = 0;
+};
+
+class SqlDatabase : public IDatabase {
+public:
+    std::string Query() override { return "SELECT *"; }
+};
+
+class IRepository {
+public:
+    virtual ~IRepository() = default;
+    virtual std::string GetData() = 0;
+};
+
+class DataRepository : public IRepository {
+public:
+    explicit DataRepository(std::shared_ptr<IDatabase> db) : m_db(db) {}
+    std::string GetData() override { return m_db ? m_db->Query() : ""; }
+private:
+    std::shared_ptr<IDatabase> m_db;
+};
+
+class IAppService {
+public:
+    virtual ~IAppService() = default;
+    virtual std::string Execute() = 0;
+};
+
+class AppService : public IAppService {
+public:
+    explicit AppService(std::shared_ptr<IRepository> repo) : m_repo(repo) {}
+    std::string Execute() override { return m_repo ? m_repo->GetData() : ""; }
+private:
+    std::shared_ptr<IRepository> m_repo;
+};
+
+void TestMultiLevelDependencyInjection() {
+    compat::println("[Test] 測試多層相依性注入級聯解析 (A -> B -> C)...");
+    ServiceCollection services;
+    services.AddSingleton<IDatabase, SqlDatabase>();
+    services.AddTransient<IRepository>([](IServiceProvider& sp) {
+        return std::make_shared<DataRepository>(sp.GetRequiredService<IDatabase>());
+    });
+    services.AddTransient<IAppService>([](IServiceProvider& sp) {
+        return std::make_shared<AppService>(sp.GetRequiredService<IRepository>());
+    });
+
+    auto provider = services.BuildServiceProvider();
+    auto appSvc = provider->GetRequiredService<IAppService>();
+
+    assert(appSvc != nullptr);
+    assert(appSvc->Execute() == "SELECT *");
+
+    compat::println("  ✔ 多層相依性注入解析驗證通過！");
+}
+
+void TestThreadSafeSingleton() {
+    compat::println("[Test] 測試 Singleton 於多執行緒環境下並發解析之安全保護...");
+    ServiceCollection services;
+    services.AddSingleton<ILogger, ConsoleLogger>();
+    auto provider = services.BuildServiceProvider();
+
+    const int threadCount = 8;
+    std::vector<std::thread> threads;
+    std::vector<std::shared_ptr<ILogger>> resolvedLoggers(threadCount);
+
+    for (int i = 0; i < threadCount; ++i) {
+        threads.emplace_back([&, i]() {
+            resolvedLoggers[i] = provider->GetRequiredService<ILogger>();
+        });
+    }
+
+    for (auto& t : threads) {
+        if (t.joinable()) t.join();
+    }
+
+    // 驗證所有執行緒解析出同一實例指標
+    for (int i = 1; i < threadCount; ++i) {
+        assert(resolvedLoggers[i] != nullptr);
+        assert(resolvedLoggers[i] == resolvedLoggers[0]);
+    }
+
+    compat::println("  ✔ Singleton 多執行緒並發解析執行緒安全驗證通過！");
+}
+
 int main() {
     compat::println("==================================================");
     compat::println(" CPPUI IoC Container TDD Unit Test Suite");
@@ -152,9 +259,12 @@ int main() {
     TestInstanceSingleton();
     TestFactoryRegistrationWithDependency();
     TestUnregisteredService();
+    TestGetRequiredServiceBehavior();
+    TestMultiLevelDependencyInjection();
+    TestThreadSafeSingleton();
 
     compat::println("==================================================");
-    compat::println(" 全部 5 項 IoC 容器單元測試通過！");
+    compat::println(" 全部 8 項 IoC 容器單元測試通過！");
     compat::println("==================================================");
     return 0;
 }

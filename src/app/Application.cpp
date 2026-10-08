@@ -131,6 +131,9 @@ void Application::DoEvents() {
             }
         }
     }
+    for (const auto& idleHandler : s_idleHandlers) {
+        if (idleHandler) idleHandler();
+    }
 }
 
 bool Application::IsRunning() noexcept {

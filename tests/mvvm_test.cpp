@@ -48,6 +48,7 @@ void TestViewModelPropertyChanged() {
     // 第一次修改值：應觸發通知
     bool changed1 = vm.SetCount(10);
     assert(changed1 == true);
+    (void)changed1;
     assert(vm.GetCount() == 10);
     assert(changeCount == 1);
     assert(changedProperty == "Count");
@@ -55,11 +56,13 @@ void TestViewModelPropertyChanged() {
     // 設定相同的值：不應觸發通知
     bool changed2 = vm.SetCount(10);
     assert(changed2 == false);
+    (void)changed2;
     assert(changeCount == 1); // 仍為 1
 
     // 修改另一個屬性
     bool changed3 = vm.SetTitle("Updated");
     assert(changed3 == true);
+    (void)changed3;
     assert(changeCount == 2);
     assert(changedProperty == "Title");
 
@@ -175,6 +178,94 @@ void TestDataContextVisualTreeInheritance() {
     compat::println("  ✔ DataContext 視覺樹向下繼承與局部覆寫驗證通過！");
 }
 
+void TestRelayCommandWithParameter() {
+    compat::println("[Test] 測試 RelayCommand 攜帶參數之 Execute 與 CanExecute...");
+    int receivedValue = 0;
+    auto cmd = std::make_shared<RelayCommand>(
+        [&](void* p) {
+            if (p) {
+                receivedValue = *static_cast<int*>(p);
+            }
+        },
+        [](void* p) -> bool {
+            if (!p) return false;
+            return *static_cast<int*>(p) > 0;
+        }
+    );
+
+    int testNeg = -5;
+    assert(cmd->CanExecute(&testNeg) == false);
+    (void)testNeg;
+
+    int testPos = 42;
+    assert(cmd->CanExecute(&testPos) == true);
+
+    cmd->Execute(&testPos);
+    (void)testPos;
+    assert(receivedValue == 42);
+
+    compat::println("  ✔ RelayCommand 參數化命令執行與判定驗證通過！");
+}
+
+void TestMultiplePropertyChangedObservers() {
+    compat::println("[Test] 測試 ViewModelBase 多觀察者廣播...");
+    CounterViewModel vm;
+
+    int observer1Count = 0;
+    int observer2Count = 0;
+    std::string obs1Prop;
+    std::string obs2Prop;
+
+    vm.AddPropertyChangedHandler([&](compat::string_view p) {
+        observer1Count++;
+        obs1Prop = std::string(p.data(), p.size());
+    });
+
+    vm.AddPropertyChangedHandler([&](compat::string_view p) {
+        observer2Count++;
+        obs2Prop = std::string(p.data(), p.size());
+    });
+
+    vm.SetCount(100);
+
+    assert(observer1Count == 1);
+    assert(observer2Count == 1);
+    assert(obs1Prop == "Count");
+    assert(obs2Prop == "Count");
+
+    compat::println("  ✔ ViewModelBase 多重觀察者廣播驗證通過！");
+}
+
+void TestDeepDataContextVisualTreeOverride() {
+    compat::println("[Test] 測試深層視覺樹 DataContext 多層級局部覆寫...");
+    auto root = std::make_shared<StackPanel>();
+    auto childBranch1 = std::make_shared<Border>();
+    auto grandchild = std::make_shared<Button>("GrandChild");
+    childBranch1->SetChild(grandchild);
+
+    auto childBranch2 = std::make_shared<Button>("Sibling");
+
+    root->AddChild(childBranch1);
+    root->AddChild(childBranch2);
+
+    auto vmRoot = std::make_shared<CounterViewModel>();
+    vmRoot->SetCount(10);
+
+    auto vmBranch1 = std::make_shared<CounterViewModel>();
+    vmBranch1->SetCount(20);
+
+    root->SetDataContext(vmRoot);
+    childBranch1->SetDataContext(vmBranch1);
+
+    // 驗證 grandchild 繼承 branch1 的 vmBranch1 (count=20)
+    assert(grandchild->GetDataContentType<CounterViewModel>()->GetCount() == 20);
+
+    // 驗證 sibling 繼承 root 的 vmRoot (count=10)
+    assert(childBranch2->GetDataContentType<CounterViewModel>()->GetCount() == 10);
+
+    compat::println("  ✔ 深層視覺樹 DataContext 多層級繼承與分支隔離驗證通過！");
+}
+
 int main() {
     compat::println("==================================================");
     compat::println(" CPPUI MVVM Framework TDD Unit Test Suite");
@@ -184,9 +275,12 @@ int main() {
     TestRelayCommandExecution();
     TestButtonCommandBindingAndCanExecute();
     TestDataContextVisualTreeInheritance();
+    TestRelayCommandWithParameter();
+    TestMultiplePropertyChangedObservers();
+    TestDeepDataContextVisualTreeOverride();
 
     compat::println("==================================================");
-    compat::println(" 全部 4 項 MVVM 單元測試通過！");
+    compat::println(" 全部 7 項 MVVM 單元測試通過！");
     compat::println("==================================================");
     return 0;
 }

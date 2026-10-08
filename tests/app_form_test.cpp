@@ -163,6 +163,66 @@ void TestAppBuilderGenericHost() {
     compat::println("  ✔ AppBuilder 與 Host 服務解析驗證通過！");
 }
 
+void TestApplicationExitAndIdleHandlers() {
+    compat::println("[Test] 測試 Application 全域 Exit 與 Idle 監聽回呼...");
+    bool idleTriggered = false;
+    bool exitTriggered = false;
+
+    Application::AddIdleHandler([&]() {
+        idleTriggered = true;
+    });
+
+    Application::AddExitHandler([&]() {
+        exitTriggered = true;
+    });
+
+    Application::DoEvents();
+    assert(idleTriggered == true);
+
+    Application::Exit();
+    assert(exitTriggered == true);
+
+    compat::println("  ✔ Application 全域 Exit / Idle 回呼調度驗證通過！");
+}
+
+void TestFormDelegatesAndCancel() {
+    compat::println("[Test] 測試 Form 外部委派監聽 (AddClosingHandler / AddClosedHandler)...");
+    auto form = std::make_shared<Form>();
+    form->SetTitle("Delegate Form");
+
+    bool cancelRequested = true;
+    bool closingInvoked = false;
+    bool closedInvoked = false;
+
+    form->AddClosingHandler([&](Form&, FormClosingEventArgs& e) {
+        closingInvoked = true;
+        if (cancelRequested) {
+            e.Cancel = true;
+        }
+    });
+
+    form->AddClosedHandler([&](Form&, FormClosedEventArgs&) {
+        closedInvoked = true;
+    });
+
+    form->Show();
+    assert(form->IsDisposed() == false);
+
+    // 第一次 Close，委派攔截並取消關閉
+    form->Close();
+    assert(closingInvoked == true);
+    assert(closedInvoked == false);
+    assert(form->IsDisposed() == false);
+
+    // 第二次 Close，允許關閉
+    cancelRequested = false;
+    form->Close();
+    assert(closedInvoked == true);
+    assert(form->IsDisposed() == true);
+
+    compat::println("  ✔ Form 外部委派監聽與取消關閉機制驗證通過！");
+}
+
 int main() {
     compat::println("==================================================");
     compat::println(" CPPUI Application & Form TDD Unit Test Suite");
@@ -173,9 +233,11 @@ int main() {
     TestFormModalDialogResult();
     TestApplicationManagement();
     TestAppBuilderGenericHost();
+    TestApplicationExitAndIdleHandlers();
+    TestFormDelegatesAndCancel();
 
     compat::println("==================================================");
-    compat::println(" 全部 5 項 Application & Form 單元測試通過！");
+    compat::println(" 全部 7 項 Application & Form 單元測試通過！");
     compat::println("==================================================");
     return 0;
 }

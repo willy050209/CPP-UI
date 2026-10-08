@@ -115,9 +115,11 @@ graph TD
 ### 現代應用程式與 MVVM (Milestone 7 Application, Form, IoC & MVVM)
 * [`Application`](classes/app_application.md)：應用程式密封靜態中樞，支援 `Application::Run(new Form1())` 極簡進入點、訊息泵循環、`DoEvents()`、視窗清單管理與依賴注入中繼。
 * [`Form`](classes/app_form.md)：桌面視窗基底類別，繼承自 `ContentControl`，封裝原生視窗與渲染管線，具備 `OnLoad`、`OnShown`、支援取消關閉之 `OnFormClosing`、`OnFormClosed` 與模態 `ShowDialog()`。
-* [`ServiceCollection`](classes/ioc_servicecollection.md)：依賴反轉 (IoC) 容器，支援 Transient 與 Singleton 生命週期之服務工廠與實例註冊。
+* [`AppBuilder` / `AppHost`](classes/app_appbuilder.md)：現代 Generic Host 應用程式構建器，支援鏈式相依服務配置與表單自動解析啟動。
+* [`FormClosingEventArgs` / `DialogResult`](classes/app_formeventargs.md)：表單生命週期事件引數（支援 `Cancel = true` 攔截取消）與視窗狀態列舉。
+* [`ServiceCollection`](classes/ioc_servicecollection.md) 與 [`IServiceProvider`](classes/ioc_iserviceprovider.md)：依賴反轉 (IoC) 容器，支援 Transient 與 Singleton 生命週期之服務工廠與實例註冊。
 * [`ViewModelBase`](classes/mvvm_viewmodelbase.md)：MVVM 視圖模型基底，提供 `SetProperty` 差異偵測與屬性變更通知。
-* [`RelayCommand`](classes/mvvm_relaycommand.md)：命令模式 Lambda 委派實作，與 `Button` 之 `IsEnabled` 狀態機自動連動。
+* [`ICommand`](classes/mvvm_icommand.md) 與 [`RelayCommand`](classes/mvvm_relaycommand.md)：命令模式純虛擬介面與 Lambda 委派實作，與 `Button` 之 `IsEnabled` 狀態機自動連動。
 
 ### 核心控制項與排版網格 (Milestone 6 Controls & Grid)
 * [`Control`](classes/controls_control.md)：控制項抽象基底，提供 Padding、Background、Foreground、BorderBrush、BorderThickness、CornerRadius 與 Deflate/Inflate 邊界度量。
