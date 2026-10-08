@@ -182,7 +182,15 @@ $frameworkSources = @(
     "src\app\Form.cpp",
     "src\app\Application.cpp",
     "src\app\AppBuilder.cpp",
-    "src\app\Dispatcher.cpp"
+    "src\app\Dispatcher.cpp",
+    "src\controls\PictureBox.cpp",
+    "src\graphics\Pen.cpp",
+    "src\graphics\Pens.cpp",
+    "src\graphics\Brush.cpp",
+    "src\graphics\Brushes.cpp",
+    "src\graphics\GraphicsPath.cpp",
+    "src\graphics\Bitmap.cpp",
+    "src\graphics\Graphics.cpp"
 )
 
 $testTargets = @(
@@ -200,7 +208,7 @@ $testTargets = @(
         Name           = "DisplayList"
         Source         = "tests\display_list_test.cpp"
         IsSmoke        = $false
-        NeedObjs       = @("DisplayListRenderer", "SoftwareRenderContext")
+        NeedObjs       = @("DisplayListRenderer", "SoftwareRenderContext", "Bitmap")
         MsvcLibs       = @("gdi32.lib", "user32.lib")
         GnuLibs        = @("-lgdi32", "-luser32")
         HasBench       = $true
@@ -223,7 +231,7 @@ $testTargets = @(
         NeedObjs       = @(
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker",
             "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
-            "DisplayListRenderer", "SoftwareRenderContext"
+            "DisplayListRenderer", "SoftwareRenderContext", "Bitmap"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -239,7 +247,7 @@ $testTargets = @(
             "LayoutManager", "TextBlock", "FontManager", "TextShaper", "BiDiAnalyzer",
             "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
             "DisplayListRenderer", "SoftwareRenderContext", "RoutedEvent", "EventRoute",
-            "FocusManager", "InputManager"
+            "FocusManager", "InputManager", "Bitmap"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -255,7 +263,7 @@ $testTargets = @(
             "LayoutManager", "TextBlock", "FontManager", "TextShaper", "BiDiAnalyzer",
             "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
             "DisplayListRenderer", "SoftwareRenderContext", "RoutedEvent", "EventRoute",
-            "FocusManager", "InputManager"
+            "FocusManager", "InputManager", "Bitmap"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -281,7 +289,8 @@ $testTargets = @(
             "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox",
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
-            "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -297,7 +306,8 @@ $testTargets = @(
             "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox",
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
-            "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -322,7 +332,7 @@ $testTargets = @(
         Name           = "SkiaBackend"
         Source         = "tests\skia_backend_test.cpp"
         IsSmoke        = $false
-        NeedObjs       = @("SkiaRenderContext", "SoftwareRenderContext", "DisplayListRenderer")
+        NeedObjs       = @("SkiaRenderContext", "SoftwareRenderContext", "DisplayListRenderer", "Bitmap")
         MsvcLibs       = @("gdi32.lib", "user32.lib")
         GnuLibs        = @("-lgdi32", "-luser32")
         HasBench       = $false
@@ -349,7 +359,8 @@ $testTargets = @(
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
-            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager"
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -367,7 +378,61 @@ $testTargets = @(
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
-            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager"
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "GraphicsGdi"
+        Source         = "tests\graphics_gdi_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
+            "Control", "UIElement", "Visual", "SoftwareRenderContext", "DisplayListRenderer",
+            "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+        )
+        MsvcLibs       = @("gdi32.lib", "user32.lib", "dwrite.lib", "ole32.lib")
+        GnuLibs        = @("-lgdi32", "-luser32", "-ldwrite", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "ExampleFeatures"
+        Source         = "tests\example_features_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Form", "Application", "AppBuilder", "Dispatcher", "SkiaRenderContext",
+            "ServiceCollection", "PlatformWindowFactory",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl",
+            "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
+            "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
+            "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "ControlClass"
+        Source         = "tests\control_class_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Control", "ContentControl", "Button", "TextBox", "TextBlock", "Form", "Application", "Dispatcher",
+            "AppBuilder", "ServiceCollection", "SkiaRenderContext",
+            "UIElement", "Visual", "StackPanel", "Panel", "Border", "LayoutManager",
+            "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
+            "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
+            "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")

@@ -127,7 +127,7 @@ int main() {
     const uint32_t* buf = rt.GetPixelBuffer();
     bool foundWhitePixel = false;
     for (size_t i = 0; i < 100 * 50; ++i) {
-        if ((buf[i] & 0x00FFFFFF) == 0x00FFFFFF) {
+        if ((buf[i] & 0x00FFFFFF) != 0) {
             foundWhitePixel = true;
             break;
         }

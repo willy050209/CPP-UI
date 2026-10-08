@@ -151,8 +151,8 @@ static void TestAsyncEventsAndDispatcher() {
     assert(observedValue == 5);
 
     // 高壓並發測試：10 個背景執行緒同時向 Application::Post 投遞任務
-    constexpr size_t THREAD_COUNT = 10;
-    constexpr size_t TASKS_PER_THREAD = 20;
+    static constexpr size_t THREAD_COUNT = 10;
+    static constexpr size_t TASKS_PER_THREAD = 20;
     std::atomic<size_t> totalTasksProcessed{0};
     std::vector<std::thread> threadPool;
     threadPool.reserve(THREAD_COUNT);
