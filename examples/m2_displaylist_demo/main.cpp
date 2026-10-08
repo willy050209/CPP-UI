@@ -80,6 +80,7 @@ int main() {
                 break;
             case RawEventType::WindowClose:
                 compat::println("[Event] Window close requested");
+                window->Close();
                 break;
             default:
                 break;

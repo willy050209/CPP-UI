@@ -520,6 +520,10 @@ int main() {
 
     // 平台原生事件接駁
     window->SetEventCallback([&](const pal::RawInputEvent& e) {
+        if (e.type == pal::RawEventType::WindowClose) {
+            window->Close();
+            return;
+        }
         if (e.type == pal::RawEventType::WindowResize) {
             currentWidth = e.window.width;
             currentHeight = e.window.height;

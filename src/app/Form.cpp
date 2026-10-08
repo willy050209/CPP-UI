@@ -93,12 +93,12 @@ void Form::Close() {
         return; // 使用者程式碼取消關閉操作
     }
 
+    m_isDisposed = true;
+    m_inModalLoop = false;
+
     if (m_window) {
         m_window->Close();
     }
-
-    m_isDisposed = true;
-    m_inModalLoop = false;
 
     FormClosedEventArgs closedArgs;
     closedArgs.CloseReasonIsUser = true;
@@ -155,6 +155,7 @@ void Form::AddClosedHandler(FormClosedHandler handler) {
 }
 
 void Form::InvalidateForm() {
+    if (m_isDisposed || (m_window && m_window->IsClosed())) return;
     InvalidateVisual();
     if (m_window) {
         m_window->RequestRedraw();
@@ -183,6 +184,11 @@ void Form::SetupPlatformEvents() {
     if (!m_window) return;
 
     m_window->SetEventCallback([this](const pal::RawInputEvent& e) {
+        if (e.type == pal::RawEventType::WindowClose) {
+            Close();
+            return;
+        }
+
         if (e.type == pal::RawEventType::WindowResize) {
             HandleWindowResize(e.window.width, e.window.height);
             return;
@@ -198,7 +204,7 @@ void Form::SetupPlatformEvents() {
 }
 
 void Form::RenderFrame() {
-    if (m_width == 0 || m_height == 0 || !m_window) return;
+    if (m_width == 0 || m_height == 0 || !m_window || m_isDisposed || m_window->IsClosed()) return;
     if (!m_renderTarget) {
         m_renderTarget = std::unique_ptr<rendering::SoftwareRenderTarget>(new rendering::SoftwareRenderTarget());
         m_renderTarget->Resize(m_width, m_height);

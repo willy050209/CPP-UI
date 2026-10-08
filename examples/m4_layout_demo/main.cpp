@@ -292,6 +292,10 @@ int main() {
                 }
                 break;
 
+            case RawEventType::WindowClose:
+                window->Close();
+                break;
+
             default:
                 break;
         }

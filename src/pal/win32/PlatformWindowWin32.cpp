@@ -117,8 +117,11 @@ void PlatformWindowWin32::Close() {
             ReleaseDC(m_hwnd, m_hdc);
             m_hdc = nullptr;
         }
-        DestroyWindow(m_hwnd);
+        HWND hwnd = m_hwnd;
         m_hwnd = nullptr;
+        DestroyWindow(hwnd);
+    } else {
+        m_isClosed = true;
     }
 }
 
@@ -416,8 +419,11 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
         }
 
         case WM_CLOSE: {
-            m_isClosed = true;
-            DispatchEvent(RawInputEvent::MakeClose(ts));
+            if (m_eventCallback) {
+                DispatchEvent(RawInputEvent::MakeClose(ts));
+            } else {
+                Close();
+            }
             return 0;
         }
 

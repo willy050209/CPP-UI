@@ -87,8 +87,18 @@ int Application::Run(std::shared_ptr<Form> mainForm) {
 
         if (s_mainForm && s_mainForm->GetPlatformWindow() && !s_mainForm->GetPlatformWindow()->IsClosed()) {
             s_mainForm->GetPlatformWindow()->WaitEvents(16);
-        } else if (!s_openForms.empty() && s_openForms.front()->GetPlatformWindow()) {
-            s_openForms.front()->GetPlatformWindow()->WaitEvents(16);
+        } else if (!s_openForms.empty()) {
+            bool waited = false;
+            for (auto& f : s_openForms) {
+                if (f && !f->IsDisposed() && f->GetPlatformWindow() && !f->GetPlatformWindow()->IsClosed()) {
+                    f->GetPlatformWindow()->WaitEvents(16);
+                    waited = true;
+                    break;
+                }
+            }
+            if (!waited) {
+                break;
+            }
         } else {
             break;
         }
@@ -99,6 +109,7 @@ int Application::Run(std::shared_ptr<Form> mainForm) {
 }
 
 void Application::Exit() {
+    if (s_exitRequested) return;
     s_exitRequested = true;
     s_isRunning = false;
 
@@ -111,9 +122,12 @@ void Application::Exit() {
     s_openForms.clear();
     s_mainForm.reset();
 
-    for (const auto& handler : s_exitHandlers) {
+    auto exitHandlers = std::move(s_exitHandlers);
+    s_exitHandlers.clear();
+    for (const auto& handler : exitHandlers) {
         if (handler) handler();
     }
+    s_idleHandlers.clear();
 }
 
 void Application::ExitThread() {

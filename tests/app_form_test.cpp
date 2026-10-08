@@ -6,6 +6,13 @@
 #include <vector>
 #include <string>
 
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
+
 using namespace cppui;
 using namespace cppui::app;
 
@@ -165,22 +172,24 @@ void TestAppBuilderGenericHost() {
 
 void TestApplicationExitAndIdleHandlers() {
     compat::println("[Test] 測試 Application 全域 Exit 與 Idle 監聽回呼...");
-    bool idleTriggered = false;
-    bool exitTriggered = false;
+    static bool s_idleTriggered = false;
+    static bool s_exitTriggered = false;
+    s_idleTriggered = false;
+    s_exitTriggered = false;
 
-    Application::AddIdleHandler([&]() {
-        idleTriggered = true;
+    Application::AddIdleHandler([]() {
+        s_idleTriggered = true;
     });
 
-    Application::AddExitHandler([&]() {
-        exitTriggered = true;
+    Application::AddExitHandler([]() {
+        s_exitTriggered = true;
     });
 
     Application::DoEvents();
-    assert(idleTriggered == true);
+    assert(s_idleTriggered == true);
 
     Application::Exit();
-    assert(exitTriggered == true);
+    assert(s_exitTriggered == true);
 
     compat::println("  ✔ Application 全域 Exit / Idle 回呼調度驗證通過！");
 }
@@ -223,6 +232,73 @@ void TestFormDelegatesAndCancel() {
     compat::println("  ✔ Form 外部委派監聽與取消關閉機制驗證通過！");
 }
 
+class AutoCloseForm : public Form {
+public:
+    AutoCloseForm() {
+        SetTitle("Auto Close Form");
+    }
+
+    void OnShown() override {
+        Form::OnShown();
+#if defined(_WIN32)
+        if (GetPlatformWindow() && GetPlatformWindow()->GetNativeHandle()) {
+            ::PostMessageW(static_cast<HWND>(GetPlatformWindow()->GetNativeHandle()), WM_CLOSE, 0, 0);
+        } else {
+            Close();
+        }
+#else
+        Close();
+#endif
+    }
+};
+
+void TestWindowClosePlatformEventHandling() {
+    compat::println("[Test] 測試原生 WM_CLOSE / WindowClose 事件分發與取消機制...");
+    auto form = std::make_shared<LifecycleTestForm>();
+    form->Show();
+    assert(form->IsDisposed() == false);
+
+    // 1. 模擬原生發送關閉訊息，但表單設定取消
+    form->cancelClose = true;
+#if defined(_WIN32)
+    if (form->GetPlatformWindow() && form->GetPlatformWindow()->GetNativeHandle()) {
+        ::PostMessageW(static_cast<HWND>(form->GetPlatformWindow()->GetNativeHandle()), WM_CLOSE, 0, 0);
+        form->GetPlatformWindow()->PollEvents();
+    } else {
+        form->Close();
+    }
+#else
+    form->Close();
+#endif
+    assert(form->IsDisposed() == false); // 取消成功，不應被關閉
+
+    // 2. 模擬原生發送關閉訊息，表單允許關閉
+    form->cancelClose = false;
+#if defined(_WIN32)
+    if (form->GetPlatformWindow() && form->GetPlatformWindow()->GetNativeHandle()) {
+        ::PostMessageW(static_cast<HWND>(form->GetPlatformWindow()->GetNativeHandle()), WM_CLOSE, 0, 0);
+        form->GetPlatformWindow()->PollEvents();
+    } else {
+        form->Close();
+    }
+#else
+    form->Close();
+#endif
+    assert(form->IsDisposed() == true); // 成功銷毀
+    compat::println("  ✔ 原生關閉事件分發與取消機制驗證通過！");
+}
+
+void TestApplicationRunCleanExit() {
+    compat::println("[Test] 測試 Application::Run 於主視窗關閉時乾淨退出訊息迴圈...");
+    Application::SetShutdownMode(ShutdownMode::OnMainWindowClose);
+    auto form = std::make_shared<AutoCloseForm>();
+    int exitCode = Application::Run(form);
+    assert(exitCode == 0);
+    assert(Application::IsRunning() == false);
+    assert(form->IsDisposed() == true);
+    compat::println("  ✔ Application::Run 主視窗關閉退出迴圈驗證通過！");
+}
+
 int main() {
     compat::println("==================================================");
     compat::println(" CPPUI Application & Form TDD Unit Test Suite");
@@ -235,9 +311,11 @@ int main() {
     TestAppBuilderGenericHost();
     TestApplicationExitAndIdleHandlers();
     TestFormDelegatesAndCancel();
+    TestWindowClosePlatformEventHandling();
+    TestApplicationRunCleanExit();
 
     compat::println("==================================================");
-    compat::println(" 全部 7 項 Application & Form 單元測試通過！");
+    compat::println(" 全部 9 項 Application & Form 單元測試通過！");
     compat::println("==================================================");
     return 0;
 }
