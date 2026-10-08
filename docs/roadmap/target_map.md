@@ -1,6 +1,6 @@
-# CPPUI 目標地圖 (Target Roadmap: M1 ~ M6)
+# CPPUI 目標地圖 (Target Roadmap: M1 ~ M7)
 
-本文件將 CPPUI 跨平台現代 UI 框架之核心演進路線劃分為六大里程碑（M1 ~ M6）。每個階段皆有明確的職責界定、輸入依賴、核心交付物與客觀驗收標準。
+本文件將 CPPUI 跨平台現代 UI 框架之核心演進路線劃分為七大里程碑（M1 ~ M7）。每個階段皆有明確的職責界定、輸入依賴、核心交付物與客觀驗收標準。
 
 ---
 
@@ -14,6 +14,8 @@ graph TD
     M4["<b>M4: Visual Tree & 雙階段佈局</b><br/>UIElement + Measure/Arrange"]
     M5["<b>M5: 輸入分發與路由事件</b><br/>Hit Testing + Tunneling/Bubbling + Focus"]
     M6["<b>M6: 控制項庫與 Fluent RAD DSL</b><br/>WinForms 效率 + Avalonia 保留模式"]
+    CrossPAL["<b>Cross-Platform PAL & Skia m151</b><br/>純記憶體通用視窗 + 向量核心"]
+    M7["<b>M7: Application、Form 生命週期、IoC 與 MVVM</b><br/>WinForms Application.Run + IoC DI + MVVM 雙向綁定"]
 
     M1 --> M2
     M1 --> M5
@@ -22,10 +24,12 @@ graph TD
     M4 --> M5
     M4 --> M6
     M5 --> M6
+    M1 --> CrossPAL
+    M6 --> M7
+    CrossPAL --> M7
 
     classDef done fill:#d4edda,stroke:#28a745,stroke-width:2px;
-    classDef planned fill:#e2e3e5,stroke:#6c757d,stroke-width:2px;
-    class M1,M2,M3,M4,M5,M6 done;
+    class M1,M2,M3,M4,M5,M6,CrossPAL,M7 done;
 ```
 
 ---
@@ -136,6 +140,24 @@ graph TD
 
 ---
 
+### 里程碑 7 (M7)：Application 中樞、Form 生命週期、IoC 與 MVVM 架構 [已完成]
+* **核心目標**：封裝視窗與訊息泵細節，支援單行 `Application::Run(new Form1())` 啟動，並原生提供依賴反轉 (IoC) 與現代 MVVM 雙向綁定與命令架構。
+* **技術選型**：.NET WinForms Application/Form 模型 + Microsoft.Extensions.DependencyInjection + CommunityToolkit.Mvvm。
+* **核心交付物**：
+  * `Application`：密封靜態類別，提供 `Run(new Form1())`、`Exit()`、`DoEvents()`、`OpenForms`、`ActiveForm`、`ShutdownMode`。
+  * `Form`：視窗基底類別，繼承自 `ContentControl`，具備 `OnLoad`、`OnShown`、`OnFormClosing`（支援取消 `e.Cancel = true`）、`OnFormClosed` 以及模態對話框 `ShowDialog`。
+  * `ServiceCollection` & `IServiceProvider`：支援 Transient 與 Singleton 生命週期之依賴反轉容器。
+  * `ViewModelBase`、`ICommand`、`RelayCommand`：命令模式與屬性變更通知。
+  * `UIElement::GetDataContext()`：沿視覺樹向上繼承。
+  * `Button::SetCommand()`：自動與 `CanExecute` 啟用/禁用狀態連動。
+* **驗收標準 (Acceptance Criteria)**：
+  1. 能夠在 7 行 C++ 代碼內透過 `Application::CreateBuilder()` 註冊服務並以 `Application::Run` 啟動主表單。[✔ 已通過]
+  2. 視窗關閉時支援使用者取消關閉操作（`FormClosingEventArgs::Cancel`）。[✔ 已通過]
+  3. 按鈕綁定 `RelayCommand` 時，自動依據 `CanExecute` 連動 `IsEnabled` 外觀。[✔ 已通過]
+  4. 通過全編譯器多標準 168/168 矩陣測試與 `m7_mvvm_app_demo` 互動展示。[✔ 已通過]
+
+---
+
 ## 3. 各階段責任矩陣速查
 
 | 模組名稱 | 階段 | 主要包含頭文件目錄 | 核心對標概念 |
@@ -146,3 +168,4 @@ graph TD
 | **Layout Tree** | M4 | `include/ui/core/`, `include/ui/layout/` | Avalonia / WPF Two-Pass Layout Engine |
 | **Input & Focus** | M5 | `include/ui/input/` | WPF Routed Event System |
 | **RAD Fluent Controls** | M6 | `include/ui/controls/` | WinForms Code-Behind / Avalonia C# Markup |
+| **Application & MVVM** | M7 | `include/ui/app/`, `include/ui/ioc/`, `include/ui/mvvm/` | WinForms `Application.Run` / WPF `DataContext` / .NET Generic Host |

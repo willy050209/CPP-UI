@@ -16,4 +16,7 @@ target_link_libraries(m5_input_demo PRIVATE cppui_core)
 add_executable(m6_fluent_rad_demo m6_fluent_rad_demo/main.cpp)
 target_link_libraries(m6_fluent_rad_demo PRIVATE cppui_core)
 
+add_executable(m7_mvvm_app_demo m7_mvvm_app_demo/main.cpp)
+target_link_libraries(m7_mvvm_app_demo PRIVATE cppui_core)
+
 

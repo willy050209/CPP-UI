@@ -53,5 +53,20 @@ add_executable(skia_backend_test skia_backend_test.cpp)
 target_link_libraries(skia_backend_test PRIVATE cppui_core)
 add_test(NAME SkiaBackendTest COMMAND skia_backend_test)
 
+# M7 依賴反轉 (IoC) 容器測試
+add_executable(ioc_container_test ioc_container_test.cpp)
+target_link_libraries(ioc_container_test PRIVATE cppui_core)
+add_test(NAME IoCContainerTest COMMAND ioc_container_test)
+
+# M7 現代 MVVM 架構測試
+add_executable(mvvm_test mvvm_test.cpp)
+target_link_libraries(mvvm_test PRIVATE cppui_core)
+add_test(NAME MvvmTest COMMAND mvvm_test)
+
+# M7 Application 與 Form 視窗生命週期測試
+add_executable(app_form_test app_form_test.cpp)
+target_link_libraries(app_form_test PRIVATE cppui_core)
+add_test(NAME AppFormTest COMMAND app_form_test)
+
 
 

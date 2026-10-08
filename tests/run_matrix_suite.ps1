@@ -175,7 +175,13 @@ $frameworkSources = @(
     "src\input\RoutedEvent.cpp",
     "src\input\EventRoute.cpp",
     "src\input\FocusManager.cpp",
-    "src\input\InputManager.cpp"
+    "src\input\InputManager.cpp",
+    "src\ioc\ServiceCollection.cpp",
+    "src\mvvm\ViewModelBase.cpp",
+    "src\mvvm\RelayCommand.cpp",
+    "src\app\Form.cpp",
+    "src\app\Application.cpp",
+    "src\app\AppBuilder.cpp"
 )
 
 $testTargets = @(
@@ -318,6 +324,49 @@ $testTargets = @(
         NeedObjs       = @("SkiaRenderContext", "SoftwareRenderContext", "DisplayListRenderer")
         MsvcLibs       = @("gdi32.lib", "user32.lib")
         GnuLibs        = @("-lgdi32", "-luser32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "IoCContainer"
+        Source         = "tests\ioc_container_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @("ServiceCollection")
+        MsvcLibs       = @()
+        GnuLibs        = @()
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "MVVM"
+        Source         = "tests\mvvm_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "ViewModelBase", "RelayCommand", "Button", "Control", "ContentControl",
+            "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
+            "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
+            "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "AppForm"
+        Source         = "tests\app_form_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Form", "Application", "AppBuilder", "ServiceCollection", "PlatformWindowFactory",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl",
+            "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
+            "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
+            "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
         HasBench       = $false
         BenchRegex     = ""
     }

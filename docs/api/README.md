@@ -95,6 +95,9 @@ graph TD
 | 命名空間 (Namespace) | 模組標題 | 簡述與職責 | 核心型別導覽 |
 | :--- | :--- | :--- | :--- |
 | [`cppui::dsl`](namespaces/cppui_dsl.md) | **宣告式 Fluent RAD DSL** | 提供極簡鏈式 UI 建構樣板 `UIBuilder<T>` 與 `VStack`, `HStack`, `Grid`, `Button` 等語意化元件工廠函式。 | [`UIBuilder<T>`](namespaces/cppui_dsl.md), `VStack`, `HStack`, `Grid`, `Border`, `Button`, `TextBox`, `CheckBox`, `Label` |
+| [`cppui::app`](namespaces/cppui_app.md) | **應用程式與視窗中樞** | 封裝生命週期、訊息泵、表單生命週期與 Generic Host 應用程式構建器。 | [`Application`](classes/app_application.md), [`Form`](classes/app_form.md), [`AppBuilder`](classes/app_application.md#appbuilder-與-apphost) |
+| [`cppui::ioc`](namespaces/cppui_ioc.md) | **依賴反轉 (IoC / DI)** | 提供執行期型別安全之依賴注入容器與服務解析機制。 | [`ServiceCollection`](classes/ioc_servicecollection.md), [`IServiceProvider`](classes/ioc_servicecollection.md) |
+| [`cppui::mvvm`](namespaces/cppui_mvvm.md) | **現代 MVVM 架構** | 提供視圖模型屬性通知機制與命令模式委派實作。 | [`ViewModelBase`](classes/mvvm_viewmodelbase.md), [`RelayCommand`](classes/mvvm_relaycommand.md), [`ICommand`](classes/mvvm_relaycommand.md) |
 | [`cppui::reactive`](namespaces/cppui_reactive.md) | **響應式資料流與信號** | 提供零依賴、型別安全且具備弱引用生命週期保護之 `Signal<T>` 狀態信號，實現資料到介面的自動同步與綁定。 | [`Signal<T>`](classes/reactive_signal.md) |
 | [`cppui::controls`](namespaces/cppui_controls.md) | **核心 UI 控制項庫** | 實作基礎控制項樣式基底 `Control`、單內容容器 `ContentControl`、互動按鈕 `Button`、核取方塊 `CheckBox` 與文字編輯框 `TextBox`。 | [`Control`](classes/controls_control.md), [`ContentControl`](classes/controls_contentcontrol.md), [`Button`](classes/controls_button.md), [`CheckBox`](classes/controls_checkbox.md), [`TextBox`](classes/controls_textbox.md), [`TextBlock`](classes/controls_textblock.md) |
 | [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 坐標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，座標轉換中樞 [`CoordinateTransform`](classes/core_coordinatetransform.md)，以及視覺樹根基 [`Visual`](classes/core_visual.md) 與排版核心 [`UIElement`](classes/core_uielement.md)。 | [`Visual`](classes/core_visual.md), [`UIElement`](classes/core_uielement.md), [`CoordinateTransform`](classes/core_coordinatetransform.md), [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
@@ -109,10 +112,17 @@ graph TD
 
 ## 3. 核心類別快速索引 (Type Quick Reference)
 
+### 現代應用程式與 MVVM (Milestone 7 Application, Form, IoC & MVVM)
+* [`Application`](classes/app_application.md)：應用程式密封靜態中樞，支援 `Application::Run(new Form1())` 極簡進入點、訊息泵循環、`DoEvents()`、視窗清單管理與依賴注入中繼。
+* [`Form`](classes/app_form.md)：桌面視窗基底類別，繼承自 `ContentControl`，封裝原生視窗與渲染管線，具備 `OnLoad`、`OnShown`、支援取消關閉之 `OnFormClosing`、`OnFormClosed` 與模態 `ShowDialog()`。
+* [`ServiceCollection`](classes/ioc_servicecollection.md)：依賴反轉 (IoC) 容器，支援 Transient 與 Singleton 生命週期之服務工廠與實例註冊。
+* [`ViewModelBase`](classes/mvvm_viewmodelbase.md)：MVVM 視圖模型基底，提供 `SetProperty` 差異偵測與屬性變更通知。
+* [`RelayCommand`](classes/mvvm_relaycommand.md)：命令模式 Lambda 委派實作，與 `Button` 之 `IsEnabled` 狀態機自動連動。
+
 ### 核心控制項與排版網格 (Milestone 6 Controls & Grid)
 * [`Control`](classes/controls_control.md)：控制項抽象基底，提供 Padding、Background、Foreground、BorderBrush、BorderThickness、CornerRadius 與 Deflate/Inflate 邊界度量。
 * [`ContentControl`](classes/controls_contentcontrol.md)：單內容控制項容器，支援動態文字字串與任意 `UIElement` 自訂子元件。
-* [`Button`](classes/controls_button.md)：互動式按鈕，具備 Hover、Pressed、Disabled、獲焦霓虹外框與空白鍵/Enter 點擊狀態機，發布 `ClickEvent`。
+* [`Button`](classes/controls_button.md)：互動式按鈕，具備 Hover、Pressed、Disabled、獲焦霓虹外框、空白鍵/Enter 狀態機與 `Command` 綁定，發布 `ClickEvent`。
 * [`CheckBox`](classes/controls_checkbox.md)：核取方塊，具備向量抗鋸齒對稱勾號繪製、狀態切換與 `CheckedEvent`/`UncheckedEvent`。
 * [`TextBox`](classes/controls_textbox.md)：單行文字編輯框，支援輸入、退格、Delete、方向鍵左右移動、Home/End、Placeholder、焦點外框與 `TextChangedEvent`。
 * [`Grid`](classes/layout_grid.md)：多儲存格網格排版容器，支援 Pixel、Auto、Star (*) 行列比例求解與 `SetRow` / `SetColumn` / `SetRowSpan` / `SetColumnSpan` 附加屬性。
@@ -130,7 +140,7 @@ graph TD
 
 ### 視覺樹與排版 (Visual Tree & Layout Engine)
 * [`Visual`](classes/core_visual.md)：視覺樹基底類別，維護親緣關係、局部位移、邊界、座標轉換 (`PointToScreen`)、反向 Z-Order 命中測試與指令流派發。
-* [`UIElement`](classes/core_uielement.md)：具備 Margin、Alignment、Min/Max 幾何約束，`Measure` / `Arrange` 雙階段排版管線、髒標記追蹤、事件註冊 (`AddHandler`) 與焦點屬性。
+* [`UIElement`](classes/core_uielement.md)：具備 Margin、Alignment、Min/Max 幾何約束，`Measure` / `Arrange` 雙階段排版管線、髒標記追蹤、事件註冊 (`AddHandler`)、焦點屬性與 `DataContext` 視覺樹繼承。
 * [`Panel`](classes/layout_panel.md)：多子元件排版容器抽象基底。
 * [`StackPanel`](classes/layout_stackpanel.md)：垂直/水平流式排版容器，支援 Spacing 間距與 Collapsed 忽略。
 * [`Border`](classes/layout_border.md)：裝飾容器，支援 BorderBrush、BorderThickness、CornerRadius、Background 與 Padding 內縮。
@@ -175,6 +185,7 @@ graph TD
 
 ## 4. 實戰與概念指南 (Guides & Tutorials)
 
+* [**現代 MVVM 與依賴反轉 (IoC) 架構指南**](guides/mvvm_and_ioc_architecture.md)：深入探討 `Application::Run`、`Form` 生命週期狀態機、取消關閉機制、`ServiceCollection` 依賴注入與 `ViewModelBase` / `RelayCommand` 雙向綁定。
 * [**宣告式 Fluent RAD DSL 與響應式信號開發指南**](guides/fluent_rad_dsl_and_signals.md)：詳解以 `< 50` 行程式碼使用 `VStack`, `HStack`, `Grid`, `Button`, `TextBox` 與 `Signal<T>` 快速宣告桌面 UI、自動雙向資料綁定與事件串接。
 * [**跨平台抽象架構指南**](guides/cross_platform_architecture.md)：詳解 PAL 視窗抽象、純 C++ 記憶體視窗、無外部依賴文字多行排版與 8x8 ASCII 軟體光柵字模庫。
 * [**Skia 向量渲染管線指南**](guides/skia_rendering_pipeline.md)：介紹 Google Skia (m151) 向量繪圖核心整合、DisplayList 指令原生回放與雙引擎優雅回退機制。
@@ -189,11 +200,11 @@ graph TD
 
 ## 5. 跨標準相容性契約 (Compatibility Matrix)
 
-本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（**132/132 通過，12 賽道 x 11 標靶，零報錯、零警告**）：
+本 API 在以下主流編譯器與語言標準下通過了全矩陣測試（**168/168 通過，12 賽道 x 14 標靶，零報錯、零警告**）：
 
 | 編譯器 | C++14 | C++17 | C++20 | C++23 / Latest | 通過率 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Clang++ (LLVM 19)** | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | 44/44 (100%) |
-| **G++ (MinGW UCRT64 14.2)** | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | 44/44 (100%) |
-| **MSVC (cl.exe 19.50)** | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | ✔ 通過 (11/11) | 44/44 (100%) |
-| **矩陣合計** | **33/33 PASS** | **33/33 PASS** | **33/33 PASS** | **33/33 PASS** | **132/132 (100%)** |
+| **Clang++ (LLVM 19)** | ✔ 通過 (14/14) | ✔ 通過 (14/14) | ✔ 通過 (14/14) | ✔ 通過 (14/14) | 56/56 (100%) |
+| **G++ (MinGW UCRT64 14.2)** | ✔ 通過 (14/14) | ✔ 通過 (14/14) | ✔ 通過 (14/14) | ✔ 通過 (14/14) | 56/56 (100%) |
+| **MSVC (cl.exe 19.50)** | ✔ 通過 (14/14) | ✔ 通過 (14/14) | ✔ 通過 (14/14) | ✔ 通過 (14/14) | 56/56 (100%) |
+| **矩陣合計** | **42/42 PASS** | **42/42 PASS** | **42/42 PASS** | **42/42 PASS** | **168/168 (100%)** |

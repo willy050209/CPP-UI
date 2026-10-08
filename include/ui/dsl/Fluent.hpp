@@ -22,6 +22,7 @@
 #include "ui/controls/CheckBox.hpp"
 #include "ui/controls/TextBox.hpp"
 #include "ui/reactive/Signal.hpp"
+#include "ui/mvvm/ICommand.hpp"
 
 namespace cppui {
 namespace dsl {
@@ -243,6 +244,21 @@ public:
             sig.Bind(sharedTb, [formatter](controls::TextBlock& t, const ValType& val) {
                 t.SetText(formatter(val));
             });
+        }
+        return *this;
+    }
+
+    // --- MVVM 命令與 DataContext 綁定 ---
+    UIBuilder& Command(std::shared_ptr<mvvm::ICommand> cmd) {
+        if (auto* btn = dynamic_cast<controls::Button*>(m_element.get())) {
+            btn->SetCommand(cmd);
+        }
+        return *this;
+    }
+
+    UIBuilder& DataContext(std::shared_ptr<void> dc) {
+        if (m_element) {
+            m_element->SetDataContext(dc);
         }
         return *this;
     }

@@ -90,6 +90,15 @@ public:
 
     COMPAT_NODISCARD UIElement* GetParentUIElement() const noexcept;
 
+    // --- MVVM DataContext 繼承體系 ---
+    COMPAT_NODISCARD std::shared_ptr<void> GetDataContext() const;
+    void SetDataContext(std::shared_ptr<void> dataContext);
+
+    template<typename T>
+    COMPAT_NODISCARD std::shared_ptr<T> GetDataContentType() const {
+        return std::static_pointer_cast<T>(GetDataContext());
+    }
+
     // --- 路由事件註冊與派發 ---
     void AddHandler(const input::RoutedEvent& routedEvent, RoutedEventHandler handler, bool handledEventsToo = false);
     void RemoveHandler(const input::RoutedEvent& routedEvent);
@@ -145,6 +154,7 @@ protected:
         bool               handledEventsToo = false;
     };
     std::vector<HandlerEntry> m_eventHandlers;
+    std::shared_ptr<void>     m_dataContext;
 
     bool                        m_isHitTestVisible = true;
     bool                        m_isFocusable = false;

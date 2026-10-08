@@ -64,6 +64,12 @@ set(CPPUI_SOURCES
     src/input/EventRoute.cpp
     src/input/FocusManager.cpp
     src/input/InputManager.cpp
+    src/ioc/ServiceCollection.cpp
+    src/mvvm/ViewModelBase.cpp
+    src/mvvm/RelayCommand.cpp
+    src/app/Form.cpp
+    src/app/Application.cpp
+    src/app/AppBuilder.cpp
 )
 
 if(WIN32)

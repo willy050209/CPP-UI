@@ -8,6 +8,10 @@
 #include "ui/input/PointerEventArgs.hpp"
 
 namespace cppui {
+namespace mvvm {
+class ICommand;
+} // namespace mvvm
+
 namespace controls {
 
 class Button;
@@ -48,6 +52,10 @@ public:
     void OnClick(ClickEventHandler handler);
     void OnClick(std::function<void()> handler);
 
+    // --- MVVM 命令綁定 ---
+    void SetCommand(std::shared_ptr<mvvm::ICommand> command);
+    COMPAT_NODISCARD std::shared_ptr<mvvm::ICommand> GetCommand() const noexcept { return m_command; }
+
     void OnRender(rendering::DrawingContext& dc) override;
 
 protected:
@@ -57,6 +65,7 @@ protected:
     bool        m_isPressed = false;
     bool        m_isHovered = false;
     bool        m_isEnabled = true;
+    std::shared_ptr<mvvm::ICommand> m_command;
 
     core::Color m_normalBackground{ 45, 52, 70, 255 };
     core::Color m_hoverBackground{ 60, 75, 105, 255 };

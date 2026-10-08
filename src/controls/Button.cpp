@@ -1,6 +1,7 @@
 #include "ui/controls/Button.hpp"
 #include "ui/input/InputManager.hpp"
 #include "ui/input/KeyEventArgs.hpp"
+#include "ui/mvvm/ICommand.hpp"
 
 namespace cppui {
 namespace controls {
@@ -121,9 +122,24 @@ void Button::OnClick(std::function<void()> handler) {
     });
 }
 
+void Button::SetCommand(std::shared_ptr<mvvm::ICommand> command) {
+    m_command = command;
+    if (m_command) {
+        m_command->AddCanExecuteChangedHandler([this]() {
+            if (m_command) {
+                SetEnabled(m_command->CanExecute());
+            }
+        });
+        SetEnabled(m_command->CanExecute());
+    }
+}
+
 void Button::RaiseClick() {
     ClickEventArgs args(this);
     RaiseEvent(args);
+    if (m_command && m_command->CanExecute()) {
+        m_command->Execute();
+    }
 }
 
 void Button::OnRender(rendering::DrawingContext& dc) {

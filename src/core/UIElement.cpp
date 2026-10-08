@@ -449,5 +449,19 @@ void UIElement::SetFocusedInternal(bool focused) noexcept {
     }
 }
 
+std::shared_ptr<void> UIElement::GetDataContext() const {
+    if (m_dataContext) {
+        return m_dataContext;
+    }
+    if (auto parent = GetParentUIElement()) {
+        return parent->GetDataContext();
+    }
+    return nullptr;
+}
+
+void UIElement::SetDataContext(std::shared_ptr<void> dataContext) {
+    m_dataContext = dataContext;
+}
+
 } // namespace core
 } // namespace cppui
