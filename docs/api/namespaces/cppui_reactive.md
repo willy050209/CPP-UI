@@ -1,6 +1,6 @@
-# cppui::reactive 命名空間
+﻿# cppui::reactive 命名空間
 
-- **標頭檔**: [`include/ui/reactive/Signal.hpp`](file:///D:/P/CPP/CPPUI/include/ui/reactive/Signal.hpp)
+- **標頭檔**: [`include/ui/reactive/Signal.hpp`](../../../include/ui/reactive/Signal.hpp)
 
 ---
 
@@ -14,4 +14,4 @@
 
 | 型別名稱 | 說明 |
 | :--- | :--- |
-| [`Signal<T>`](file:///D:/P/CPP/CPPUI/docs/api/classes/reactive_signal.md) | 響應式屬性狀態信號樣板，支援值變更推播與控制項弱引用綁定。 |
+| [`Signal<T>`](../classes/reactive_signal.md) | 響應式屬性狀態信號樣板，支援值變更推播與控制項弱引用綁定。 |

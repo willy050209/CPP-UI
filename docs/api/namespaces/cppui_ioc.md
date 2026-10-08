@@ -1,4 +1,4 @@
-# cppui::ioc 命名空間
+﻿# cppui::ioc 命名空間
 
 - **標頭檔目錄**: `include/ui/ioc/`
 
@@ -14,9 +14,9 @@
 
 | 型別名稱 | 標頭檔 | 說明 |
 | :--- | :--- | :--- |
-| [`IServiceProvider`](file:///D:/P/CPP/CPPUI/docs/api/classes/ioc_iserviceprovider.md) | `IServiceProvider.hpp` | 服務提供者核心介面，定義 `GetService<T>()` 與 `GetRequiredService<T>()` 解析合約。 |
-| [`ServiceCollection`](file:///D:/P/CPP/CPPUI/docs/api/classes/ioc_servicecollection.md) | `ServiceCollection.hpp` | 服務集合註冊表，支援鏈式註冊 Transient、Singleton、物件實例及相依工廠 Lambda。 |
-| [`ServiceLifetime`](file:///D:/P/CPP/CPPUI/docs/api/classes/ioc_servicecollection.md#servicelifetime) | `ServiceCollection.hpp` | 服務生命週期模式列舉 (`Transient`, `Singleton`)。 |
+| [`IServiceProvider`](../classes/ioc_iserviceprovider.md) | `IServiceProvider.hpp` | 服務提供者核心介面，定義 `GetService<T>()` 與 `GetRequiredService<T>()` 解析合約。 |
+| [`ServiceCollection`](../classes/ioc_servicecollection.md) | `ServiceCollection.hpp` | 服務集合註冊表，支援鏈式註冊 Transient、Singleton、物件實例及相依工廠 Lambda。 |
+| [`ServiceLifetime`](../classes/ioc_servicecollection.md#servicelifetime) | `ServiceCollection.hpp` | 服務生命週期模式列舉 (`Transient`, `Singleton`)。 |
 
 ---
 

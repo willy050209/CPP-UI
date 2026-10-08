@@ -3,7 +3,7 @@
 CounterViewModel::CounterViewModel()
     : m_model(0, 0, 10) {
 
-    IncrementCommand = std::make_shared<cppui::mvvm::RelayCommand>(
+    IncrementCommand = cppui::mvvm::MakeCommand(
         [this]() {
             if (m_model.Increment()) {
                 UpdatePropertiesAndCommands();
@@ -14,7 +14,7 @@ CounterViewModel::CounterViewModel()
         }
     );
 
-    DecrementCommand = std::make_shared<cppui::mvvm::RelayCommand>(
+    DecrementCommand = cppui::mvvm::MakeCommand(
         [this]() {
             if (m_model.Decrement()) {
                 UpdatePropertiesAndCommands();
@@ -25,10 +25,10 @@ CounterViewModel::CounterViewModel()
         }
     );
 
-    ResetCommand = std::make_shared<cppui::mvvm::RelayCommand>(
+    ResetCommand = cppui::mvvm::MakeCommand(
         [this]() {
             m_model.Reset();
-            UpdatePropertiesAndCommands();
+                UpdatePropertiesAndCommands();
         },
         [this]() -> bool {
             return m_model.GetValue() != m_model.GetMinValue();

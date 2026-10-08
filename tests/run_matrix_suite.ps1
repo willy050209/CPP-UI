@@ -181,7 +181,8 @@ $frameworkSources = @(
     "src\mvvm\RelayCommand.cpp",
     "src\app\Form.cpp",
     "src\app\Application.cpp",
-    "src\app\AppBuilder.cpp"
+    "src\app\AppBuilder.cpp",
+    "src\app\Dispatcher.cpp"
 )
 
 $testTargets = @(
@@ -342,11 +343,13 @@ $testTargets = @(
         Source         = "tests\mvvm_test.cpp"
         IsSmoke        = $false
         NeedObjs       = @(
-            "ViewModelBase", "RelayCommand", "Button", "Control", "ContentControl",
+            "ViewModelBase", "RelayCommand", "Application", "Dispatcher", "Form", "AppBuilder",
+            "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32", "SkiaRenderContext",
+            "ServiceCollection", "Button", "Control", "ContentControl",
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
-            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -358,7 +361,8 @@ $testTargets = @(
         Source         = "tests\app_form_test.cpp"
         IsSmoke        = $false
         NeedObjs       = @(
-            "Form", "Application", "AppBuilder", "ServiceCollection", "PlatformWindowFactory",
+            "Form", "Application", "AppBuilder", "Dispatcher", "SkiaRenderContext",
+            "ServiceCollection", "PlatformWindowFactory",
             "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl",
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",

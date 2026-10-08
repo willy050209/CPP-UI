@@ -5,8 +5,11 @@
 #include "ui/controls/Button.hpp"
 #include "ui/layout/StackPanel.hpp"
 #include "ui/layout/Border.hpp"
+#include "ui/app/Application.hpp"
 #include <cassert>
 #include <string>
+#include <thread>
+#include <atomic>
 
 using namespace cppui;
 using namespace cppui::mvvm;
@@ -97,7 +100,22 @@ void TestRelayCommandExecution() {
     cmd->NotifyCanExecuteChanged();
     assert(canExecuteChangedNotified == true);
 
-    compat::println("  ✔ RelayCommand 執行與狀態通知驗證通過！");
+    // 測試 RelayCommand::Create 與 MakeCommand 工廠函數
+    bool factoryExecuted1 = false;
+    auto cmdCreate = RelayCommand::Create([&]() { factoryExecuted1 = true; });
+    assert(cmdCreate != nullptr);
+    assert(cmdCreate->CanExecute() == true);
+    cmdCreate->Execute();
+    assert(factoryExecuted1 == true);
+
+    bool factoryExecuted2 = false;
+    auto cmdMake = MakeCommand([&]() { factoryExecuted2 = true; }, []() { return true; });
+    assert(cmdMake != nullptr);
+    assert(cmdMake->CanExecute() == true);
+    cmdMake->Execute();
+    assert(factoryExecuted2 == true);
+
+    compat::println("  ✔ RelayCommand 執行、狀態通知與工廠函數驗證通過！");
 }
 
 void TestButtonCommandBindingAndCanExecute() {
@@ -266,6 +284,42 @@ void TestDeepDataContextVisualTreeOverride() {
     compat::println("  ✔ 深層視覺樹 DataContext 多層級繼承與分支隔離驗證通過！");
 }
 
+void TestViewModelBackgroundThreadMarshalling() {
+    compat::println("[Test] 測試 ViewModelBase 背景執行緒屬性變更自動封送至主執行緒...");
+    auto vm = std::make_shared<CounterViewModel>();
+
+    std::atomic<int> notificationCount{0};
+    std::thread::id receivedThreadId;
+    std::string receivedProperty;
+
+    vm->AddPropertyChangedHandler([&](compat::string_view propName) {
+        notificationCount++;
+        receivedThreadId = std::this_thread::get_id();
+        receivedProperty = std::string(propName.data(), propName.size());
+    });
+
+    std::thread worker([&]() {
+        // 從背景執行緒更新 ViewModel 屬性
+        vm->SetCount(42);
+    });
+    worker.join();
+
+    // 在背景執行緒變更後，因為被自動封送至 Dispatcher 佇列，
+    // 在主執行緒 DrainTasks / DoEvents 之前，handler 尚未被觸發
+    assert(notificationCount == 0);
+
+    // 主執行緒處理事件佇列
+    app::Application::DoEvents();
+
+    // 驗證回呼已在主執行緒安全執行
+    assert(notificationCount == 1);
+    assert(receivedProperty == "Count");
+    assert(receivedThreadId == std::this_thread::get_id());
+    assert(vm->GetCount() == 42);
+
+    compat::println("  ✔ ViewModelBase 背景執行緒屬性變更自動封送 (Thread Marshalling) 驗證通過！");
+}
+
 int main() {
     compat::println("==================================================");
     compat::println(" CPPUI MVVM Framework TDD Unit Test Suite");
@@ -278,9 +332,10 @@ int main() {
     TestRelayCommandWithParameter();
     TestMultiplePropertyChangedObservers();
     TestDeepDataContextVisualTreeOverride();
+    TestViewModelBackgroundThreadMarshalling();
 
     compat::println("==================================================");
-    compat::println(" 全部 7 項 MVVM 單元測試通過！");
+    compat::println(" 全部 8 項 MVVM 單元測試通過！");
     compat::println("==================================================");
     return 0;
 }

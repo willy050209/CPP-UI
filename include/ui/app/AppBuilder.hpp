@@ -2,6 +2,7 @@
 
 #include "compat/compat.hpp"
 #include "Form.hpp"
+#include "PlatformBackend.hpp"
 #include "ui/ioc/ServiceCollection.hpp"
 #include <memory>
 
@@ -60,12 +61,28 @@ public:
     }
 
     /// <summary>
+    /// 設定渲染實作平台後端
+    /// </summary>
+    AppBuilder& UsePlatformBackend(PlatformBackend backend) noexcept;
+
+    /// <summary>
+    /// 切換為 Win32 原生/軟體渲染後端
+    /// </summary>
+    AppBuilder& UseWin32() noexcept;
+
+    /// <summary>
+    /// 切換為 Skia 向量繪圖渲染後端
+    /// </summary>
+    AppBuilder& UseSkia() noexcept;
+
+    /// <summary>
     /// 構建應用程式宿主
     /// </summary>
     COMPAT_NODISCARD AppHost Build();
 
 private:
     ioc::ServiceCollection m_services;
+    PlatformBackend m_backend{PlatformBackend::Win32};
 };
 
 } // namespace app

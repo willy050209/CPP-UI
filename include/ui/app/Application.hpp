@@ -2,6 +2,8 @@
 
 #include "compat/compat.hpp"
 #include "Form.hpp"
+#include "PlatformBackend.hpp"
+#include "Dispatcher.hpp"
 #include "ui/ioc/IServiceProvider.hpp"
 #include <functional>
 #include <memory>
@@ -85,6 +87,31 @@ public:
     COMPAT_NODISCARD static std::vector<std::shared_ptr<Form>> GetOpenForms();
     COMPAT_NODISCARD static ShutdownMode GetShutdownMode() noexcept;
     static void SetShutdownMode(ShutdownMode mode) noexcept;
+
+    // --- 實作平台 / 渲染後端選擇 ---
+    COMPAT_NODISCARD static PlatformBackend GetPlatformBackend() noexcept;
+    static void SetPlatformBackend(PlatformBackend backend) noexcept;
+
+    // --- 非同步事件調度與喚醒 (Dispatcher) ---
+    /// <summary>
+    /// 將非同步任務投遞至 UI 執行緒執行 (對標 WPF Dispatcher.InvokeAsync / Post)
+    /// </summary>
+    static void Post(std::function<void()> action);
+
+    /// <summary>
+    /// 檢查呼叫端是否運行於 UI 主執行緒
+    /// </summary>
+    COMPAT_NODISCARD static bool CheckAccess() noexcept;
+
+    /// <summary>
+    /// 取得全域 Dispatcher 調度器實例
+    /// </summary>
+    COMPAT_NODISCARD static Dispatcher& GetDispatcher() noexcept;
+
+    /// <summary>
+    /// 內部喚醒 UI 訊息迴圈 (支援跨執行緒安全調用)
+    /// </summary>
+    static void WakeUpUIThread();
 
     // --- 應用程式環境中繼資訊 ---
     COMPAT_NODISCARD static compat::string_view GetExecutablePath();

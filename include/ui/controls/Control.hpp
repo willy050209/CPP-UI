@@ -40,6 +40,17 @@ public:
     COMPAT_NODISCARD float GetCornerRadius() const noexcept { return m_cornerRadius; }
     void SetCornerRadius(float radius);
 
+    /// <summary>
+    /// 取得控制項左上角相對於容器左上角的座標 (對標 WinForms Control.Location)
+    /// </summary>
+    COMPAT_NODISCARD core::Point GetLocation() const noexcept;
+
+    /// <summary>
+    /// 設定控制項左上角相對於容器左上角的座標
+    /// </summary>
+    void SetLocation(core::Point location);
+    void SetLocation(float x, float y);
+
 protected:
     /// <summary>
     /// 繪製背景與外圍邊框之標準輔助函式
@@ -62,6 +73,7 @@ protected:
     core::Color     m_borderBrush{ 0, 0, 0, 0 };
     core::Thickness m_borderThickness{ 0.0f };
     float           m_cornerRadius = 0.0f;
+    core::Point     m_location{ 0.0f, 0.0f };
 };
 
 } // namespace controls

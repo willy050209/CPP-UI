@@ -95,7 +95,7 @@ graph TD
 | 命名空間 (Namespace) | 模組標題 | 簡述與職責 | 核心型別導覽 |
 | :--- | :--- | :--- | :--- |
 | [`cppui::dsl`](namespaces/cppui_dsl.md) | **宣告式 Fluent RAD DSL** | 提供極簡鏈式 UI 建構樣板 `UIBuilder<T>` 與 `VStack`, `HStack`, `Grid`, `Button` 等語意化元件工廠函式。 | [`UIBuilder<T>`](namespaces/cppui_dsl.md), `VStack`, `HStack`, `Grid`, `Border`, `Button`, `TextBox`, `CheckBox`, `Label` |
-| [`cppui::app`](namespaces/cppui_app.md) | **應用程式與視窗中樞** | 封裝生命週期、訊息泵、表單生命週期與 Generic Host 應用程式構建器。 | [`Application`](classes/app_application.md), [`Form`](classes/app_form.md), [`AppBuilder`](classes/app_application.md#appbuilder-與-apphost) |
+| [`cppui::app`](namespaces/cppui_app.md) | **應用程式與視窗中樞** | 封裝生命週期、訊息泵、非同步調度器 (Dispatcher)、表單生命週期與 Generic Host 應用程式構建器。 | [`Application`](classes/app_application.md), [`Dispatcher`](classes/app_dispatcher.md), [`Form`](classes/app_form.md), [`AppBuilder`](classes/app_appbuilder.md) |
 | [`cppui::ioc`](namespaces/cppui_ioc.md) | **依賴反轉 (IoC / DI)** | 提供執行期型別安全之依賴注入容器與服務解析機制。 | [`ServiceCollection`](classes/ioc_servicecollection.md), [`IServiceProvider`](classes/ioc_servicecollection.md) |
 | [`cppui::mvvm`](namespaces/cppui_mvvm.md) | **現代 MVVM 架構** | 提供視圖模型屬性通知機制與命令模式委派實作。 | [`ViewModelBase`](classes/mvvm_viewmodelbase.md), [`RelayCommand`](classes/mvvm_relaycommand.md), [`ICommand`](classes/mvvm_relaycommand.md) |
 | [`cppui::reactive`](namespaces/cppui_reactive.md) | **響應式資料流與信號** | 提供零依賴、型別安全且具備弱引用生命週期保護之 `Signal<T>` 狀態信號，實現資料到介面的自動同步與綁定。 | [`Signal<T>`](classes/reactive_signal.md) |
@@ -112,17 +112,18 @@ graph TD
 
 ## 3. 核心類別快速索引 (Type Quick Reference)
 
-### 現代應用程式與 MVVM (Milestone 7 Application, Form, IoC & MVVM)
-* [`Application`](classes/app_application.md)：應用程式密封靜態中樞，支援 `Application::Run(new Form1())` 極簡進入點、訊息泵循環、`DoEvents()`、視窗清單管理與依賴注入中繼。
-* [`Form`](classes/app_form.md)：桌面視窗基底類別，繼承自 `ContentControl`，封裝原生視窗與渲染管線，具備 `OnLoad`、`OnShown`、支援取消關閉之 `OnFormClosing`、`OnFormClosed` 與模態 `ShowDialog()`。
-* [`AppBuilder` / `AppHost`](classes/app_appbuilder.md)：現代 Generic Host 應用程式構建器，支援鏈式相依服務配置與表單自動解析啟動。
+### 現代應用程式與 MVVM (Milestone 7 & 8 Application, Form, Dispatcher, IoC & MVVM)
+* [`Application`](classes/app_application.md)：應用程式密封靜態中樞，支援 `Application::Run(new Form1())` 極簡進入點、訊息泵循環、`DoEvents()`、`Post(action)` 非同步投遞、渲染平台切換 (`PlatformBackend`)、視窗清單管理與依賴注入中繼。
+* [`Dispatcher`](classes/app_dispatcher.md)：UI 執行緒非同步事件調度器，支援跨執行緒安全任務派發 (`Post` / `InvokeAsync`) 與執行緒親和性判定 (`CheckAccess`)。
+* [`Form`](classes/app_form.md)：桌面視窗基底類別，繼承自 `ContentControl`，封裝原生視窗與渲染管線（支援 Win32 軟體與 Skia 後端），具備 `OnLoad`、`OnShown`、支援取消關閉之 `OnFormClosing`、`OnFormClosed` 與模態 `ShowDialog()`。
+* [`AppBuilder` / `AppHost`](classes/app_appbuilder.md)：現代 Generic Host 應用程式構建器，支援鏈式相依服務配置、平台切換 (`UseSkia()` / `UseWin32()`) 與表單自動解析啟動。
 * [`FormClosingEventArgs` / `DialogResult`](classes/app_formeventargs.md)：表單生命週期事件引數（支援 `Cancel = true` 攔截取消）與視窗狀態列舉。
 * [`ServiceCollection`](classes/ioc_servicecollection.md) 與 [`IServiceProvider`](classes/ioc_iserviceprovider.md)：依賴反轉 (IoC) 容器，支援 Transient 與 Singleton 生命週期之服務工廠與實例註冊。
-* [`ViewModelBase`](classes/mvvm_viewmodelbase.md)：MVVM 視圖模型基底，提供 `SetProperty` 差異偵測與屬性變更通知。
-* [`ICommand`](classes/mvvm_icommand.md) 與 [`RelayCommand`](classes/mvvm_relaycommand.md)：命令模式純虛擬介面與 Lambda 委派實作，與 `Button` 之 `IsEnabled` 狀態機自動連動。
+* [`ViewModelBase`](classes/mvvm_viewmodelbase.md)：MVVM 視圖模型基底，提供 `SetProperty` 差異偵測與屬性變更通知，並具備背景執行緒自動封送 (Thread Marshalling) 至主執行緒能力。
+* [`ICommand`](classes/mvvm_icommand.md) 與 [`RelayCommand`](classes/mvvm_relaycommand.md)：命令模式純虛擬介面與 Lambda 委派實作，提供 `MakeCommand` 與 `RelayCommand::Create` 簡潔工廠，與 `Button` 之 `IsEnabled` 狀態機自動連動。
 
-### 核心控制項與排版網格 (Milestone 6 Controls & Grid)
-* [`Control`](classes/controls_control.md)：控制項抽象基底，提供 Padding、Background、Foreground、BorderBrush、BorderThickness、CornerRadius 與 Deflate/Inflate 邊界度量。
+### 核心控制項與排版網格 (Milestone 6 & 8 Controls & Grid)
+* [`Control`](classes/controls_control.md)：控制項抽象基底，提供 Location 幾何坐標、Padding、Background、Foreground、BorderBrush、BorderThickness、CornerRadius 與 Deflate/Inflate 邊界度量。
 * [`ContentControl`](classes/controls_contentcontrol.md)：單內容控制項容器，支援動態文字字串與任意 `UIElement` 自訂子元件。
 * [`Button`](classes/controls_button.md)：互動式按鈕，具備 Hover、Pressed、Disabled、獲焦霓虹外框、空白鍵/Enter 狀態機與 `Command` 綁定，發布 `ClickEvent`。
 * [`CheckBox`](classes/controls_checkbox.md)：核取方塊，具備向量抗鋸齒對稱勾號繪製、狀態切換與 `CheckedEvent`/`UncheckedEvent`。

@@ -102,5 +102,24 @@ void Control::RenderBackgroundAndBorder(rendering::DrawingContext& dc, const cor
     }
 }
 
+core::Point Control::GetLocation() const noexcept {
+    if (m_isArrangeValid) {
+        return core::Point(m_renderBounds.x, m_renderBounds.y);
+    }
+    return m_location;
+}
+
+void Control::SetLocation(core::Point location) {
+    m_location = location;
+    m_renderBounds.x = location.x;
+    m_renderBounds.y = location.y;
+    SetVisualOffset(location);
+    InvalidateArrange();
+}
+
+void Control::SetLocation(float x, float y) {
+    SetLocation(core::Point(x, y));
+}
+
 } // namespace controls
 } // namespace cppui

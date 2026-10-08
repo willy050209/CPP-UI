@@ -1,8 +1,8 @@
-# Button 類別
+﻿# Button 類別
 
 - **命名空間**: `cppui::controls`
-- **標頭檔**: [`include/ui/controls/Button.hpp`](file:///D:/P/CPP/CPPUI/include/ui/controls/Button.hpp)
-- **繼承關係**: 繼承自 [`controls::ContentControl`](file:///D:/P/CPP/CPPUI/docs/api/classes/controls_contentcontrol.md)
+- **標頭檔**: [`include/ui/controls/Button.hpp`](../../../include/ui/controls/Button.hpp)
+- **繼承關係**: 繼承自 [`controls::ContentControl`](controls_contentcontrol.md)
 
 ---
 

@@ -44,6 +44,7 @@ public:
 
     void PollEvents() override;
     bool WaitEvents(int timeoutMs = -1) override;
+    void WakeUp() override;
 
     void RequestRedraw() override;
     void SetPaintCallback(PaintCallback callback) override {

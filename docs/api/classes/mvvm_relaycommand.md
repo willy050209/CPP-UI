@@ -40,11 +40,19 @@ public:
     explicit RelayCommand(std::function<void()> execute, std::function<bool()> canExecute = nullptr);
     ~RelayCommand() override = default;
 
+    // 快速工廠方法
+    template<typename... Args>
+    static std::shared_ptr<RelayCommand> Create(Args&&... args);
+
     COMPAT_NODISCARD bool CanExecute(void* parameter = nullptr) const override;
     void Execute(void* parameter = nullptr) override;
     void AddCanExecuteChangedHandler(CanExecuteChangedHandler handler) override;
     void NotifyCanExecuteChanged() override;
 };
+
+// 命名空間便捷工廠輔助函式
+inline std::shared_ptr<RelayCommand> MakeCommand(RelayCommand::ExecuteFunc execute, RelayCommand::CanExecuteFunc canExecute = nullptr);
+inline std::shared_ptr<RelayCommand> MakeCommand(std::function<void()> execute, std::function<bool()> canExecute = nullptr);
 
 } // namespace mvvm
 } // namespace cppui
@@ -56,11 +64,12 @@ public:
 
 `RelayCommand` 將按鈕點擊等互動行為與業務邏輯解耦：
 1. **Lambda 定義邏輯**：建構時可傳入無參數或帶參數的 `execute` 與 `canExecute` Lambda。
-2. **與控制項自動連動**：
+2. **快速工廠方法**：提供 `MakeCommand(...)` 與 `RelayCommand::Create(...)`，無需繁瑣之 `std::make_shared<RelayCommand>(...)`。
+3. **與控制項自動連動**：
    - 當按鈕以 `btn->SetCommand(cmd)` 或 DSL `.Command(cmd)` 綁定後，按鈕會自動訂閱 `CanExecuteChanged`。
    - 若 `CanExecute()` 回傳 `false`，按鈕自動切換為 `IsEnabled(false)` 禁用外觀，無法點擊。
    - 當條件改變時調用 `cmd->NotifyCanExecuteChanged()`，按鈕自動復原為可用狀態。
-3. **點擊自動派發**：按鈕在點擊事件觸發時自動執行 `cmd->Execute()`。
+4. **點擊自動派發**：按鈕在點擊事件觸發時自動執行 `cmd->Execute()`。
 
 ---
 
@@ -76,7 +85,9 @@ void SetupCommand() {
     using namespace cppui::controls;
 
     bool hasPermission = false;
-    auto saveCommand = std::make_shared<RelayCommand>(
+    
+    // 使用便捷工廠函數 MakeCommand 建立命令
+    auto saveCommand = MakeCommand(
         []() { compat::println("儲存成功！"); },
         [&]() { return hasPermission; }
     );

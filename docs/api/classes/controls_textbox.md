@@ -1,8 +1,8 @@
-# TextBox 類別
+﻿# TextBox 類別
 
 - **命名空間**: `cppui::controls`
-- **標頭檔**: [`include/ui/controls/TextBox.hpp`](file:///D:/P/CPP/CPPUI/include/ui/controls/TextBox.hpp)
-- **繼承關係**: 繼承自 [`controls::Control`](file:///D:/P/CPP/CPPUI/docs/api/classes/controls_control.md)
+- **標頭檔**: [`include/ui/controls/TextBox.hpp`](../../../include/ui/controls/TextBox.hpp)
+- **繼承關係**: 繼承自 [`controls::Control`](controls_control.md)
 
 ---
 

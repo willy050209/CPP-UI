@@ -1,8 +1,8 @@
-# CheckBox 類別
+﻿# CheckBox 類別
 
 - **命名空間**: `cppui::controls`
-- **標頭檔**: [`include/ui/controls/CheckBox.hpp`](file:///D:/P/CPP/CPPUI/include/ui/controls/CheckBox.hpp)
-- **繼承關係**: 繼承自 [`controls::Button`](file:///D:/P/CPP/CPPUI/docs/api/classes/controls_button.md)
+- **標頭檔**: [`include/ui/controls/CheckBox.hpp`](../../../include/ui/controls/CheckBox.hpp)
+- **繼承關係**: 繼承自 [`controls::Button`](controls_button.md)
 
 ---
 

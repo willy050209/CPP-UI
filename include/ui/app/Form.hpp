@@ -14,6 +14,7 @@
 namespace cppui {
 namespace rendering {
 class SoftwareRenderTarget;
+class IRenderContext;
 } // namespace rendering
 
 namespace app {
@@ -96,6 +97,7 @@ private:
 
     std::shared_ptr<pal::IPlatformWindow> m_window;
     std::unique_ptr<rendering::SoftwareRenderTarget> m_renderTarget;
+    std::unique_ptr<rendering::IRenderContext> m_renderContext;
     rendering::DisplayListRenderer m_renderer;
     core::CoordinateTransform m_coordTransform;
 

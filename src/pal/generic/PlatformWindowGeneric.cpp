@@ -115,15 +115,18 @@ void PlatformWindowGeneric::SetEventCallback(EventCallback callback) {
 void PlatformWindowGeneric::PollEvents() {
     if (m_isClosed) return;
 
-    if (!m_eventQueue.empty()) {
-        std::vector<RawInputEvent> pendingEvents;
-        pendingEvents.swap(m_eventQueue);
+    std::vector<RawInputEvent> pendingEvents;
+    {
+        std::lock_guard<std::mutex> lock(m_eventMutex);
+        if (!m_eventQueue.empty()) {
+            pendingEvents.swap(m_eventQueue);
+        }
+    }
 
-        if (m_eventCallback) {
-            for (const auto& ev : pendingEvents) {
-                m_eventCallback(ev);
-                if (m_isClosed) break;
-            }
+    if (m_eventCallback) {
+        for (const auto& ev : pendingEvents) {
+            m_eventCallback(ev);
+            if (m_isClosed) break;
         }
     }
 
@@ -136,23 +139,36 @@ void PlatformWindowGeneric::PollEvents() {
 bool PlatformWindowGeneric::WaitEvents(int timeoutMs) {
     if (m_isClosed) return false;
 
-    if (!m_eventQueue.empty() || m_pendingRedraw) {
-        PollEvents();
-        return true;
-    }
+    {
+        std::unique_lock<std::mutex> lock(m_eventMutex);
+        if (!m_eventQueue.empty() || m_pendingRedraw) {
+            lock.unlock();
+            PollEvents();
+            return true;
+        }
 
-    if (timeoutMs > 0) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(timeoutMs));
-    } else if (timeoutMs < 0) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (timeoutMs > 0) {
+            m_eventCv.wait_for(lock, std::chrono::milliseconds(timeoutMs), [this]() {
+                return !m_eventQueue.empty() || m_pendingRedraw || m_isClosed;
+            });
+        } else if (timeoutMs < 0) {
+            m_eventCv.wait(lock, [this]() {
+                return !m_eventQueue.empty() || m_pendingRedraw || m_isClosed;
+            });
+        }
     }
 
     PollEvents();
     return true;
 }
 
+void PlatformWindowGeneric::WakeUp() {
+    m_eventCv.notify_all();
+}
+
 void PlatformWindowGeneric::RequestRedraw() {
     m_pendingRedraw = true;
+    m_eventCv.notify_all();
 }
 
 void PlatformWindowGeneric::SetPaintCallback(PaintCallback callback) {
@@ -175,7 +191,11 @@ void PlatformWindowGeneric::PresentFramebuffer(compat::span<const uint32_t> pixe
 
 void PlatformWindowGeneric::InjectEvent(const RawInputEvent& event) {
     if (m_isClosed) return;
-    m_eventQueue.push_back(event);
+    {
+        std::lock_guard<std::mutex> lock(m_eventMutex);
+        m_eventQueue.push_back(event);
+    }
+    m_eventCv.notify_all();
 }
 
 compat::span<const uint32_t> PlatformWindowGeneric::GetFramebufferPixels() const noexcept {

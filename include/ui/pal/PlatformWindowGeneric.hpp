@@ -4,6 +4,8 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include <mutex>
+#include <condition_variable>
 #include "compat/compat.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 
@@ -44,6 +46,7 @@ public:
     void SetEventCallback(EventCallback callback) override;
     void PollEvents() override;
     bool WaitEvents(int timeoutMs = -1) override;
+    void WakeUp() override;
 
     // 觸發視窗重繪請求
     void RequestRedraw() override;
@@ -89,6 +92,8 @@ private:
 
     std::vector<uint32_t> m_framebuffer;
     std::vector<RawInputEvent> m_eventQueue;
+    mutable std::mutex m_eventMutex;
+    std::condition_variable m_eventCv;
 };
 
 } // namespace pal

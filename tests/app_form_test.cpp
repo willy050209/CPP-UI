@@ -5,6 +5,8 @@
 #include <cassert>
 #include <vector>
 #include <string>
+#include <thread>
+#include <atomic>
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -299,6 +301,73 @@ void TestApplicationRunCleanExit() {
     compat::println("  ✔ Application::Run 主視窗關閉退出迴圈驗證通過！");
 }
 
+void TestPlatformBackendSelection() {
+    compat::println("[Test] 測試 PlatformBackend 選擇與 AppBuilder 鏈式配置...");
+    
+    // 預設為 Win32
+    assert(Application::GetPlatformBackend() == PlatformBackend::Win32);
+
+    Application::SetPlatformBackend(PlatformBackend::Skia);
+    assert(Application::GetPlatformBackend() == PlatformBackend::Skia);
+
+    Application::SetPlatformBackend(PlatformBackend::Win32);
+    assert(Application::GetPlatformBackend() == PlatformBackend::Win32);
+
+    // 測試 AppBuilder 鏈式設定
+    auto builder1 = Application::CreateBuilder();
+    builder1.UseSkia();
+    auto host1 = builder1.Build();
+    assert(Application::GetPlatformBackend() == PlatformBackend::Skia);
+
+    auto builder2 = Application::CreateBuilder();
+    builder2.UseWin32();
+    auto host2 = builder2.Build();
+    assert(Application::GetPlatformBackend() == PlatformBackend::Win32);
+
+    auto builder3 = Application::CreateBuilder();
+    builder3.UsePlatformBackend(PlatformBackend::Skia);
+    auto host3 = builder3.Build();
+    assert(Application::GetPlatformBackend() == PlatformBackend::Skia);
+
+    // 重設回 Win32
+    Application::SetPlatformBackend(PlatformBackend::Win32);
+    compat::println("  ✔ PlatformBackend 選擇與 AppBuilder 配置驗證通過！");
+}
+
+void TestDispatcherCrossThreadExecution() {
+    compat::println("[Test] 測試 Dispatcher 跨執行緒任務投遞與 UI 執行緒執行...");
+
+    assert(Application::CheckAccess() == true);
+
+    std::atomic<bool> workerCheckedAccess{false};
+    std::atomic<bool> taskExecuted{false};
+    std::thread::id taskExecutedThreadId;
+
+    std::thread worker([&]() {
+        // 背景執行緒呼叫 CheckAccess 應回傳 false
+        workerCheckedAccess = Application::CheckAccess();
+
+        // 背景執行緒向主執行緒派發任務
+        Application::Post([&]() {
+            taskExecuted = true;
+            taskExecutedThreadId = std::this_thread::get_id();
+        });
+    });
+
+    worker.join();
+
+    assert(workerCheckedAccess == false);
+    assert(taskExecuted == false); // 尚未在主執行緒 DrainTasks
+
+    // 在主執行緒呼叫 DoEvents 處理非同步任務
+    Application::DoEvents();
+
+    assert(taskExecuted == true);
+    assert(taskExecutedThreadId == std::this_thread::get_id());
+
+    compat::println("  ✔ Dispatcher 跨執行緒非同步任務調度與主執行緒執行驗證通過！");
+}
+
 int main() {
     compat::println("==================================================");
     compat::println(" CPPUI Application & Form TDD Unit Test Suite");
@@ -313,9 +382,11 @@ int main() {
     TestFormDelegatesAndCancel();
     TestWindowClosePlatformEventHandling();
     TestApplicationRunCleanExit();
+    TestPlatformBackendSelection();
+    TestDispatcherCrossThreadExecution();
 
     compat::println("==================================================");
-    compat::println(" 全部 9 項 Application & Form 單元測試通過！");
+    compat::println(" 全部 11 項 Application & Form 單元測試通過！");
     compat::println("==================================================");
     return 0;
 }

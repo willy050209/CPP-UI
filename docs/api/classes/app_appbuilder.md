@@ -39,6 +39,11 @@ public:
 
     COMPAT_NODISCARD ioc::ServiceCollection& Services() noexcept;
 
+    // 實作平台後端配置
+    AppBuilder& UsePlatformBackend(PlatformBackend backend) noexcept;
+    AppBuilder& UseWin32() noexcept;
+    AppBuilder& UseSkia() noexcept;
+
     COMPAT_NODISCARD AppHost Build();
 };
 
@@ -54,9 +59,13 @@ public:
 - **回傳值**: `ioc::ServiceCollection&`。
 - **說明**: 取得內部的服務註冊集合，以進行 Transient 或 Singleton 依賴項目註冊。
 
+### `AppBuilder::UsePlatformBackend(backend)` / `UseWin32()` / `UseSkia()`
+- **回傳值**: `AppBuilder&`（支援鏈式呼叫）。
+- **說明**: 指定應用程式之繪圖渲染實作平台。預設為 `PlatformBackend::Win32`（Windows GDI / 軟體光柵緩衝區），可透過 `UseSkia()` 切換為 Google Skia 向量繪圖核心後端。
+
 ### `AppBuilder::Build()`
 - **回傳值**: `AppHost`。
-- **說明**: 封閉註冊表並建置出不可變的 `IServiceProvider`，產出可用於啟動應用程式的 `AppHost` 實例。
+- **說明**: 封閉註冊表並建置出不可變的 `IServiceProvider`，設定全域渲染平台，產出可用於啟動應用程式的 `AppHost` 實例。
 
 ### `AppHost::Services()`
 - **回傳值**: `std::shared_ptr<ioc::IServiceProvider>`。

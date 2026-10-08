@@ -11,6 +11,7 @@ namespace win32 {
 
 namespace {
     const wchar_t* WINDOW_CLASS_NAME = L"CPPUI_PlatformWindowClass";
+    const UINT WM_APP_DISPATCH = WM_APP + 101;
     bool g_classRegistered = false;
 
     void EnableHighDpiAwareness() {
@@ -176,6 +177,12 @@ bool PlatformWindowWin32::WaitEvents(int timeoutMs) {
         return true;
     }
     return false;
+}
+
+void PlatformWindowWin32::WakeUp() {
+    if (m_hwnd && !m_isClosed) {
+        PostMessageW(m_hwnd, WM_APP_DISPATCH, 0, 0);
+    }
 }
 
 void PlatformWindowWin32::RequestRedraw() {
@@ -429,6 +436,10 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
 
         case WM_DESTROY: {
             m_isClosed = true;
+            return 0;
+        }
+
+        case WM_APP_DISPATCH: {
             return 0;
         }
 

@@ -1,8 +1,8 @@
 # Control 類別
 
 - **命名空間**: `cppui::controls`
-- **標頭檔**: [`include/ui/controls/Control.hpp`](file:///D:/P/CPP/CPPUI/include/ui/controls/Control.hpp)
-- **繼承關係**: 繼承自 [`core::UIElement`](file:///D:/P/CPP/CPPUI/docs/api/classes/core_uielement.md)
+- **標頭檔**: [`include/ui/controls/Control.hpp`](../../../include/ui/controls/Control.hpp)
+- **繼承關係**: 繼承自 [`core::UIElement`](core_uielement.md)
 
 ---
 
@@ -15,6 +15,8 @@
 ## 核心成員方法
 
 ### 邊界與幾何樣式
+- `COMPAT_NODISCARD core::Point GetLocation() const noexcept / void SetLocation(core::Point location) / void SetLocation(float x, float y)`:
+  取得或設定控制器左上角相對於容器左上角的座標（DIP 像素）。設定座標時會自動同步更新渲染邊界並標記 `InvalidateArrange()` 重新排版。
 - `COMPAT_NODISCARD const core::Thickness& GetPadding() const noexcept / void SetPadding(const core::Thickness& padding)`:
   取得或設定控制項內部內縮邊距。當邊距改變時觸發 `InvalidateMeasure()`。
 - `COMPAT_NODISCARD core::Color GetBackground() const noexcept / void SetBackground(core::Color bg)`:

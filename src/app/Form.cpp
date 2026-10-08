@@ -4,6 +4,7 @@
 #include "ui/layout/LayoutManager.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
 #include "../rendering/backend/SoftwareRenderContext.hpp"
+#include "../rendering/backend/SkiaRenderContext.hpp"
 #include <algorithm>
 
 namespace cppui {
@@ -15,6 +16,10 @@ Form::Form() {
 }
 
 Form::~Form() {
+    if (m_renderContext) {
+        m_renderContext->Destroy();
+        m_renderContext.reset();
+    }
     if (!m_isDisposed) {
         Application::UnregisterForm(this);
     }
@@ -96,6 +101,11 @@ void Form::Close() {
     m_isDisposed = true;
     m_inModalLoop = false;
 
+    if (m_renderContext) {
+        m_renderContext->Destroy();
+        m_renderContext.reset();
+    }
+
     if (m_window) {
         m_window->Close();
     }
@@ -173,10 +183,16 @@ void Form::EnsurePlatformWindow() {
     desc.visible = false;
 
     m_window = pal::PlatformWindowFactory::Create(desc);
-    if (!m_renderTarget) {
-        m_renderTarget = std::unique_ptr<rendering::SoftwareRenderTarget>(new rendering::SoftwareRenderTarget());
+    if (Application::GetPlatformBackend() == PlatformBackend::Skia) {
+        auto skiaCtx = std::unique_ptr<rendering::SkiaRenderContext>(new rendering::SkiaRenderContext());
+        skiaCtx->Init(m_window->GetNativeHandle(), m_width, m_height);
+        m_renderContext = std::move(skiaCtx);
+    } else {
+        if (!m_renderTarget) {
+            m_renderTarget = std::unique_ptr<rendering::SoftwareRenderTarget>(new rendering::SoftwareRenderTarget());
+        }
+        m_renderTarget->Resize(m_width, m_height);
     }
-    m_renderTarget->Resize(m_width, m_height);
     SetupPlatformEvents();
 }
 
@@ -205,26 +221,50 @@ void Form::SetupPlatformEvents() {
 
 void Form::RenderFrame() {
     if (m_width == 0 || m_height == 0 || !m_window || m_isDisposed || m_window->IsClosed()) return;
-    if (!m_renderTarget) {
-        m_renderTarget = std::unique_ptr<rendering::SoftwareRenderTarget>(new rendering::SoftwareRenderTarget());
-        m_renderTarget->Resize(m_width, m_height);
-    }
 
     core::Size avail(static_cast<float>(m_width), static_cast<float>(m_height));
     layout::LayoutManager::Get().UpdateLayout(*this, avail);
 
-    m_renderTarget->Clear(GetBackground());
-    rendering::DisplayList dl;
-    rendering::DrawingContext dc(dl);
-    Render(dc);
-    m_renderer.Render(dl, m_renderTarget.get());
+    if (Application::GetPlatformBackend() == PlatformBackend::Skia) {
+        if (!m_renderContext) {
+            auto skiaCtx = std::unique_ptr<rendering::SkiaRenderContext>(new rendering::SkiaRenderContext());
+            skiaCtx->Init(m_window->GetNativeHandle(), m_width, m_height);
+            m_renderContext = std::move(skiaCtx);
+        }
+        auto* target = m_renderContext->BeginFrame();
+        if (target) {
+            target->Clear(GetBackground());
+            rendering::DisplayList dl;
+            rendering::DrawingContext dc(dl);
+            Render(dc);
+            m_renderer.Render(dl, target);
+        }
+        m_renderContext->EndFrame();
+        if (target && target->GetPixelBuffer()) {
+            m_window->PresentFramebuffer(compat::span<const uint32_t>(target->GetPixelBuffer(), static_cast<size_t>(m_width) * m_height), m_width, m_height);
+        }
+    } else {
+        if (!m_renderTarget) {
+            m_renderTarget = std::unique_ptr<rendering::SoftwareRenderTarget>(new rendering::SoftwareRenderTarget());
+            m_renderTarget->Resize(m_width, m_height);
+        }
 
-    m_window->PresentFramebuffer(m_renderTarget->GetPixelSpan(), m_width, m_height);
+        m_renderTarget->Clear(GetBackground());
+        rendering::DisplayList dl;
+        rendering::DrawingContext dc(dl);
+        Render(dc);
+        m_renderer.Render(dl, m_renderTarget.get());
+
+        m_window->PresentFramebuffer(m_renderTarget->GetPixelSpan(), m_width, m_height);
+    }
 }
 
 void Form::HandleWindowResize(uint32_t width, uint32_t height) {
     m_width = width;
     m_height = height;
+    if (m_renderContext) {
+        m_renderContext->Resize(width, height);
+    }
     if (m_renderTarget) {
         m_renderTarget->Resize(width, height);
     }

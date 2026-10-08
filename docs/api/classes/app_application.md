@@ -25,6 +25,11 @@ enum class ShutdownMode {
     OnExplicitShutdown // 僅在顯式呼叫 Application::Exit() 時終止
 };
 
+enum class PlatformBackend {
+    Win32, // 原生 Win32 GDI / 軟體光柵緩衝區渲染後端
+    Skia   // Google Skia 向量繪圖渲染後端
+};
+
 class Application final {
 public:
     Application() = delete;
@@ -51,6 +56,16 @@ public:
     COMPAT_NODISCARD static std::vector<std::shared_ptr<Form>> GetOpenForms();
     COMPAT_NODISCARD static ShutdownMode GetShutdownMode() noexcept;
     static void SetShutdownMode(ShutdownMode mode) noexcept;
+
+    // 實作平台 / 渲染後端選擇
+    COMPAT_NODISCARD static PlatformBackend GetPlatformBackend() noexcept;
+    static void SetPlatformBackend(PlatformBackend backend) noexcept;
+
+    // 非同步事件調度與喚醒 (Dispatcher)
+    static void Post(std::function<void()> action);
+    COMPAT_NODISCARD static bool CheckAccess() noexcept;
+    COMPAT_NODISCARD static Dispatcher& GetDispatcher() noexcept;
+    static void WakeUpUIThread();
 
     // 應用程式環境中繼資訊
     COMPAT_NODISCARD static compat::string_view GetExecutablePath();
@@ -109,7 +124,26 @@ static int Run(std::shared_ptr<Form> mainForm);
 ```cpp
 static void DoEvents();
 ```
-非阻塞處理當前作業系統訊息佇列中所有待處理事件與繪圖請求。
+非阻塞處理當前作業系統訊息佇列中所有待處理事件與非同步 Dispatcher 任務。
+
+### `Post(std::function<void()> action)`
+```cpp
+static void Post(std::function<void()> action);
+```
+將非同步回呼操作投遞至 UI 主執行緒任務佇列（呼叫底層 Dispatcher），並立即喚醒處於等待狀態的 UI 訊息循環。
+
+### `CheckAccess()`
+```cpp
+COMPAT_NODISCARD static bool CheckAccess() noexcept;
+```
+判定當前呼叫端執行緒是否為 UI 主執行緒。
+
+### `SetPlatformBackend(PlatformBackend backend)` / `GetPlatformBackend()`
+```cpp
+static void SetPlatformBackend(PlatformBackend backend) noexcept;
+COMPAT_NODISCARD static PlatformBackend GetPlatformBackend() noexcept;
+```
+取得或設定應用程式渲染實作平台（`PlatformBackend::Win32` 或 `PlatformBackend::Skia`）。表單在建立時將依據此全域配置初始化對應之渲染環境。
 
 ### `Exit()`
 ```cpp
@@ -121,7 +155,7 @@ static void Exit();
 ```cpp
 static AppBuilder CreateBuilder();
 ```
-建立現代化應用程式建構器，支援在啟動前以鏈式語法向 `ServiceCollection` 註冊依賴服務。
+建立現代化應用程式建構器，支援在啟動前以鏈式語法向 `ServiceCollection` 註冊依賴服務與配置渲染平台。
 
 ---
 
@@ -149,6 +183,7 @@ int main() {
 ---
 
 ## 請參閱 (See Also)
+* [`Dispatcher` 任務調度器](app_dispatcher.md)
 * [`Form` 視窗基底類別](app_form.md)
 * [`AppBuilder` 應用程式建構器](app_form.md#appbuilder-與-apphost)
 * [`ServiceCollection` 服務註冊集合](ioc_servicecollection.md)

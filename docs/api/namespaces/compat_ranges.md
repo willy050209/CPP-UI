@@ -1,6 +1,6 @@
-# 受約束範圍與演算法 (compat::ranges)
+﻿# 受約束範圍與演算法 (compat::ranges)
 
-定義於標頭檔 [`include/compat/compat.hpp`](file:///D:/P/CPP/CPPUI/include/compat/compat.hpp)。  
+定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
 所屬命名空間：`compat::ranges`。
 
 ---

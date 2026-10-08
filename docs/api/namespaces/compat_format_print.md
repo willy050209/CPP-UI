@@ -1,6 +1,6 @@
-# 格式化、終端輸出與數值解析 (compat::format, print & parse)
+﻿# 格式化、終端輸出與數值解析 (compat::format, print & parse)
 
-定義於標頭檔 [`include/compat/compat.hpp`](file:///D:/P/CPP/CPPUI/include/compat/compat.hpp)。  
+定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
 所屬命名空間：`compat`。
 
 ---

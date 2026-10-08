@@ -22,14 +22,14 @@
 
 | 列舉名稱 | 說明 |
 | :--- | :--- |
-| [`FontWeight`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_font.md#fontweight) | 字型粗細等級 (`Thin` ~ `Black`，100 ~ 950)。 |
-| [`FontStyle`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_font.md#fontstyle) | 字型樣式傾斜度 (`Normal`, `Oblique`, `Italic`)。 |
-| [`FontStretch`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_font.md#fontstretch) | 字型橫向伸展等級 (`UltraCondensed` ~ `UltraExpanded`)。 |
-| [`BiDiDirection`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_bidianalyzer.md#bididirection) | 雙向文字段落總體文本流向 (`LeftToRight`, `RightToLeft`, `Mixed`)。 |
-| [`BreakOpportunity`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_linebreaker.md#breakopportunity) | Unicode 換行機會等級 (`None`, `CanBreak`, `MustBreak`)。 |
-| [`TextAlignment`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textlayout.md#textalignment) | 段落水平對齊模式 (`Left`, `Center`, `Right`, `Justify`)。 |
-| [`TextWrapping`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textlayout.md#textwrapping) | 自動折行策略 (`NoWrap`, `WordWrap`, `CharacterWrap`)。 |
-| [`TextTrimming`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textlayout.md#texttrimming) | 超出邊界時之省略號修剪策略 (`None`, `CharacterEllipsis`, `WordEllipsis`)。 |
+| [`FontWeight`](../classes/text_font.md#fontweight) | 字型粗細等級 (`Thin` ~ `Black`，100 ~ 950)。 |
+| [`FontStyle`](../classes/text_font.md#fontstyle) | 字型樣式傾斜度 (`Normal`, `Oblique`, `Italic`)。 |
+| [`FontStretch`](../classes/text_font.md#fontstretch) | 字型橫向伸展等級 (`UltraCondensed` ~ `UltraExpanded`)。 |
+| [`BiDiDirection`](../classes/text_bidianalyzer.md#bididirection) | 雙向文字段落總體文本流向 (`LeftToRight`, `RightToLeft`, `Mixed`)。 |
+| [`BreakOpportunity`](../classes/text_linebreaker.md#breakopportunity) | Unicode 換行機會等級 (`None`, `CanBreak`, `MustBreak`)。 |
+| [`TextAlignment`](../classes/text_textlayout.md#textalignment) | 段落水平對齊模式 (`Left`, `Center`, `Right`, `Justify`)。 |
+| [`TextWrapping`](../classes/text_textlayout.md#textwrapping) | 自動折行策略 (`NoWrap`, `WordWrap`, `CharacterWrap`)。 |
+| [`TextTrimming`](../classes/text_textlayout.md#texttrimming) | 超出邊界時之省略號修剪策略 (`None`, `CharacterEllipsis`, `WordEllipsis`)。 |
 
 ---
 
@@ -37,20 +37,20 @@
 
 | 類型名稱 | 種類 | 說明 |
 | :--- | :--- | :--- |
-| [`FontDescriptor`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_font.md) | `class` | 包含字型家族名稱、字級尺寸、粗細與樣式的不可變字型規格。 |
-| [`FontMetrics`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_font.md#fontmetrics) | `struct` | 字型度量數值（`ascent`, `descent`, `lineGap`, `capHeight`, `xHeight` 等）。 |
-| [`FontManager`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_fontmanager.md) | `class` | 系統字型匹配、預設字型解析與字型度量快取中樞。 |
-| [`ShapedGlyph`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textshaper.md#shapedglyph) | `struct` | 單一塑形字形（OpenType Glyph ID、Cluster 索引、X/Y Advance 與 Offset）。 |
-| [`ShapedRun`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textshaper.md#shapedrun) | `class` | 一組同字型、同流向的連續塑形字符切片（提供 `compat::span` 視圖存取）。 |
-| [`TextShaper`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textshaper.md) | `class` | 將 UTF-8 字串塑形為 OpenType 字符度量列表之核心塑形機。 |
-| [`BiDiRun`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textbidianalyzer.md#bidirun) | `struct` | 雙向文字分析單一方向區段（起始索引、長度、嵌入等級、是否為 RTL）。 |
-| [`BiDiAnalyzer`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_bidianalyzer.md) | `class` | Unicode UAX #9 雙向文字分析器。 |
-| [`LineBreak`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_linebreaker.md#linebreak) | `struct` | 換行點索引與斷行等級。 |
-| [`LineBreaker`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_linebreaker.md) | `class` | Unicode UAX #14 斷行規則分析器（含 CJK 標點禁則處理）。 |
-| [`TextLine`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textlayout.md#textline) | `struct` | 排版後的單行文字邊界、基線、字串範圍與折行標記。 |
-| [`TextHitTestResult`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textlayout.md#texthittestresult) | `struct` | 命中測試結果（命中字元位置、是否為後半字元、游標繪製矩形）。 |
-| [`TextLayout`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textlayout.md) | `class` | 完整多行文字排版成果物件（支援行切片視圖、雙向命中測試與度量）。 |
-| [`TextLayoutEngine`](file:///D:/P/CPP/CPPUI/docs/api/classes/text_textlayoutengine.md) | `class` | 高階多行排版求解器與高速文字度量 (`MeasureText`) 工廠。 |
+| [`FontDescriptor`](../classes/text_font.md) | `class` | 包含字型家族名稱、字級尺寸、粗細與樣式的不可變字型規格。 |
+| [`FontMetrics`](../classes/text_font.md#fontmetrics) | `struct` | 字型度量數值（`ascent`, `descent`, `lineGap`, `capHeight`, `xHeight` 等）。 |
+| [`FontManager`](../classes/text_fontmanager.md) | `class` | 系統字型匹配、預設字型解析與字型度量快取中樞。 |
+| [`ShapedGlyph`](../classes/text_textshaper.md#shapedglyph) | `struct` | 單一塑形字形（OpenType Glyph ID、Cluster 索引、X/Y Advance 與 Offset）。 |
+| [`ShapedRun`](../classes/text_textshaper.md#shapedrun) | `class` | 一組同字型、同流向的連續塑形字符切片（提供 `compat::span` 視圖存取）。 |
+| [`TextShaper`](../classes/text_textshaper.md) | `class` | 將 UTF-8 字串塑形為 OpenType 字符度量列表之核心塑形機。 |
+| [`BiDiRun`](../classes/text_bidianalyzer.md#bidirun) | `struct` | 雙向文字分析單一方向區段（起始索引、長度、嵌入等級、是否為 RTL）。 |
+| [`BiDiAnalyzer`](../classes/text_bidianalyzer.md) | `class` | Unicode UAX #9 雙向文字分析器。 |
+| [`LineBreak`](../classes/text_linebreaker.md#linebreak) | `struct` | 換行點索引與斷行等級。 |
+| [`LineBreaker`](../classes/text_linebreaker.md) | `class` | Unicode UAX #14 斷行規則分析器（含 CJK 標點禁則處理）。 |
+| [`TextLine`](../classes/text_textlayout.md#textline) | `struct` | 排版後的單行文字邊界、基線、字串範圍與折行標記。 |
+| [`TextHitTestResult`](../classes/text_textlayout.md#texthittestresult) | `struct` | 命中測試結果（命中字元位置、是否為後半字元、游標繪製矩形）。 |
+| [`TextLayout`](../classes/text_textlayout.md) | `class` | 完整多行文字排版成果物件（支援行切片視圖、雙向命中測試與度量）。 |
+| [`TextLayoutEngine`](../classes/text_textlayoutengine.md) | `class` | 高階多行排版求解器與高速文字度量 (`MeasureText`) 工廠。 |
 
 ---
 

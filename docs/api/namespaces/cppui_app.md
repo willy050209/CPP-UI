@@ -14,16 +14,18 @@
 
 | 型別名稱 | 標頭檔 | 說明 |
 | :--- | :--- | :--- |
-| [`Application`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_application.md) | `Application.hpp` | 密封型靜態應用程式中樞，負責主訊息循環調度、全域狀態管理與 IoC 依賴反轉容器對接。 |
-| [`Form`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_form.md) | `Form.hpp` | 現代桌面頂層視窗控制器，封裝底層平台視窗、雙階段排版與完整生命週期事件。 |
-| [`AppBuilder`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_appbuilder.md) | `AppBuilder.hpp` | 應用程式 Host 構建器，提供鏈式服務配置與依賴注入容器註冊。 |
-| [`AppHost`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_appbuilder.md) | `AppBuilder.hpp` | 構建完成之應用程式宿主，負責解析目標 Form 並啟動主循環。 |
-| [`FormClosingEventArgs`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_formeventargs.md) | `FormEventArgs.hpp` | 表單即將關閉事件參數，支援藉由 `Cancel = true` 攔截取消關閉行為。 |
-| [`FormClosedEventArgs`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_formeventargs.md) | `FormEventArgs.hpp` | 表單完成關閉事件參數。 |
-| [`ShutdownMode`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_application.md#shutdownmode) | `Application.hpp` | 應用程式終止策略列舉 (`OnMainWindowClose`, `OnLastWindowClose`, `OnExplicitShutdown`)。 |
-| [`DialogResult`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_formeventargs.md) | `FormEventArgs.hpp` | 模態對話方塊回傳結果列舉 (`None`, `OK`, `Cancel`, `Yes`, `No` 等)。 |
-| [`WindowState`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_formeventargs.md) | `FormEventArgs.hpp` | 視窗呈現狀態列舉 (`Normal`, `Minimized`, `Maximized`)。 |
-| [`FormStartPosition`](file:///D:/P/CPP/CPPUI/docs/api/classes/app_formeventargs.md) | `FormEventArgs.hpp` | 視窗初始呈現位置列舉 (`CenterScreen`, `Manual`, `WindowsDefault`)。 |
+| [`Application`](../classes/app_application.md) | `Application.hpp` | 密封型靜態應用程式中樞，負責主訊息循環調度、全域狀態管理與 IoC 依賴反轉容器對接。 |
+| [`Dispatcher`](../classes/app_dispatcher.md) | `Dispatcher.hpp` | UI 執行緒非同步事件調度器，支援執行緒安全任務派發與執行緒親和性判定。 |
+| [`Form`](../classes/app_form.md) | `Form.hpp` | 現代桌面頂層視窗控制器，封裝底層平台視窗、雙階段排版與完整生命週期事件。 |
+| [`AppBuilder`](../classes/app_appbuilder.md) | `AppBuilder.hpp` | 應用程式 Host 構建器，提供鏈式服務配置、渲染平台選擇與依賴注入容器註冊。 |
+| [`AppHost`](../classes/app_appbuilder.md) | `AppBuilder.hpp` | 構建完成之應用程式宿主，負責解析目標 Form 並啟動主循環。 |
+| [`FormClosingEventArgs`](../classes/app_formeventargs.md) | `FormEventArgs.hpp` | 表單即將關閉事件參數，支援藉由 `Cancel = true` 攔截取消關閉行為。 |
+| [`FormClosedEventArgs`](../classes/app_formeventargs.md) | `FormEventArgs.hpp` | 表單完成關閉事件參數。 |
+| [`PlatformBackend`](../classes/app_application.md#platformbackend) | `PlatformBackend.hpp` | 渲染後端平台列舉 (`Win32`, `Skia`)。 |
+| [`ShutdownMode`](../classes/app_application.md#shutdownmode) | `Application.hpp` | 應用程式終止策略列舉 (`OnMainWindowClose`, `OnLastWindowClose`, `OnExplicitShutdown`)。 |
+| [`DialogResult`](../classes/app_formeventargs.md) | `FormEventArgs.hpp` | 模態對話方塊回傳結果列舉 (`None`, `OK`, `Cancel`, `Yes`, `No` 等)。 |
+| [`WindowState`](../classes/app_formeventargs.md) | `FormEventArgs.hpp` | 視窗呈現狀態列舉 (`Normal`, `Minimized`, `Maximized`)。 |
+| [`FormStartPosition`](../classes/app_formeventargs.md) | `FormEventArgs.hpp` | 視窗初始呈現位置列舉 (`CenterScreen`, `Manual`, `WindowsDefault`)。 |
 
 ---
 
@@ -47,10 +49,28 @@ int main() {
 
 int main() {
     auto builder = cppui::app::Application::CreateBuilder();
+    builder.UseSkia(); // 切換為 Skia 向量繪圖核心後端
     builder.Services().AddSingleton<IMyService, MyServiceImpl>();
     builder.Services().AddTransient<MyForm>();
 
     auto app = builder.Build();
     return app.Run<MyForm>();
+}
+```
+
+### 3. 非同步事件調度 (Dispatcher Post)
+```cpp
+#include "ui/app/Application.hpp"
+#include <thread>
+
+void FetchDataInBackground() {
+    std::thread([]() {
+        auto data = DownloadNetworkData();
+
+        // 跨執行緒安全切回 UI 主執行緒
+        cppui::app::Application::Post([data]() {
+            myGrid->UpdateContent(data);
+        });
+    }).detach();
 }
 ```

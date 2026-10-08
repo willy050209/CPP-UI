@@ -26,11 +26,33 @@ public:
     void AddCanExecuteChangedHandler(CanExecuteChangedHandler handler) override;
     void NotifyCanExecuteChanged() override;
 
+    /// <summary>
+    /// 便捷靜態工廠方法：原地建構 RelayCommand 並回傳 shared_ptr
+    /// </summary>
+    template<typename... Args>
+    static std::shared_ptr<RelayCommand> Create(Args&&... args) {
+        return std::make_shared<RelayCommand>(std::forward<Args>(args)...);
+    }
+
 private:
     ExecuteFunc m_execute;
     CanExecuteFunc m_canExecute;
     std::vector<CanExecuteChangedHandler> m_handlers;
 };
+
+/// <summary>
+/// 便捷命名空間工廠函數：建構具備參數的 RelayCommand
+/// </summary>
+inline std::shared_ptr<RelayCommand> MakeCommand(RelayCommand::ExecuteFunc execute, RelayCommand::CanExecuteFunc canExecute = nullptr) {
+    return std::make_shared<RelayCommand>(std::move(execute), std::move(canExecute));
+}
+
+/// <summary>
+/// 便捷命名空間工廠函數：建構無參數的 RelayCommand
+/// </summary>
+inline std::shared_ptr<RelayCommand> MakeCommand(std::function<void()> execute, std::function<bool()> canExecute = nullptr) {
+    return std::make_shared<RelayCommand>(std::move(execute), std::move(canExecute));
+}
 
 } // namespace mvvm
 } // namespace cppui

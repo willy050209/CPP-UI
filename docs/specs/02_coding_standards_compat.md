@@ -1,10 +1,10 @@
-# CPPUI 設計規範 02：代碼規範與向下相容標準 (Coding Standards & compat.hpp)
+﻿# CPPUI 設計規範 02：代碼規範與向下相容標準 (Coding Standards & compat.hpp)
 
 ## 1. 核心相容性哲學
 
 現代 C++ 提供了豐富的語法與標準庫功能（如 C++17 `std::string_view`、`std::optional`，C++20 `std::format`、`std::span`，C++23 `std::expected`），但在許多工業環境與既有編譯器上，無法保證支援最新標準。
 
-CPPUI 專案全面引入自行研發的 [`compat.hpp`](file:///D:/P/CPP/CPPUI/include/compat/compat.hpp) 作為基礎相容層：
+CPPUI 專案全面引入自行研發的 [`compat.hpp`](../../include/compat/compat.hpp) 作為基礎相容層：
 1. **在新版編譯器（如 C++20/23）下**：`compat::` 自動無縫 alias 到原生 `std::` 實作，享有零開銷（Zero-Overhead）與極致編譯器最佳化。
 2. **在舊版編譯器（如 C++14/17）下**：`compat::` 自動提供完整的 Polyfill 退回實作，確保相同語法能無痛通過編譯。
 

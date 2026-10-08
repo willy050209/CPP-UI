@@ -61,7 +61,17 @@ int main() {
         assert(inflated.width == 100.0f);
         assert(inflated.height == 50.0f);
 
-        compat::println("  [PASS] Control styling properties and insets verified.");
+        // Location 座標屬性測試
+        assert(ctrl.GetLocation().x == 0.0f);
+        assert(ctrl.GetLocation().y == 0.0f);
+        ctrl.SetLocation(Point(120.0f, 65.0f));
+        assert(ctrl.GetLocation().x == 120.0f);
+        assert(ctrl.GetLocation().y == 65.0f);
+        ctrl.SetLocation(200.0f, 150.0f);
+        assert(ctrl.GetLocation().x == 200.0f);
+        assert(ctrl.GetLocation().y == 150.0f);
+
+        compat::println("  [PASS] Control styling properties, Location and insets verified.");
     }
 
     // -------------------------------------------------------------------------

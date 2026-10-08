@@ -1,4 +1,4 @@
-# 高分屏 DPI 與座標轉換指南 (DPI Scaling & Coordinate Systems)
+﻿# 高分屏 DPI 與座標轉換指南 (DPI Scaling & Coordinate Systems)
 
 說明 CPPUI 中 **裝置獨立像素 (Device Independent Pixels, DIP)**、**實體像素 (Physical Pixels)**、**客戶區排版空間 (Client Layout Space)** 與專屬 [`CoordinateTransform`](../classes/core_coordinatetransform.md) 類別的設計原理與最佳實踐。
 
@@ -57,7 +57,7 @@ flowchart LR
 
 ## 3. Windows Per-Monitor V2 自動感知與動態 DPI
 
-在 Win32 實作 [`PlatformWindowWin32`](file:///D:/P/CPP/CPPUI/src/pal/win32/PlatformWindowWin32.cpp) 中，視窗建立前即啟用 Per-Monitor V2 模式：
+在 Win32 實作 [`PlatformWindowWin32`](../../../src/pal/win32/PlatformWindowWin32.cpp) 中，視窗建立前即啟用 Per-Monitor V2 模式：
 
 ```cpp
 SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);

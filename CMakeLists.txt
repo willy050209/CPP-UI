@@ -70,6 +70,7 @@ set(CPPUI_SOURCES
     src/app/Form.cpp
     src/app/Application.cpp
     src/app/AppBuilder.cpp
+    src/app/Dispatcher.cpp
 )
 
 if(WIN32)

@@ -1,4 +1,4 @@
-# ICommand 介面
+﻿# ICommand 介面
 
 - **命名空間**: `cppui::mvvm`
 - **標頭檔**: `include/ui/mvvm/ICommand.hpp`
@@ -62,4 +62,4 @@ public:
 
 ## 衍生實作
 
-- 輕量委派實作：參見 [`RelayCommand`](file:///D:/P/CPP/CPPUI/docs/api/classes/mvvm_relaycommand.md)。
+- 輕量委派實作：參見 [`RelayCommand`](mvvm_relaycommand.md)。

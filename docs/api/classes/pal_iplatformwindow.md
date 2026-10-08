@@ -56,6 +56,9 @@ public:
     virtual void PollEvents() = 0;
     virtual bool WaitEvents(int timeoutMs = -1) = 0;
 
+    // 喚醒等待狀態之原生訊息迴圈 (支援跨執行緒調用)
+    virtual void WakeUp() = 0;
+
     // 觸發視窗重繪請求
     virtual void RequestRedraw() = 0;
 
@@ -129,6 +132,13 @@ COMPAT_NODISCARD virtual float GetDpiScale() const noexcept = 0;
 ### `PollEvents()` / `WaitEvents(int timeoutMs)`
 * `PollEvents()`：非阻塞輪詢原生作業系統訊息隊列，立即分發所有待處理訊息。
 * `WaitEvents(int timeoutMs)`：低延遲阻塞等待訊息。若有訊息到達或超過 `timeoutMs` 毫秒（預設 `-1` 為無限等待）則喚醒。
+
+### `WakeUp()`
+```cpp
+virtual void WakeUp() = 0;
+```
+* **說明**：
+  支援跨執行緒安全呼叫，立即喚醒處於 `WaitEvents` 低功耗阻塞等待狀態的原生視窗訊息循環。在 Win32 平台下透過 `PostMessageW(m_hwnd, WM_APP_DISPATCH, 0, 0)` 喚醒 `MsgWaitForMultipleObjectsEx`；在跨平台通用端透過 `std::condition_variable::notify_all()` 立即解除休眠，使非同步派發任務（Dispatcher）得以及時在主執行緒消費執行。
 
 ### `RequestRedraw()`
 通知視窗系統與 `RunLoop` 在下一幀觸發重繪回呼。

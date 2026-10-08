@@ -52,6 +52,11 @@ public:
     virtual void PollEvents() = 0;
     virtual bool WaitEvents(int timeoutMs = -1) = 0;
 
+    /// <summary>
+    /// 喚醒處於 WaitEvents 等待狀態的原生訊息迴圈 (支援跨執行緒調用)
+    /// </summary>
+    virtual void WakeUp() = 0;
+
     // 觸發視窗重繪請求
     virtual void RequestRedraw() = 0;
 

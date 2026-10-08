@@ -1,7 +1,7 @@
-# Signal<T> 類別樣板
+﻿# Signal<T> 類別樣板
 
 - **命名空間**: `cppui::reactive`
-- **標頭檔**: [`include/ui/reactive/Signal.hpp`](file:///D:/P/CPP/CPPUI/include/ui/reactive/Signal.hpp)
+- **標頭檔**: [`include/ui/reactive/Signal.hpp`](../../../include/ui/reactive/Signal.hpp)
 
 ---
 

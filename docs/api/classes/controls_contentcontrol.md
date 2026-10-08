@@ -1,14 +1,14 @@
-# ContentControl 類別
+﻿# ContentControl 類別
 
 - **命名空間**: `cppui::controls`
-- **標頭檔**: [`include/ui/controls/ContentControl.hpp`](file:///D:/P/CPP/CPPUI/include/ui/controls/ContentControl.hpp)
-- **繼承關係**: 繼承自 [`controls::Control`](file:///D:/P/CPP/CPPUI/docs/api/classes/controls_control.md)
+- **標頭檔**: [`include/ui/controls/ContentControl.hpp`](../../../include/ui/controls/ContentControl.hpp)
+- **繼承關係**: 繼承自 [`controls::Control`](controls_control.md)
 
 ---
 
 ## 概述
 
-`ContentControl` 是容納單一內容元素的控制項基底類別（如按鈕、標籤面板）。支援動態傳入純字串（自動包裝為內部唯讀 [`TextBlock`](file:///D:/P/CPP/CPPUI/docs/api/classes/controls_textblock.md) 並繼承前景色彩）或任意自訂 [`UIElement`](file:///D:/P/CPP/CPPUI/docs/api/classes/core_uielement.md) 子元素，自動在排版與繪製階段套用四周 `Padding` 與邊框內縮。
+`ContentControl` 是容納單一內容元素的控制項基底類別（如按鈕、標籤面板）。支援動態傳入純字串（自動包裝為內部唯讀 [`TextBlock`](controls_textblock.md) 並繼承前景色彩）或任意自訂 [`UIElement`](core_uielement.md) 子元素，自動在排版與繪製階段套用四周 `Padding` 與邊框內縮。
 
 ---
 

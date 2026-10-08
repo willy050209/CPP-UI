@@ -30,6 +30,9 @@ std::vector<Application::ExitCallback> s_exitHandlers;
 std::vector<Application::IdleCallback> s_idleHandlers;
 std::shared_ptr<ioc::IServiceProvider> s_serviceProvider;
 
+PlatformBackend s_platformBackend = PlatformBackend::Win32;
+Dispatcher s_dispatcher;
+
 } // anonymous namespace
 
 int Application::Run() {
@@ -48,6 +51,7 @@ int Application::Run(std::shared_ptr<Form> mainForm) {
     s_mainForm = mainForm;
     s_isRunning = true;
     s_exitRequested = false;
+    s_dispatcher.SetMainThreadId(std::this_thread::get_id());
 
     if (mainForm) {
         mainForm->Show();
@@ -56,6 +60,9 @@ int Application::Run(std::shared_ptr<Form> mainForm) {
 
     // 主訊息迴圈
     while (s_isRunning && !s_exitRequested) {
+        // 先行處理並執行跨執行緒投遞的非同步任務
+        s_dispatcher.DrainTasks();
+
         if (s_shutdownMode == ShutdownMode::OnMainWindowClose) {
             if (s_mainForm && s_mainForm->IsDisposed()) {
                 break;
@@ -76,6 +83,8 @@ int Application::Run(std::shared_ptr<Form> mainForm) {
                 }
             }
         }
+
+        s_dispatcher.DrainTasks();
 
         if (s_openForms.empty()) {
             break;
@@ -128,6 +137,7 @@ void Application::Exit() {
         if (handler) handler();
     }
     s_idleHandlers.clear();
+    s_dispatcher.Clear();
 }
 
 void Application::ExitThread() {
@@ -135,6 +145,7 @@ void Application::ExitThread() {
 }
 
 void Application::DoEvents() {
+    s_dispatcher.DrainTasks();
     auto currentForms = s_openForms;
     for (auto& f : currentForms) {
         if (f && !f->IsDisposed()) {
@@ -145,6 +156,7 @@ void Application::DoEvents() {
             }
         }
     }
+    s_dispatcher.DrainTasks();
     for (const auto& idleHandler : s_idleHandlers) {
         if (idleHandler) idleHandler();
     }
@@ -266,6 +278,38 @@ void Application::SetActiveForm(std::shared_ptr<Form> form) {
 
 AppBuilder Application::CreateBuilder() {
     return AppBuilder();
+}
+
+PlatformBackend Application::GetPlatformBackend() noexcept {
+    return s_platformBackend;
+}
+
+void Application::SetPlatformBackend(PlatformBackend backend) noexcept {
+    s_platformBackend = backend;
+}
+
+void Application::Post(std::function<void()> action) {
+    s_dispatcher.Post(std::move(action));
+}
+
+bool Application::CheckAccess() noexcept {
+    return s_dispatcher.CheckAccess();
+}
+
+Dispatcher& Application::GetDispatcher() noexcept {
+    return s_dispatcher;
+}
+
+void Application::WakeUpUIThread() {
+    for (auto& f : s_openForms) {
+        if (f && !f->IsDisposed() && f->GetPlatformWindow() && !f->GetPlatformWindow()->IsClosed()) {
+            f->GetPlatformWindow()->WakeUp();
+            return;
+        }
+    }
+    if (s_mainForm && s_mainForm->GetPlatformWindow() && !s_mainForm->GetPlatformWindow()->IsClosed()) {
+        s_mainForm->GetPlatformWindow()->WakeUp();
+    }
 }
 
 } // namespace app

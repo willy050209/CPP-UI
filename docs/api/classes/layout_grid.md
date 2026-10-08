@@ -1,8 +1,8 @@
-# Grid 類別
+﻿# Grid 類別
 
 - **命名空間**: `cppui::layout`
-- **標頭檔**: [`include/ui/layout/Grid.hpp`](file:///D:/P/CPP/CPPUI/include/ui/layout/Grid.hpp)
-- **繼承關係**: 繼承自 [`layout::Panel`](file:///D:/P/CPP/CPPUI/docs/api/classes/layout_panel.md)
+- **標頭檔**: [`include/ui/layout/Grid.hpp`](../../../include/ui/layout/Grid.hpp)
+- **繼承關係**: 繼承自 [`layout::Panel`](layout_panel.md)
 
 ---
 

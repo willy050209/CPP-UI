@@ -1,6 +1,6 @@
-# compat 核心相容層技術手冊 (Namespace & Shim Architecture)
+﻿# compat 核心相容層技術手冊 (Namespace & Shim Architecture)
 
-`compat` 命名空間與單標頭檔 [`include/compat/compat.hpp`](file:///D:/P/CPP/CPPUI/include/compat/compat.hpp) 為 CPPUI 提供 **零外部依賴、向下相容 C++14/17、向上對齊 C++20/23/26** 的現代 C++ 墊片架構 (Compatibility Shim Layer)。
+`compat` 命名空間與單標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp) 為 CPPUI 提供 **零外部依賴、向下相容 C++14/17、向上對齊 C++20/23/26** 的現代 C++ 墊片架構 (Compatibility Shim Layer)。
 
 ---
 

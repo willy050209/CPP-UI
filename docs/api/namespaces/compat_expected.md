@@ -1,6 +1,6 @@
-# 期望值、可空值與錯誤處理 (compat::expected & optional)
+﻿# 期望值、可空值與錯誤處理 (compat::expected & optional)
 
-定義於標頭檔 [`include/compat/compat.hpp`](file:///D:/P/CPP/CPPUI/include/compat/compat.hpp)。  
+定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
 所屬命名空間：`compat`。
 
 ---

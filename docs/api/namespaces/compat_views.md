@@ -1,6 +1,6 @@
-# 視圖適配器與惰性管道 (compat::views)
+﻿# 視圖適配器與惰性管道 (compat::views)
 
-定義於標頭檔 [`include/compat/compat.hpp`](file:///D:/P/CPP/CPPUI/include/compat/compat.hpp)。  
+定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
 所屬命名空間：`compat::views`。
 
 ---
