@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include "compat/compat.hpp"
 #include "Form.hpp"
 #include "PlatformBackend.hpp"
@@ -43,24 +44,40 @@ public:
     }
 
     /// <summary>
-    /// 從 IoC 容器解析指定 Form 型別並啟動應用程式。
+    /// 從 IoC 容器解析指定 Form 型別並啟動應用程式；若未於容器中註冊則自動原地建構實例。
     /// </summary>
     /// <typeparam name="TForm">目標 Form 型別。</typeparam>
+    /// <typeparam name="Args">表單建構子引數型別包。</typeparam>
+    /// <param name="args">表單建構子引數。</param>
     /// <returns>應用程式退出代碼 (Exit Code)。</returns>
-    template<typename TForm>
-    int32_t Run() {
-        auto form = m_services->GetRequiredService<TForm>();
+    template<typename TForm, typename... Args>
+    int32_t Run(Args&&... args) {
+        std::shared_ptr<TForm> form = nullptr;
+        if constexpr (sizeof...(Args) == 0) {
+            if (m_services) {
+                form = m_services->GetService<TForm>();
+            }
+            if (!form) {
+                if constexpr (std::is_default_constructible<TForm>::value) {
+                    form = std::make_shared<TForm>();
+                }
+            }
+        } else {
+            if constexpr (std::is_constructible<TForm, Args...>::value) {
+                form = std::make_shared<TForm>(std::forward<Args>(args)...);
+            }
+        }
         return RunForm(form);
     }
 
     /// <summary>
-    /// 啟動指定表單。
+    /// 啟動指定表單實例。
     /// </summary>
     /// <param name="form">待啟動之主表單，不可為 nullptr。</param>
     /// <returns>應用程式退出代碼 (Exit Code)。</returns>
     /// <exception cref="std::invalid_argument">當 form 為 nullptr 時擲出。</exception>
     int32_t Run(std::shared_ptr<Form> form) {
-        return RunForm(form);
+        return RunForm(std::move(form));
     }
 
 private:

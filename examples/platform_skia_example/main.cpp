@@ -22,6 +22,9 @@ int main() {
     // 顯式宣告：強制使用 Google Skia 向量加速渲染後端
     builder.UseSkia();
 
+    // 註冊表單至 IoC 容器 (亦支援 host.Run<SkiaDemoForm>() 原地自動建構)
+    builder.Services().AddTransient<SkiaDemoForm>();
+
     // 構建 Host 宿主並啟動視窗循環
     auto host = builder.Build();
     return host.Run<SkiaDemoForm>();

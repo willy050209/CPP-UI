@@ -35,6 +35,18 @@ public:
     }
 };
 
+class AutoCloseTestForm : public cppui::app::Form {
+public:
+    AutoCloseTestForm() {
+        SetTitle("Auto Close Test Form");
+        SetFormSize(200, 200);
+    }
+    void OnShown() override {
+        cppui::app::Form::OnShown();
+        Close();
+    }
+};
+
 // =============================================================================
 // 1. 平台切換與強制 Skia 後端測試
 // =============================================================================
@@ -72,9 +84,15 @@ static void TestPlatformSwitchForcedSkia() {
     auto host2 = builder2.Build();
     assert(Application::GetPlatformBackend() == PlatformBackend::Win32);
 
+    // 測試 AppHost::Run<TForm>() 在未於 Services 預先註冊時能自動原地建構並成功運行 (防止 form cannot be null 例外)
+    auto autoBuilder = Application::CreateBuilder();
+    auto autoHost = autoBuilder.Build();
+    int32_t exitCode = autoHost.Run<AutoCloseTestForm>();
+    assert(exitCode == 0);
+
     // 復原環境
     Application::SetPlatformBackend(original);
-    compat::println("  ✔ 平台切換 (強制使用 Skia) 驗證通過！");
+    compat::println("  ✔ 平台切換 (強制使用 Skia) 與 AppHost 自動建構驗證通過！");
 }
 
 // =============================================================================

@@ -122,6 +122,9 @@ void ExampleColor() {
 ---
 
 ## 請參閱 (See Also)
+* [**Color 結構進階技術文件 (Graphics)**](graphics_color.md)
+* [**Colors 預定義常數調色盤 (140+ 種標準色)**](graphics_colors.md)
 * [`Rect` 結構參考](core_rect.md)
 * [`DrawingContext` 參考](rendering_drawingcontext.md)
 * [`cppui::core` 命名空間](../namespaces/cppui_core.md)
+

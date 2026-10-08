@@ -93,3 +93,22 @@ CPPUI 圖形子系統整合與參考了以下開源專案之設計與實作：
 ### 3. HarfBuzz & ICU
 - **授權條款**：Old MIT License / Unicode License
 - **說明**：用於跨平台雙向文字 (BiDi) 分析與 OpenType 複合字形排版。
+
+---
+
+## 5. API 參考與專屬技術文件 (API References)
+
+深入了解個別圖形物件的 API 簽名、參數驗證、異常規格與進階使用範例：
+
+* [**Graphics 核心繪圖排程器**](../classes/graphics_graphics.md)
+* [**Color 32-bit 色彩結構**](../classes/graphics_color.md)
+* [**Colors 預定義常數調色盤 (140+ 種標準色)**](../classes/graphics_colors.md)
+* [**Brush 畫刷家族 (Solid, LinearGradient, Texture)**](../classes/graphics_brush.md)
+* [**Brushes 常用 28 種標準純色畫刷集合**](../classes/graphics_brushes.md)
+* [**Bitmap 32-bit 點陣影像與緩衝區鎖定**](../classes/graphics_bitmap.md)
+* [**Pen 描邊畫筆類別**](../classes/graphics_pen.md)
+* [**Pens 常用 28 種標準畫筆集合**](../classes/graphics_pens.md)
+* [**GraphicsPath 複合幾何路徑與射線命中測試**](../classes/graphics_path.md)
+* [**Graphics 列舉型別完整字典 (DashStyle, LineCap, PixelFormat 等)**](../classes/graphics_enums.md)
+* [**PictureBox 圖片控制項規格與呈現模式**](../classes/controls_picturebox.md)
+
