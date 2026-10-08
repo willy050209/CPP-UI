@@ -44,13 +44,13 @@ public:
     /// 取得當前輸入之文字視圖。
     /// </summary>
     /// <returns>文字字串視圖。</returns>
-    COMPAT_NODISCARD compat::string_view GetText() const noexcept { return m_text; }
+    COMPAT_NODISCARD compat::string_view GetText() const noexcept override { return m_text; }
 
     /// <summary>
     /// 設定文字編輯輸入框之文字內容。
     /// </summary>
     /// <param name="text">欲設定之字串視圖。</param>
-    void SetText(compat::string_view text);
+    void SetText(compat::string_view text) override;
 
     /// <summary>
     /// 於當前游標位置插入文字。

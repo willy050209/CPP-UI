@@ -75,6 +75,20 @@ public:
     /// </summary>
     void ClearVisualChildren();
 
+    /// <summary>
+    /// 將指定之子視覺節點移至清單最末端 (最上層/前景)。
+    /// </summary>
+    /// <param name="child">子節點原始指標，不可為 nullptr。</param>
+    /// <exception cref="std::invalid_argument">若 child 為 nullptr 則擲出。</exception>
+    void BringVisualChildToFront(Visual* child);
+
+    /// <summary>
+    /// 將指定之子視覺節點移至清單開頭 (最底層/背景)。
+    /// </summary>
+    /// <param name="child">子節點原始指標，不可為 nullptr。</param>
+    /// <exception cref="std::invalid_argument">若 child 為 nullptr 則擲出。</exception>
+    void SendVisualChildToBack(Visual* child);
+
     // --- 幾何與變換屬性 ---
 
     /// <summary>

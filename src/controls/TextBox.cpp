@@ -134,6 +134,10 @@ void TextBox::SetText(compat::string_view text) {
         InvalidateMeasure();
         InvalidateVisual();
         RaiseTextChanged();
+        OnTextChangedCore(m_text);
+        if (m_textChangedHandler) {
+            m_textChangedHandler(m_text);
+        }
     }
 }
 

@@ -61,6 +61,15 @@ void ContentControl::SetContentText(compat::string_view text) {
     }
 }
 
+compat::string_view ContentControl::GetText() const noexcept {
+    return GetContentText();
+}
+
+void ContentControl::SetText(compat::string_view text) {
+    SetContentText(text);
+    Control::SetText(text);
+}
+
 core::Size ContentControl::MeasureOverride(core::Size availableSize) {
     core::Size deflated = DeflateSize(availableSize);
     core::Size contentDesired(0.0f, 0.0f);

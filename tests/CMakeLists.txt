@@ -78,6 +78,11 @@ add_executable(example_features_test example_features_test.cpp)
 target_link_libraries(example_features_test PRIVATE cppui_core)
 add_test(NAME ExampleFeaturesTest COMMAND example_features_test)
 
+# Control 類別規格對標與全功能單元測試
+add_executable(control_class_test control_class_test.cpp)
+target_link_libraries(control_class_test PRIVATE cppui_core)
+add_test(NAME ControlClassTest COMMAND control_class_test)
+
 
 
 

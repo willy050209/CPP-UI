@@ -517,16 +517,129 @@ public:
         return *this;
     }
 
+    // --- Control 基礎屬性與事件 ---
+
+    /// <summary>
+    /// 設定控制項名稱識別字串 (Name)。
+    /// </summary>
+    /// <param name="name">名稱字串視圖。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Name(compat::string_view name) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetName(name);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定附加使用者自訂資料指標 (Tag)。
+    /// </summary>
+    /// <param name="tag">自訂資料 shared_ptr。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Tag(std::shared_ptr<void> tag) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetTag(std::move(tag));
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定控制項是否可用 (Enabled)。
+    /// </summary>
+    /// <param name="enabled">true 啟用，false 停用。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Enabled(bool enabled) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetEnabled(enabled);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定滑鼠游標樣式 (Cursor)。
+    /// </summary>
+    /// <param name="cursor">CursorType 列舉值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Cursor(controls::CursorType cursor) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetCursor(cursor);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定邊界錨定樣式 (Anchor)。
+    /// </summary>
+    /// <param name="anchor">AnchorStyles 列舉值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Anchor(controls::AnchorStyles anchor) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetAnchor(anchor);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定邊界停靠模式 (Dock)。
+    /// </summary>
+    /// <param name="dock">DockStyle 列舉值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Dock(controls::DockStyle dock) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetDock(dock);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定控制項邊界矩形 (Bounds)。
+    /// </summary>
+    /// <param name="x">X 軸像素。</param>
+    /// <param name="y">Y 軸像素。</param>
+    /// <param name="width">寬度像素。</param>
+    /// <param name="height">高度像素。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Bounds(float x, float y, float width, float height) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetBounds(x, y, width, height);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定完整字型描述項 (Font)。
+    /// </summary>
+    /// <param name="font">FontDescriptor 引用。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Font(const text::FontDescriptor& font) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetFont(font);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 掛載 GDI+ 風格 Paint 繪圖回呼函式。
+    /// </summary>
+    /// <param name="handler">繪圖回呼函式。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& OnPaint(std::function<void(graphics::Graphics&)> handler) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->OnPaintHandler(std::move(handler));
+        }
+        return *this;
+    }
+
     // --- TextBox 專屬屬性與事件 ---
 
     /// <summary>
-    /// 設定文字內容 (相容 TextBox 與 TextBlock)。
+    /// 設定文字內容 (相容 Control 與 TextBlock)。
     /// </summary>
     /// <param name="text">欲設定之字串視圖。</param>
     /// <returns>UIBuilder 引用支援鏈式調用。</returns>
     UIBuilder& Text(compat::string_view text) {
-        if (auto* tbox = dynamic_cast<controls::TextBox*>(m_element.get())) {
-            tbox->SetText(text);
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetText(text);
         } else if (auto* tb = dynamic_cast<controls::TextBlock*>(m_element.get())) {
             tb->SetText(text);
         }

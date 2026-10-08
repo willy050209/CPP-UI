@@ -1,4 +1,5 @@
 #include "ui/core/Visual.hpp"
+#include <stdexcept>
 
 namespace cppui {
 namespace core {
@@ -48,6 +49,38 @@ void Visual::ClearVisualChildren() {
         }
     }
     m_visualChildren.clear();
+}
+
+void Visual::BringVisualChildToFront(Visual* child) {
+    if (!child) {
+        throw std::invalid_argument("Visual::BringVisualChildToFront: child cannot be nullptr");
+    }
+    for (auto it = m_visualChildren.begin(); it != m_visualChildren.end(); ++it) {
+        if (it->get() == child) {
+            if (it != m_visualChildren.end() - 1) {
+                auto sp = std::move(*it);
+                m_visualChildren.erase(it);
+                m_visualChildren.push_back(std::move(sp));
+            }
+            return;
+        }
+    }
+}
+
+void Visual::SendVisualChildToBack(Visual* child) {
+    if (!child) {
+        throw std::invalid_argument("Visual::SendVisualChildToBack: child cannot be nullptr");
+    }
+    for (auto it = m_visualChildren.begin(); it != m_visualChildren.end(); ++it) {
+        if (it->get() == child) {
+            if (it != m_visualChildren.begin()) {
+                auto sp = std::move(*it);
+                m_visualChildren.erase(it);
+                m_visualChildren.insert(m_visualChildren.begin(), std::move(sp));
+            }
+            return;
+        }
+    }
 }
 
 Point Visual::PointToScreen(Point clientPoint) const {

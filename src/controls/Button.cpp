@@ -27,20 +27,20 @@ Button::Button() {
     SetBorderBrush(m_normalBorder);
 
     OnPointerEntered([this](input::PointerEventArgs&) {
-        if (!m_isEnabled) return;
+        if (!m_enabled) return;
         m_isHovered = true;
         InvalidateVisual();
     });
 
     OnPointerExited([this](input::PointerEventArgs&) {
-        if (!m_isEnabled) return;
+        if (!m_enabled) return;
         m_isHovered = false;
         m_isPressed = false;
         InvalidateVisual();
     });
 
     OnPointerPressed([this](input::PointerEventArgs& e) {
-        if (!m_isEnabled) return;
+        if (!m_enabled) return;
         if (e.IsLeftButton()) {
             m_isPressed = true;
             input::InputManager::Get().CapturePointer(this);
@@ -50,7 +50,7 @@ Button::Button() {
     });
 
     OnPointerReleased([this](input::PointerEventArgs& e) {
-        if (!m_isEnabled) return;
+        if (!m_enabled) return;
         if (e.IsLeftButton() && m_isPressed) {
             input::InputManager::Get().ReleasePointerCapture(this);
             m_isPressed = false;
@@ -70,7 +70,7 @@ Button::Button() {
     });
 
     OnKeyDown([this](input::KeyEventArgs& e) {
-        if (!m_isEnabled) return;
+        if (!m_enabled) return;
         // Space (0x20) 或 Return (0x0D) 觸發點擊
         if (e.GetVirtualKey() == 0x20 || e.GetVirtualKey() == 0x0D) {
             RaiseClick();
@@ -92,10 +92,8 @@ Button::Button(compat::string_view text) : Button() {
 }
 
 void Button::SetEnabled(bool enabled) {
-    if (m_isEnabled != enabled) {
-        m_isEnabled = enabled;
-        SetFocusable(enabled);
-        InvalidateVisual();
+    if (m_enabled != enabled) {
+        Control::SetEnabled(enabled);
     }
 }
 
@@ -158,7 +156,7 @@ void Button::OnRender(rendering::DrawingContext& dc) {
     core::Color bg = m_normalBackground;
     core::Color border = m_normalBorder;
 
-    if (!m_isEnabled) {
+    if (!m_enabled) {
         bg = m_disabledBackground;
     } else if (m_isPressed) {
         bg = m_pressedBackground;
@@ -166,7 +164,7 @@ void Button::OnRender(rendering::DrawingContext& dc) {
         bg = m_hoverBackground;
     }
 
-    if (m_isEnabled && IsFocused()) {
+    if (m_enabled && IsFocused()) {
         border = m_focusBorder;
     }
 

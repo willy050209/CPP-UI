@@ -74,6 +74,18 @@ public:
     void SetContentText(compat::string_view text);
 
     /// <summary>
+    /// 取得內容文字 (多型覆寫 Control::GetText)。
+    /// </summary>
+    /// <returns>文字字串視圖。</returns>
+    COMPAT_NODISCARD compat::string_view GetText() const noexcept override;
+
+    /// <summary>
+    /// 設定內容文字 (多型覆寫 Control::SetText)。
+    /// </summary>
+    /// <param name="text">文字字串視圖。</param>
+    void SetText(compat::string_view text) override;
+
+    /// <summary>
     /// 覆寫排版測量階段，計算包含 Padding 與 BorderThickness 之內容所需尺寸。
     /// </summary>
     /// <param name="availableSize">父容器提供之可用尺寸。</param>

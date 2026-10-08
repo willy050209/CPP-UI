@@ -75,13 +75,13 @@ public:
     /// 檢查按鈕是否處於可用啟用狀態。
     /// </summary>
     /// <returns>若啟用則回傳 true，禁用回傳 false。</returns>
-    COMPAT_NODISCARD bool IsEnabled() const noexcept { return m_isEnabled; }
+    COMPAT_NODISCARD bool IsEnabled() const noexcept override { return Control::IsEnabled(); }
 
     /// <summary>
     /// 設定按鈕是否可用 (Enabled)。
     /// </summary>
     /// <param name="enabled">true 啟用，false 停用。</param>
-    void SetEnabled(bool enabled);
+    void SetEnabled(bool enabled) override;
 
     /// <summary>
     /// 設定滑鼠懸停時之背景色彩。
@@ -145,7 +145,6 @@ protected:
 
     bool        m_isPressed = false;
     bool        m_isHovered = false;
-    bool        m_isEnabled = true;
     std::shared_ptr<mvvm::ICommand> m_command;
 
     core::Color m_normalBackground{ 45, 52, 70, 255 };
