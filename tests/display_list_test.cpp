@@ -13,7 +13,7 @@
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/rendering/DrawingContext.hpp"
 #include "ui/rendering/DisplayListRenderer.hpp"
-#include "../../src/rendering/backend/SoftwareRenderContext.hpp"
+#include "../src/rendering/backend/SoftwareRenderContext.hpp"
 
 int main() {
     using namespace cppui::core;

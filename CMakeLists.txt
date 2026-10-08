@@ -114,6 +114,9 @@ if(WIN32)
         dwrite
         ole32
     )
+else()
+    find_package(Threads REQUIRED)
+    target_link_libraries(cppui_core PUBLIC Threads::Threads)
 endif()
 
 # -----------------------------------------------------------------------------

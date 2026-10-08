@@ -8,8 +8,8 @@ on:
 
 jobs:
   msvc-build:
-    name: MSVC (Windows, C++20)
-    runs-on: windows-latest
+    name: MSVC (Windows 2022, C++20)
+    runs-on: windows-2022
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -23,9 +23,9 @@ jobs:
       - name: Run CTest Suite
         run: ctest --test-dir build -C Release --output-on-failure --verbose
 
-  clang-build:
-    name: Clang++ (Windows, C++20)
-    runs-on: windows-latest
+  clang-windows-build:
+    name: Clang++ (Windows 2022, C++20)
+    runs-on: windows-2022
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -39,9 +39,9 @@ jobs:
       - name: Run CTest Suite
         run: ctest --test-dir build --output-on-failure --verbose
 
-  mingw-build:
+  mingw-windows-build:
     name: MinGW GCC (Windows UCRT64, C++20)
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -68,9 +68,70 @@ jobs:
         shell: msys2 {0}
         run: ctest --test-dir build --output-on-failure --verbose
 
+  linux-gcc-build:
+    name: GCC (Ubuntu Linux, C++20)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++
+
+      - name: Configure CMake (GCC with Ninja)
+        run: cmake -B build -G "Ninja" -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+
+      - name: Build All Targets
+        run: cmake --build build
+
+      - name: Run CTest Suite
+        run: ctest --test-dir build --output-on-failure --verbose
+
+  linux-clang-build:
+    name: Clang++ (Ubuntu Linux, C++20)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang
+
+      - name: Configure CMake (Clang++ with Ninja)
+        run: cmake -B build -G "Ninja" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+
+      - name: Build All Targets
+        run: cmake --build build
+
+      - name: Run CTest Suite
+        run: ctest --test-dir build --output-on-failure --verbose
+
+  macos-build:
+    name: Apple Clang (macOS, C++20)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Build Dependencies
+        run: brew install ninja
+
+      - name: Configure CMake (Apple Clang with Ninja)
+        run: cmake -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+
+      - name: Build All Targets
+        run: cmake --build build
+
+      - name: Run CTest Suite
+        run: ctest --test-dir build --output-on-failure --verbose
+
   matrix-verification:
     name: Multi-Compiler Full Matrix Suite (60/60 Standards Verification)
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
