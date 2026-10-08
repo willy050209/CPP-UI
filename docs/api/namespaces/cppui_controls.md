@@ -1,4 +1,4 @@
-﻿# cppui::controls 命名空間
+# cppui::controls 命名空間
 
 - **標頭檔目錄**: `include/ui/controls/`
 
@@ -20,3 +20,4 @@
 | [`CheckBox`](../classes/controls_checkbox.md) | `CheckBox.hpp` | 具備向量勾號繪製、狀態切換與 Checked/Unchecked 事件之核取方塊。 |
 | [`TextBox`](../classes/controls_textbox.md) | `TextBox.hpp` | 單行文字編輯輸入框，支援打字輸入、退格、游標移動與佔位符。 |
 | [`TextBlock`](../classes/controls_textblock.md) | `TextBlock.hpp` | 高效能唯讀純文字/多行文字展示元件。 |
+| [`PictureBox`](../classes/controls_picturebox.md) | `PictureBox.hpp` | 圖片展示控制項，支援 5 種尺寸縮放模式與 Bitmap 繫結。 |

@@ -30,7 +30,12 @@ enum class DrawOpType : uint16_t {
     DrawRoundedRectangle,
     DrawLine,
     DrawText,
-    DrawTextLayout
+    DrawTextLayout,
+    DrawEllipse,
+    FillEllipse,
+    DrawPath,
+    FillPath,
+    DrawImage
 };
 
 #pragma pack(push, 4)
@@ -106,6 +111,58 @@ struct DrawTextLayoutOp {
     core::Point origin;
     core::Color color;
     void*       nativeLayoutHandle = nullptr;
+};
+
+/// <summary>
+/// 橢圓描邊繪製操作負載
+/// </summary>
+struct DrawEllipseOp {
+    core::Rect  rect;
+    core::Color color;
+    float       strokeWidth = 1.0f;
+};
+
+/// <summary>
+/// 橢圓填滿繪製操作負載
+/// </summary>
+struct FillEllipseOp {
+    core::Rect  rect;
+    core::Color color;
+};
+
+/// <summary>
+/// 幾何路徑描邊繪製操作負載
+/// </summary>
+struct DrawPathOp {
+    core::Color color;
+    float       strokeWidth = 1.0f;
+    uint32_t    pointCount  = 0;
+};
+
+/// <summary>
+/// 幾何路徑填滿繪製操作負載
+/// </summary>
+struct FillPathOp {
+    core::Color color;
+    uint8_t     fillMode       = 0;
+    uint8_t     hasGradient    = 0;
+    uint16_t    reserved       = 0;
+    uint32_t    pointCount     = 0;
+    core::Rect  bounds;
+    core::Point gradStart;
+    core::Point gradEnd;
+    core::Color gradStartColor;
+    core::Color gradEndColor;
+};
+
+/// <summary>
+/// 點陣影像繪製操作負載
+/// </summary>
+struct DrawImageOp {
+    core::Rect  destRect;
+    core::Rect  srcRect;
+    const void* bitmapPtr = nullptr;
+    float       opacity   = 1.0f;
 };
 
 #pragma pack(pop)

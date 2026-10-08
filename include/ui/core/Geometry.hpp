@@ -322,6 +322,120 @@ struct Color {
     }
 
     /// <summary>
+    /// 從 RGB 分量靜態建構不透明 (Alpha=255) Color 實例。
+    /// </summary>
+    /// <param name="r">紅色通道 (0-255)。</param>
+    /// <param name="g">綠色通道 (0-255)。</param>
+    /// <param name="b">藍色通道 (0-255)。</param>
+    /// <returns>對應之 Color 物件。</returns>
+    COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint8_t r, uint8_t g, uint8_t b) noexcept {
+        return Color(r, g, b, 255);
+    }
+
+    /// <summary>
+    /// 從 32 位元整數 (0xAARRGGBB) 靜態建構 Color 實例。
+    /// </summary>
+    /// <param name="argb">32 位元 ARGB 封裝值。</param>
+    /// <returns>對應之 Color 物件。</returns>
+    COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint32_t argb) noexcept {
+        return Color(
+            static_cast<uint8_t>((argb >> 16) & 0xFF),
+            static_cast<uint8_t>((argb >> 8) & 0xFF),
+            static_cast<uint8_t>(argb & 0xFF),
+            static_cast<uint8_t>((argb >> 24) & 0xFF)
+        );
+    }
+
+    /// <summary>
+    /// 從指定的基底顏色與新 Alpha 分量建構 Color 實例。
+    /// </summary>
+    /// <param name="a">不透明度通道 (0-255)。</param>
+    /// <param name="baseColor">基底顏色。</param>
+    /// <returns>對應之 Color 物件。</returns>
+    COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint8_t a, const Color& baseColor) noexcept {
+        return Color(baseColor.r, baseColor.g, baseColor.b, a);
+    }
+
+    /// <summary>
+    /// 將當前顏色轉換為 32 位元 ARGB 整數值 (0xAARRGGBB)。
+    /// </summary>
+    /// <returns>32 位元 ARGB 整數。</returns>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 uint32_t ToArgb() const noexcept {
+        return (static_cast<uint32_t>(a) << 24) |
+               (static_cast<uint32_t>(r) << 16) |
+               (static_cast<uint32_t>(g) << 8) |
+               static_cast<uint32_t>(b);
+    }
+
+    /// <summary>
+    /// 檢查此顏色是否為未初始化的空顏色 (全 0)。
+    /// </summary>
+    /// <returns>若 RGBA 全為 0 傳回 true，否則傳回 false。</returns>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool IsEmpty() const noexcept {
+        return r == 0 && g == 0 && b == 0 && a == 0;
+    }
+
+    /// <summary>
+    /// 計算並取得顏色之亮度 (Brightness / Lightness, 0.0f ~ 1.0f)。
+    /// </summary>
+    /// <returns>亮度純量值。</returns>
+    COMPAT_NODISCARD float GetBrightness() const noexcept {
+        float minVal = static_cast<float>(r < g ? (r < b ? r : b) : (g < b ? g : b)) / 255.0f;
+        float maxVal = static_cast<float>(r > g ? (r > b ? r : b) : (g > b ? g : b)) / 255.0f;
+        return (minVal + maxVal) / 2.0f;
+    }
+
+    /// <summary>
+    /// 計算並取得顏色之色相 (Hue, 0.0f ~ 360.0f)。
+    /// </summary>
+    /// <returns>色相角度值。</returns>
+    COMPAT_NODISCARD float GetHue() const noexcept {
+        if (r == g && g == b) return 0.0f;
+        float rf = static_cast<float>(r) / 255.0f;
+        float gf = static_cast<float>(g) / 255.0f;
+        float bf = static_cast<float>(b) / 255.0f;
+        float minVal = rf < gf ? (rf < bf ? rf : bf) : (gf < bf ? gf : bf);
+        float maxVal = rf > gf ? (rf > bf ? rf : bf) : (gf > bf ? gf : bf);
+        float delta = maxVal - minVal;
+        if (delta <= 0.0f) return 0.0f;
+
+        float hue = 0.0f;
+        if (rf == maxVal) {
+            hue = (gf - bf) / delta;
+        } else if (gf == maxVal) {
+            hue = 2.0f + (bf - rf) / delta;
+        } else {
+            hue = 4.0f + (rf - gf) / delta;
+        }
+        hue *= 60.0f;
+        if (hue < 0.0f) {
+            hue += 360.0f;
+        }
+        return hue;
+    }
+
+    /// <summary>
+    /// 計算並取得顏色之飽和度 (Saturation, 0.0f ~ 1.0f)。
+    /// </summary>
+    /// <returns>飽和度純量值。</returns>
+    COMPAT_NODISCARD float GetSaturation() const noexcept {
+        if (r == g && g == b) return 0.0f;
+        float rf = static_cast<float>(r) / 255.0f;
+        float gf = static_cast<float>(g) / 255.0f;
+        float bf = static_cast<float>(b) / 255.0f;
+        float minVal = rf < gf ? (rf < bf ? rf : bf) : (gf < bf ? gf : bf);
+        float maxVal = rf > gf ? (rf > bf ? rf : bf) : (gf > bf ? gf : bf);
+        float delta = maxVal - minVal;
+        if (delta <= 0.0f) return 0.0f;
+
+        float lightness = (minVal + maxVal) / 2.0f;
+        if (lightness <= 0.5f) {
+            return delta / (maxVal + minVal);
+        }
+        return delta / (2.0f - maxVal - minVal);
+    }
+
+    /// <summary>
     /// 判斷兩顏色是否完全相等。
     /// </summary>
     /// <param name="other">待比較的另一顏色。</param>

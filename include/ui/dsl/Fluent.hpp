@@ -26,6 +26,7 @@
 #include "ui/controls/Button.hpp"
 #include "ui/controls/CheckBox.hpp"
 #include "ui/controls/TextBox.hpp"
+#include "ui/controls/PictureBox.hpp"
 #include "ui/reactive/Signal.hpp"
 #include "ui/mvvm/ICommand.hpp"
 
@@ -605,6 +606,49 @@ public:
         return *this;
     }
 
+    // --- PictureBox 專屬屬性與影像綁定 ---
+
+    /// <summary>
+    /// 設定 PictureBox 圖片。
+    /// </summary>
+    /// <param name="bmp">Bitmap 共享指標。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Image(std::shared_ptr<graphics::Bitmap> bmp) {
+        if (auto* pic = dynamic_cast<controls::PictureBox*>(m_element.get())) {
+            pic->SetImage(std::move(bmp));
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定 PictureBox 尺寸呈現模式。
+    /// </summary>
+    /// <param name="mode">PictureBoxSizeMode 列舉值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& SizeMode(graphics::PictureBoxSizeMode mode) {
+        if (auto* pic = dynamic_cast<controls::PictureBox*>(m_element.get())) {
+            pic->SetSizeMode(mode);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 綁定 Signal 反應式圖片來源。
+    /// </summary>
+    /// <param name="sig">Bitmap 共享指標信號引用。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& BindImage(reactive::Signal<std::shared_ptr<graphics::Bitmap>>& sig) {
+        if (auto* pic = dynamic_cast<controls::PictureBox*>(m_element.get())) {
+            pic->SetImage(sig.Get());
+            sig.Subscribe([elem = m_element](const std::shared_ptr<graphics::Bitmap>& val) {
+                if (auto* p = dynamic_cast<controls::PictureBox*>(elem.get())) {
+                    p->SetImage(val);
+                }
+            });
+        }
+        return *this;
+    }
+
 private:
     std::shared_ptr<T> m_element;
 };
@@ -699,6 +743,15 @@ inline UIBuilder<controls::CheckBox> CheckBox(compat::string_view label = "") {
 /// <returns>TextBox 的 UIBuilder 包裝實例。</returns>
 inline UIBuilder<controls::TextBox> TextBox(compat::string_view placeholder = "") {
     return UIBuilder<controls::TextBox>(std::make_shared<controls::TextBox>(placeholder));
+}
+
+/// <summary>
+/// 建立圖片顯示控制項 (PictureBox)。
+/// </summary>
+/// <param name="image">預設點陣圖影像指標。</param>
+/// <returns>PictureBox 的 UIBuilder 包裝實例。</returns>
+inline UIBuilder<controls::PictureBox> PictureBox(std::shared_ptr<graphics::Bitmap> image = nullptr) {
+    return UIBuilder<controls::PictureBox>(std::make_shared<controls::PictureBox>(std::move(image)));
 }
 
 } // namespace dsl

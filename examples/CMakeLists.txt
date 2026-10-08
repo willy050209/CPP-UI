@@ -44,3 +44,25 @@ add_executable(ioc_example
     ioc_example/views/OrderForm.cpp
 )
 target_link_libraries(ioc_example PRIVATE cppui_core)
+
+# 4. Platform Backend Switching Example (Forced Skia)
+add_executable(platform_skia_example
+    platform_skia_example/main.cpp
+    platform_skia_example/SkiaDemoForm.cpp
+)
+target_link_libraries(platform_skia_example PRIVATE cppui_core)
+
+# 5. Asynchronous Events & Dispatcher Example
+add_executable(async_events_example
+    async_events_example/main.cpp
+    async_events_example/AsyncEventForm.cpp
+)
+target_link_libraries(async_events_example PRIVATE cppui_core)
+
+# 6. GDI+ Graphics Drawing Example (Cardioid & Gradient)
+add_executable(drawing_cardioid_example
+    drawing_cardioid_example/main.cpp
+    drawing_cardioid_example/CardioidForm.cpp
+)
+target_link_libraries(drawing_cardioid_example PRIVATE cppui_core)
+

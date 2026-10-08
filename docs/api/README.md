@@ -12,14 +12,20 @@ CPPUI 採用嚴格解耦的分層架構設計，自底向上分為平台抽象�
 graph TD
     subgraph DSLLayer["宣告式與響應式層 (cppui::dsl & reactive)"]
         Fluent["UIBuilder<T> (Fluent RAD DSL)"]
-        Factory["VStack / HStack / Grid / Border / Button / TextBox"]
+        Factory["VStack / HStack / Grid / Border / Button / TextBox / PictureBox"]
         Signals["Signal<T> (響應式資料流與單雙向綁定)"]
     end
 
     subgraph ControlsLayer["核心控制項庫 (cppui::controls)"]
         BaseCtrl["Control (Padding / Border / Background)"]
         ContentCtrl["ContentControl (單一內容容器)"]
-        Ctrls["Button / CheckBox / TextBox / TextBlock"]
+        Ctrls["Button / CheckBox / TextBox / TextBlock / PictureBox"]
+    end
+
+    subgraph GraphicsLayer["進階圖形排程層 (cppui::graphics)"]
+        Graphics["Graphics (統一繪圖排程器)"]
+        GObjects["Pen / Brush / GraphicsPath / Bitmap"]
+        Presets["Pens / Brushes / Colors"]
     end
 
     subgraph InputLayer["輸入與事件路由層 (cppui::input)"]
@@ -70,6 +76,9 @@ graph TD
     Signals --> Ctrls
     Ctrls --> BaseCtrl
     BaseCtrl --> Tree
+    Graphics --> DC
+    Graphics --> GObjects
+    Ctrls --> GObjects
     Win --> RawEvent
     RawEvent --> InputMgr
     InputMgr --> Tree
@@ -94,12 +103,13 @@ graph TD
 
 | 命名空間 (Namespace) | 模組標題 | 簡述與職責 | 核心型別導覽 |
 | :--- | :--- | :--- | :--- |
-| [`cppui::dsl`](namespaces/cppui_dsl.md) | **宣告式 Fluent RAD DSL** | 提供極簡鏈式 UI 建構樣板 `UIBuilder<T>` 與 `VStack`, `HStack`, `Grid`, `Button` 等語意化元件工廠函式。 | [`UIBuilder<T>`](namespaces/cppui_dsl.md), `VStack`, `HStack`, `Grid`, `Border`, `Button`, `TextBox`, `CheckBox`, `Label` |
+| [`cppui::dsl`](namespaces/cppui_dsl.md) | **宣告式 Fluent RAD DSL** | 提供極簡鏈式 UI 建構樣板 `UIBuilder<T>` 與 `VStack`, `HStack`, `Grid`, `Button`, `PictureBox` 等語意化元件工廠函式。 | [`UIBuilder<T>`](namespaces/cppui_dsl.md), `VStack`, `HStack`, `Grid`, `Border`, `Button`, `TextBox`, `CheckBox`, `Label`, `PictureBox` |
 | [`cppui::app`](namespaces/cppui_app.md) | **應用程式與視窗中樞** | 封裝生命週期、訊息泵、非同步調度器 (Dispatcher)、表單生命週期與 Generic Host 應用程式構建器。 | [`Application`](classes/app_application.md), [`Dispatcher`](classes/app_dispatcher.md), [`Form`](classes/app_form.md), [`AppBuilder`](classes/app_appbuilder.md) |
 | [`cppui::ioc`](namespaces/cppui_ioc.md) | **依賴反轉 (IoC / DI)** | 提供執行期型別安全之依賴注入容器與服務解析機制。 | [`ServiceCollection`](classes/ioc_servicecollection.md), [`IServiceProvider`](classes/ioc_servicecollection.md) |
 | [`cppui::mvvm`](namespaces/cppui_mvvm.md) | **現代 MVVM 架構** | 提供視圖模型屬性通知機制與命令模式委派實作。 | [`ViewModelBase`](classes/mvvm_viewmodelbase.md), [`RelayCommand`](classes/mvvm_relaycommand.md), [`ICommand`](classes/mvvm_relaycommand.md) |
 | [`cppui::reactive`](namespaces/cppui_reactive.md) | **響應式資料流與信號** | 提供零依賴、型別安全且具備弱引用生命週期保護之 `Signal<T>` 狀態信號，實現資料到介面的自動同步與綁定。 | [`Signal<T>`](classes/reactive_signal.md) |
-| [`cppui::controls`](namespaces/cppui_controls.md) | **核心 UI 控制項庫** | 實作基礎控制項樣式基底 `Control`、單內容容器 `ContentControl`、互動按鈕 `Button`、核取方塊 `CheckBox` 與文字編輯框 `TextBox`。 | [`Control`](classes/controls_control.md), [`ContentControl`](classes/controls_contentcontrol.md), [`Button`](classes/controls_button.md), [`CheckBox`](classes/controls_checkbox.md), [`TextBox`](classes/controls_textbox.md), [`TextBlock`](classes/controls_textblock.md) |
+| [`cppui::controls`](namespaces/cppui_controls.md) | **核心 UI 控制項庫** | 實作基礎控制項樣式基底 `Control`、單內容容器 `ContentControl`、互動按鈕 `Button`、核取方塊 `CheckBox`、文字編輯框 `TextBox` 與圖片展示框 `PictureBox`。 | [`Control`](classes/controls_control.md), [`ContentControl`](classes/controls_contentcontrol.md), [`Button`](classes/controls_button.md), [`CheckBox`](classes/controls_checkbox.md), [`TextBox`](classes/controls_textbox.md), [`TextBlock`](classes/controls_textblock.md), [`PictureBox`](classes/controls_picturebox.md) |
+| [`cppui::graphics`](namespaces/cppui_graphics.md) | **進階向量與點陣圖形 (GDI+ 風格 API)** | 提供解耦式一級圖形物件（`Pen`, `Brush`, `GraphicsPath`, `Bitmap`）、預定義樣式清單（`Pens`, `Brushes`, `Colors`）、多執行緒讀寫鎖保護與統一排程繪圖器 `Graphics`。 | [`Graphics`](classes/graphics_graphics.md), [`Pen`](classes/graphics_objects.md#1-pen-類別), [`Brush`](classes/graphics_objects.md#2-brush-類別族), [`GraphicsPath`](classes/graphics_objects.md#3-graphicspath-類別), [`Bitmap`](classes/graphics_objects.md#4-bitmap-類別), [`Pens`](classes/graphics_objects.md#5-pens-常數集合), [`Brushes`](classes/graphics_objects.md#6-brushes-常數集合) |
 | [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 坐標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，座標轉換中樞 [`CoordinateTransform`](classes/core_coordinatetransform.md)，以及視覺樹根基 [`Visual`](classes/core_visual.md) 與排版核心 [`UIElement`](classes/core_uielement.md)。 | [`Visual`](classes/core_visual.md), [`UIElement`](classes/core_uielement.md), [`CoordinateTransform`](classes/core_coordinatetransform.md), [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
 | [`cppui::input`](namespaces/cppui_input.md) | **輸入管線與路由事件** | 實作微軟 WPF / Avalonia 風格之雙向（隧道 Tunneling + 冒泡 Bubbling）事件路由系統、游標懸停追蹤、指標捕獲與鍵盤 Tab 焦點巡訪中樞。 | [`RoutedEvent`](classes/input_routedevent.md), [`RoutedEventArgs`](classes/input_routedeventargs.md), [`EventRoute`](classes/input_eventroute.md), [`PointerEventArgs`](classes/input_pointereventargs.md), [`KeyEventArgs`](classes/input_keyeventargs.md), [`FocusManager`](classes/input_focusmanager.md), [`InputManager`](classes/input_inputmanager.md) |
 | [`cppui::layout`](namespaces/cppui_layout.md) | **排版容器與調度** | 提供雙階段微架構排版管線容器（`Grid`、`StackPanel`、`Border`、`Canvas`）與頂層排版調度管理器 `LayoutManager`。 | [`Grid`](classes/layout_grid.md), [`Panel`](classes/layout_panel.md), [`StackPanel`](classes/layout_stackpanel.md), [`Border`](classes/layout_border.md), [`Canvas`](classes/layout_canvas.md), [`LayoutManager`](classes/layout_layoutmanager.md) |
@@ -128,8 +138,18 @@ graph TD
 * [`Button`](classes/controls_button.md)：互動式按鈕，具備 Hover、Pressed、Disabled、獲焦霓虹外框、空白鍵/Enter 狀態機與 `Command` 綁定，發布 `ClickEvent`。
 * [`CheckBox`](classes/controls_checkbox.md)：核取方塊，具備向量抗鋸齒對稱勾號繪製、狀態切換與 `CheckedEvent`/`UncheckedEvent`。
 * [`TextBox`](classes/controls_textbox.md)：單行文字編輯框，支援輸入、退格、Delete、方向鍵左右移動、Home/End、Placeholder、焦點外框與 `TextChangedEvent`。
+* [`PictureBox`](classes/controls_picturebox.md)：圖片展示控制項，支援 5 種尺寸縮放模式 (`Normal`, `StretchImage`, `AutoSize`, `CenterImage`, `Zoom`)，並提供 Fluent DSL 鏈式構建與響應式信號綁定。
 * [`Grid`](classes/layout_grid.md)：多儲存格網格排版容器，支援 Pixel、Auto、Star (*) 行列比例求解與 `SetRow` / `SetColumn` / `SetRowSpan` / `SetColumnSpan` 附加屬性。
 * [`Signal<T>`](classes/reactive_signal.md)：輕量響應式屬性信號樣板，支援值變更推播與弱引用安全的控制項屬性自動綁定。
+
+### GDI+ 風格圖形與排程架構 (Milestone 8 Advanced Graphics & Objects)
+* [`Graphics`](classes/graphics_graphics.md)：核心圖形排程器，支援雙模式建構（`FromDrawingContext` UI 模式與 `FromImage` 離線記憶體位圖模式）、幾何圖元/路徑/影像/文字繪製、變換矩陣、剪裁區域與 `StateScope` RAII 狀態守衛。
+* [`Pen`](classes/graphics_objects.md#1-pen-類別) 與 [`Pens`](classes/graphics_objects.md#5-pens-常數集合)：一級畫筆物件，封裝描邊顏色、寬度、`DashStyle`、`LineCap`、`LineJoin`，內建 `std::shared_mutex` 執行緒同步與常用標準畫筆靜態集合。
+* [`Brush`](classes/graphics_objects.md#2-brush-類別族) 與 [`Brushes`](classes/graphics_objects.md#6-brushes-常數集合)：抽象畫刷基底與具體衍生類別（`SolidBrush`、`LinearGradientBrush`、`TextureBrush`），支援多型複製、執行緒同步與常用純色畫刷靜態集合。
+* [`GraphicsPath`](classes/graphics_objects.md#3-graphicspath-類別)：複合幾何路徑，支援線段、矩形、圓角矩形、橢圓、圓弧、三次貝茲曲線、Catmull-Rom 曲線、平整化 (`Flatten`) 與射線命中測試。
+* [`Bitmap`](classes/graphics_objects.md#4-bitmap-類別)：32-bit ARGB/BGRA 點陣影像緩衝區，支援像素讀寫、記憶體鎖定 (`LockBits`)、區域裁切、90° 步進旋轉翻轉 (`RotateFlip`) 與執行緒同步。
+* [`Colors`](classes/graphics_objects.md)：對標 GDI+ 完整 140+ 種標準現代色彩常數。
+
 
 ### 輸入事件與焦點 (Input & Routed Events System)
 * [`RoutedEvent`](classes/input_routedevent.md)：路由事件標識元與傳播策略（Tunnel, Bubble, Direct），包含 `StandardEvents` 集合。
@@ -188,6 +208,7 @@ graph TD
 
 ## 4. 實戰與概念指南 (Guides & Tutorials)
 
+* [**GDI+ 風格圖形 API 與 PictureBox 控制項實戰指南**](guides/gdi_plus_graphics_guide.md)：詳解解耦圖形管線架構、Skia 向量加速與 CPU 軟體光柵雙引擎、多執行緒讀寫鎖並發防護、PictureBox 5 種縮放模式與 Skia BSD 授權聲明。
 * [**現代 MVVM 與依賴反轉 (IoC) 架構指南**](guides/mvvm_and_ioc_architecture.md)：深入探討 `Application::Run`、`Form` 生命週期狀態機、取消關閉機制、`ServiceCollection` 依賴注入與 `ViewModelBase` / `RelayCommand` 雙向綁定。
 * [**宣告式 Fluent RAD DSL 與響應式信號開發指南**](guides/fluent_rad_dsl_and_signals.md)：詳解以 `< 50` 行程式碼使用 `VStack`, `HStack`, `Grid`, `Button`, `TextBox` 與 `Signal<T>` 快速宣告桌面 UI、自動雙向資料綁定與事件串接。
 * [**跨平台抽象架構指南**](guides/cross_platform_architecture.md)：詳解 PAL 視窗抽象、純 C++ 記憶體視窗、無外部依賴文字多行排版與 8x8 ASCII 軟體光柵字模庫。

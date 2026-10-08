@@ -71,6 +71,14 @@ set(CPPUI_SOURCES
     src/app/Application.cpp
     src/app/AppBuilder.cpp
     src/app/Dispatcher.cpp
+    src/controls/PictureBox.cpp
+    src/graphics/Pen.cpp
+    src/graphics/Pens.cpp
+    src/graphics/Brush.cpp
+    src/graphics/Brushes.cpp
+    src/graphics/GraphicsPath.cpp
+    src/graphics/Bitmap.cpp
+    src/graphics/Graphics.cpp
 )
 
 if(WIN32)

@@ -68,5 +68,16 @@ add_executable(app_form_test app_form_test.cpp)
 target_link_libraries(app_form_test PRIVATE cppui_core)
 add_test(NAME AppFormTest COMMAND app_form_test)
 
+# M8 GDI+ 圖形 API、Skia 加速、執行緒安全自動同步與 PictureBox 測試
+add_executable(graphics_gdi_test graphics_gdi_test.cpp)
+target_link_libraries(graphics_gdi_test PRIVATE cppui_core)
+add_test(NAME GraphicsGdiTest COMMAND graphics_gdi_test)
+
+# 範例功能全自動測試 (平台切換、非同步事件、心臟線與漸層繪圖)
+add_executable(example_features_test example_features_test.cpp)
+target_link_libraries(example_features_test PRIVATE cppui_core)
+add_test(NAME ExampleFeaturesTest COMMAND example_features_test)
+
+
 
 

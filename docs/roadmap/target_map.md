@@ -1,6 +1,6 @@
-# CPPUI 目標地圖 (Target Roadmap: M1 ~ M7)
+# CPPUI 目標地圖 (Target Roadmap: M1 ~ M8)
 
-本文件將 CPPUI 跨平台現代 UI 框架之核心演進路線劃分為七大里程碑（M1 ~ M7）。每個階段皆有明確的職責界定、輸入依賴、核心交付物與客觀驗收標準。
+本文件將 CPPUI 跨平台現代 UI 框架之核心演進路線劃分為八大里程碑（M1 ~ M8）。每個階段皆有明確的職責界定、輸入依賴、核心交付物、所有即將實作的 API 清單與客觀驗收標準。
 
 ---
 
@@ -16,6 +16,7 @@ graph TD
     M6["<b>M6: 控制項庫與 Fluent RAD DSL</b><br/>WinForms 效率 + Avalonia 保留模式"]
     CrossPAL["<b>Cross-Platform PAL & Skia m151</b><br/>純記憶體通用視窗 + 向量核心"]
     M7["<b>M7: Application、Form 生命週期、IoC 與 MVVM</b><br/>WinForms Application.Run + IoC DI + MVVM 雙向綁定"]
+    M8["<b>M8: GDI+ 2D 圖形 API、Skia 加速與 PictureBox</b><br/>Pen/Brush/Path/Bitmap + 執行緒同步 + PictureBox"]
 
     M1 --> M2
     M1 --> M5
@@ -27,9 +28,12 @@ graph TD
     M1 --> CrossPAL
     M6 --> M7
     CrossPAL --> M7
+    M2 --> M8
+    M6 --> M8
 
     classDef done fill:#d4edda,stroke:#28a745,stroke-width:2px;
-    class M1,M2,M3,M4,M5,M6,CrossPAL,M7 done;
+    classDef planned fill:#fff3cd,stroke:#ffc107,stroke-width:2px;
+    class M1,M2,M3,M4,M5,M6,CrossPAL,M7,M8 done;
 ```
 
 ---
@@ -158,6 +162,221 @@ graph TD
 
 ---
 
+### 里程碑 8 (M8)：GDI+ 風格圖形 API、Skia 向量加速、執行緒安全自動同步與 PictureBox 控制項 (Graphics & Imaging Subsystem) [規劃中]
+* **核心目標**：建立解耦、高生產力且完全型別安全的 2D 繪圖物件模型，借鏡 GDI+ 將畫筆（`Pen`）、畫刷（`Brush`）、幾何路徑（`GraphicsPath`）與位圖（`Bitmap`）抽離為一級物件，由 `Graphics` 類別統一排程繪製，導入 Skia GPU 加速與純 CPU 軟體光柵雙引擎備援，物件內建讀寫鎖自動同步多執行緒存取，並新增 `PictureBox` 影像控制項。
+* **技術選型**：
+  * 物件導向圖形模型：對標 GDI+ (`System.Drawing`) API 規格。
+  * 渲染引擎：Skia (`SkCanvas`, `SkPath`, `SkImage`, `SkPaint`) 向量硬體加速 + 純 C++ 軟體光柵備援 (Bilinear Interpolation / Edge Table Scanline)。
+  * 並發架構：`std::shared_mutex` 多讀單寫零衝突自動同步。
+  * 控制項：WinForms `PictureBox` 5 種尺寸佈局模式 + Fluent DSL。
+* **即將實作之完整 API 地圖清單 (Exhaustive API Inventory)**：
+
+#### 1. 列舉型別清單 (`include/ui/graphics/GraphicsTypes.hpp`)
+* `enum class DashStyle : uint8_t { Solid, Dash, Dot, DashDot, DashDotDot, Custom }`
+* `enum class LineCap : uint8_t { Flat, Square, Round, Triangle, NoAnchor, SquareAnchor, RoundAnchor, DiamondAnchor, ArrowAnchor }`
+* `enum class LineJoin : uint8_t { Miter, Bevel, Round, MiterClipped }`
+* `enum class FillMode : uint8_t { Alternate, Winding }`
+* `enum class SmoothingMode : uint8_t { Default, HighSpeed, HighQuality, None, AntiAlias }`
+* `enum class InterpolationMode : uint8_t { Default, Low, High, Bilinear, Bicubic, NearestNeighbor, HighQualityBilinear, HighQualityBicubic }`
+* `enum class PixelFormat : uint8_t { Format32bppArgb, Format32bppRgb, Format24bppRgb, Format8bppIndexed }`
+* `enum class PictureBoxSizeMode : uint8_t { Normal, StretchImage, AutoSize, CenterImage, Zoom }`
+* `enum class BrushType : uint8_t { SolidColor, LinearGradient, Texture }`
+* `enum class RotateFlipType : uint8_t { RotateNoneFlipNone, Rotate90FlipNone, Rotate180FlipNone, Rotate270FlipNone, RotateNoneFlipX, RotateNoneFlipY, RotateNoneFlipXY }`
+
+#### 2. 色彩類別與預定義集合 (`include/ui/core/Geometry.hpp` & `include/ui/graphics/Colors.hpp`)
+* `struct Color` 方法擴充：
+  * `static Color FromArgb(uint8_t a, uint8_t r, uint8_t g, uint8_t b) noexcept`
+  * `static Color FromArgb(uint8_t r, uint8_t g, uint8_t b) noexcept`
+  * `static Color FromArgb(uint32_t argb) noexcept`
+  * `static Color FromArgb(uint8_t a, const Color& baseColor) noexcept`
+  * `uint32_t ToArgb() const noexcept`
+  * `bool IsEmpty() const noexcept`
+  * `float GetBrightness() const noexcept`
+  * `float GetHue() const noexcept`
+  * `float GetSaturation() const noexcept`
+* `namespace Colors` 預定義常數擴充（涵蓋 GDI+ 完整色系）：
+  * `Transparent`, `Black`, `White`, `Red`, `Green`, `Blue`, `Yellow`, `Cyan`, `Magenta`, `Gray`, `LightGray`, `DarkGray`, `Orange`, `Purple`, `Brown`, `SteelBlue`, `Navy`, `Gold`, `Lime`, `Pink`, `DarkRed`, `DarkBlue`, `DarkGreen`, `DarkSlateGray`, `Olive`, `Teal`, `Maroon`, `Coral`, `Silver`, `AliceBlue`, `AntiqueWhite`, `Aqua`, `Aquamarine`, `Azure`, `Beige`, `Bisque`, `BlanchedAlmond`, `BlueViolet`, `BurlyWood`, `CadetBlue`, `Chartreuse`, `Chocolate`, `CornflowerBlue`, `Cornsilk`, `Crimson`, `DarkCyan`, `DarkGoldenrod`, `DarkKhaki`, `DarkMagenta`, `DarkOliveGreen`, `DarkOrange`, `DarkOrchid`, `DarkSalmon`, `DarkSeaGreen`, `DarkSlateBlue`, `DarkTurquoise`, `DarkViolet`, `DeepPink`, `DeepSkyBlue`, `DimGray`, `DodgerBlue`, `Firebrick`, `FloralWhite`, `ForestGreen`, `Fuchsia`, `Gainsboro`, `GhostWhite`, `Goldenrod`, `GreenYellow`, `Honeydew`, `HotPink`, `IndianRed`, `Indigo`, `Ivory`, `Khaki`, `Lavender`, `LavenderBlush`, `LawnGreen`, `LemonChiffon`, `LightBlue`, `LightCoral`, `LightCyan`, `LightGoldenrodYellow`, `LightGreen`, `LightPink`, `LightSalmon`, `LightSeaGreen`, `LightSkyBlue`, `LightSlateGray`, `LightSteelBlue`, `LightYellow`, `LimeGreen`, `Linen`, `MediumAquamarine`, `MediumBlue`, `MediumOrchid`, `MediumPurple`, `MediumSeaGreen`, `MediumSlateBlue`, `MediumSpringGreen`, `MediumTurquoise`, `MediumVioletRed`, `MidnightBlue`, `MintCream`, `MistyRose`, `Moccasin`, `NavajoWhite`, `OldLace`, `OliveDrab`, `OrangeRed`, `Orchid`, `PaleGoldenrod`, `PaleGreen`, `PaleTurquoise`, `PaleVioletRed`, `PapayaWhip`, `PeachPuff`, `Peru`, `Plum`, `PowderBlue`, `RosyBrown`, `RoyalBlue`, `SaddleBrown`, `Salmon`, `SandyBrown`, `SeaGreen`, `SeaShell`, `Sienna`, `SkyBlue`, `SlateBlue`, `SlateGray`, `Snow`, `SpringGreen`, `Tan`, `Thistle`, `Tomato`, `Turquoise`, `Violet`, `Wheat`, `WhiteSmoke`, `YellowGreen`
+
+#### 3. 畫筆類別與標準集合 (`include/ui/graphics/Pen.hpp` & `include/ui/graphics/Pens.hpp`)
+* `class Pen`：
+  * `Pen(core::Color color, float width = 1.0f)`
+  * `Pen(const Brush& brush, float width = 1.0f)`
+  * `Pen(const Pen& other)`（執行緒安全深拷貝）
+  * `Pen& operator=(const Pen& other)`（雙重鎖定防死鎖拷貝賦值）
+  * `core::Color GetColor() const`
+  * `void SetColor(core::Color color)`
+  * `float GetWidth() const`
+  * `void SetWidth(float width)`
+  * `DashStyle GetDashStyle() const`
+  * `void SetDashStyle(DashStyle style)`
+  * `LineCap GetLineCap() const`
+  * `void SetLineCap(LineCap cap)`
+  * `LineJoin GetLineJoin() const`
+  * `void SetLineJoin(LineJoin join)`
+  * `Pen Clone() const`
+* `class Pens`（靜態標準畫筆，寬度為 1.0f）：
+  * `static const Pen& Transparent()`, `static const Pen& Black()`, `static const Pen& White()`, `static const Pen& Red()`, `static const Pen& Green()`, `static const Pen& Blue()`, `static const Pen& Yellow()`, `static const Pen& Cyan()`, `static const Pen& Magenta()`, `static const Pen& Gray()`, `static const Pen& LightGray()`, `static const Pen& DarkGray()`, `static const Pen& Orange()`, `static const Pen& Purple()`, `static const Pen& Brown()`, `static const Pen& SteelBlue()`, `static const Pen& Navy()`, `static const Pen& Gold()`, `static const Pen& Lime()`, `static const Pen& Pink()`, `static const Pen& DarkRed()`, `static const Pen& DarkBlue()`, `static const Pen& DarkGreen()`, `static const Pen& Olive()`, `static const Pen& Teal()`, `static const Pen& Maroon()`, `static const Pen& Coral()`, `static const Pen& Silver()`
+
+#### 4. 畫刷家族與標準集合 (`include/ui/graphics/Brush.hpp` & `include/ui/graphics/Brushes.hpp`)
+* `class Brush`（抽象基底）：
+  * `virtual ~Brush() = default`
+  * `virtual BrushType GetType() const noexcept = 0`
+  * `virtual std::unique_ptr<Brush> Clone() const = 0`
+* `class SolidBrush : public Brush`：
+  * `SolidBrush(core::Color color)`
+  * `core::Color GetColor() const`
+  * `void SetColor(core::Color color)`
+  * `std::unique_ptr<Brush> Clone() const override`
+* `class LinearGradientBrush : public Brush`：
+  * `LinearGradientBrush(core::Point p1, core::Point p2, core::Color c1, core::Color c2)`
+  * `LinearGradientBrush(const core::Rect& rect, core::Color c1, core::Color c2, float angleDegrees)`
+  * `core::Point GetStartPoint() const`, `void SetStartPoint(core::Point p)`
+  * `core::Point GetEndPoint() const`, `void SetEndPoint(core::Point p)`
+  * `core::Color GetStartColor() const`, `void SetStartColor(core::Color c)`
+  * `core::Color GetEndColor() const`, `void SetEndColor(core::Color c)`
+  * `std::unique_ptr<Brush> Clone() const override`
+* `class TextureBrush : public Brush`：
+  * `TextureBrush(std::shared_ptr<Bitmap> image)`
+  * `std::shared_ptr<Bitmap> GetImage() const`
+  * `std::unique_ptr<Brush> Clone() const override`
+* `class Brushes`（靜態標準純色畫刷）：
+  * `static const SolidBrush& Transparent()`, `static const SolidBrush& Black()`, `static const SolidBrush& White()`, `static const SolidBrush& Red()`, `static const SolidBrush& Green()`, `static const SolidBrush& Blue()`, `static const SolidBrush& Yellow()`, `static const SolidBrush& Cyan()`, `static const SolidBrush& Magenta()`, `static const SolidBrush& Gray()`, `static const SolidBrush& LightGray()`, `static const SolidBrush& DarkGray()`, `static const SolidBrush& Orange()`, `static const SolidBrush& Purple()`, `static const SolidBrush& Brown()`, `static const SolidBrush& SteelBlue()`, `static const SolidBrush& Navy()`, `static const SolidBrush& Gold()`, `static const SolidBrush& Lime()`, `static const SolidBrush& Pink()`, `static const SolidBrush& DarkRed()`, `static const SolidBrush& DarkBlue()`, `static const SolidBrush& DarkGreen()`, `static const SolidBrush& Olive()`, `static const SolidBrush& Teal()`, `static const SolidBrush& Maroon()`, `static const SolidBrush& Coral()`, `static const SolidBrush& Silver()`
+
+#### 5. 幾何路徑類別 (`include/ui/graphics/GraphicsPath.hpp`)
+* `class GraphicsPath`：
+  * `GraphicsPath()`
+  * `explicit GraphicsPath(FillMode fillMode)`
+  * `GraphicsPath(compat::span<const core::Point> points, FillMode fillMode = FillMode::Alternate)`
+  * `GraphicsPath(const GraphicsPath& other)` / `GraphicsPath& operator=(const GraphicsPath& other)`
+  * `void AddLine(core::Point p1, core::Point p2)`
+  * `void AddLine(float x1, float y1, float x2, float y2)`
+  * `void AddLines(compat::span<const core::Point> points)`
+  * `void AddRectangle(const core::Rect& rect)`
+  * `void AddRoundedRectangle(const core::Rect& rect, float radius)`
+  * `void AddEllipse(const core::Rect& rect)`
+  * `void AddEllipse(float x, float y, float width, float height)`
+  * `void AddArc(const core::Rect& rect, float startAngle, float sweepAngle)`
+  * `void AddBezier(core::Point p1, core::Point c1, core::Point c2, core::Point p2)`
+  * `void AddCurve(compat::span<const core::Point> points)`
+  * `void AddPolygon(compat::span<const core::Point> points)`
+  * `void AddPath(const GraphicsPath& path, bool connect = false)`
+  * `void CloseFigure()`
+  * `void CloseAllFigures()`
+  * `void StartFigure()`
+  * `void Reset()`
+  * `FillMode GetFillMode() const`
+  * `void SetFillMode(FillMode mode)`
+  * `core::Rect GetBounds() const`
+  * `size_t GetPointCount() const`
+  * `std::vector<core::Point> GetPathPoints() const`
+  * `bool IsVisible(core::Point pt) const`
+  * `bool IsVisible(float x, float y) const`
+  * `bool IsOutlineVisible(core::Point pt, const Pen& pen) const`
+  * `std::vector<core::Point> Flatten(float flatness = 0.25f) const`
+  * `void Transform(float m11, float m12, float m21, float m22, float dx, float dy)`
+  * `GraphicsPath Clone() const`
+
+#### 6. 點陣位圖類別 (`include/ui/graphics/Bitmap.hpp`)
+* `class Bitmap`：
+  * `Bitmap(uint32_t width, uint32_t height, PixelFormat format = PixelFormat::Format32bppArgb)`
+  * `Bitmap(uint32_t width, uint32_t height, compat::span<const uint32_t> pixels, PixelFormat format = PixelFormat::Format32bppArgb)`
+  * `explicit Bitmap(compat::string_view filename)`
+  * `Bitmap(const Bitmap& other)` / `Bitmap& operator=(const Bitmap& other)`
+  * `uint32_t GetWidth() const noexcept`
+  * `uint32_t GetHeight() const noexcept`
+  * `PixelFormat GetPixelFormat() const noexcept`
+  * `uint32_t GetStride() const noexcept`
+  * `core::Color GetPixel(uint32_t x, uint32_t y) const`
+  * `void SetPixel(uint32_t x, uint32_t y, core::Color color)`
+  * `void Clear(core::Color color)`
+  * `compat::span<const uint32_t> GetPixelSpan() const`
+  * `compat::span<uint32_t> GetPixelSpanMut()`
+  * `void* LockBits(const core::Rect& rect, uint32_t flags)`
+  * `void UnlockBits()`
+  * `std::shared_ptr<Bitmap> Clone(const core::Rect& rect, PixelFormat format) const`
+  * `void RotateFlip(RotateFlipType rotateFlipType)`
+
+#### 7. 圖形排程中樞 (`include/ui/graphics/Graphics.hpp`)
+* `class Graphics`：
+  * `static Graphics FromDrawingContext(rendering::DrawingContext& dc)`
+  * `static Graphics FromImage(std::shared_ptr<Bitmap> image)`
+  * `uint32_t Save()`
+  * `void Restore(uint32_t stateId)`
+  * `void TranslateTransform(float dx, float dy)`
+  * `void ScaleTransform(float sx, float sy)`
+  * `void RotateTransform(float angleDegrees)`
+  * `void ResetTransform()`
+  * `void SetClip(const core::Rect& rect)`
+  * `void SetClip(const GraphicsPath& path)`
+  * `void ResetClip()`
+  * `core::Rect GetClipBounds() const`
+  * `void SetSmoothingMode(SmoothingMode mode)`
+  * `SmoothingMode GetSmoothingMode() const`
+  * `void SetInterpolationMode(InterpolationMode mode)`
+  * `InterpolationMode GetInterpolationMode() const`
+  * `void Clear(core::Color color)`
+  * `void DrawLine(const Pen& pen, core::Point pt1, core::Point pt2)`
+  * `void DrawLine(const Pen& pen, float x1, float y1, float x2, float y2)`
+  * `void DrawLines(const Pen& pen, compat::span<const core::Point> points)`
+  * `void DrawRectangle(const Pen& pen, const core::Rect& rect)`
+  * `void DrawRectangle(const Pen& pen, float x, float y, float width, float height)`
+  * `void DrawRectangles(const Pen& pen, compat::span<const core::Rect> rects)`
+  * `void FillRectangle(const Brush& brush, const core::Rect& rect)`
+  * `void FillRectangle(const Brush& brush, float x, float y, float width, float height)`
+  * `void FillRectangles(const Brush& brush, compat::span<const core::Rect> rects)`
+  * `void DrawRoundedRectangle(const Pen& pen, const core::Rect& rect, float radius)`
+  * `void FillRoundedRectangle(const Brush& brush, const core::Rect& rect, float radius)`
+  * `void DrawEllipse(const Pen& pen, const core::Rect& rect)`
+  * `void DrawEllipse(const Pen& pen, float x, float y, float width, float height)`
+  * `void FillEllipse(const Brush& brush, const core::Rect& rect)`
+  * `void FillEllipse(const Brush& brush, float x, float y, float width, float height)`
+  * `void DrawArc(const Pen& pen, const core::Rect& rect, float startAngle, float sweepAngle)`
+  * `void DrawPie(const Pen& pen, const core::Rect& rect, float startAngle, float sweepAngle)`
+  * `void FillPie(const Brush& brush, const core::Rect& rect, float startAngle, float sweepAngle)`
+  * `void DrawPolygon(const Pen& pen, compat::span<const core::Point> points)`
+  * `void FillPolygon(const Brush& brush, compat::span<const core::Point> points, FillMode fillMode = FillMode::Alternate)`
+  * `void DrawBezier(const Pen& pen, core::Point pt1, core::Point pt2, core::Point pt3, core::Point pt4)`
+  * `void DrawBeziers(const Pen& pen, compat::span<const core::Point> points)`
+  * `void DrawCurve(const Pen& pen, compat::span<const core::Point> points)`
+  * `void DrawPath(const Pen& pen, const GraphicsPath& path)`
+  * `void FillPath(const Brush& brush, const GraphicsPath& path)`
+  * `void DrawImage(std::shared_ptr<Bitmap> image, const core::Rect& destRect)`
+  * `void DrawImage(std::shared_ptr<Bitmap> image, const core::Rect& destRect, const core::Rect& srcRect)`
+  * `void DrawImage(std::shared_ptr<Bitmap> image, float x, float y)`
+  * `void DrawImage(std::shared_ptr<Bitmap> image, float x, float y, float width, float height)`
+  * `void DrawImageUnscaled(std::shared_ptr<Bitmap> image, core::Point origin)`
+  * `void DrawString(compat::string_view text, const text::FontDescriptor& font, const Brush& brush, core::Point origin)`
+  * `void DrawString(compat::string_view text, const text::FontDescriptor& font, const Brush& brush, const core::Rect& layoutRect)`
+  * `core::Size MeasureString(compat::string_view text, const text::FontDescriptor& font)`
+  * `class Graphics::StateScope`（RAII 狀態守衛）
+
+#### 8. PictureBox 控制項與 Fluent DSL (`include/ui/controls/PictureBox.hpp` & `include/ui/dsl/Fluent.hpp`)
+* `class PictureBox : public Control`：
+  * `PictureBox()`
+  * `explicit PictureBox(std::shared_ptr<graphics::Bitmap> image)`
+  * `std::shared_ptr<graphics::Bitmap> GetImage() const`
+  * `void SetImage(std::shared_ptr<graphics::Bitmap> image)`
+  * `graphics::PictureBoxSizeMode GetSizeMode() const`
+  * `void SetSizeMode(graphics::PictureBoxSizeMode mode)`
+  * `core::Size MeasureOverride(core::Size availableSize) override`
+  * `core::Size ArrangeOverride(core::Size finalSize) override`
+  * `void OnRender(rendering::DrawingContext& dc) override`
+* `Fluent.hpp` 宣告式擴充：
+  * `PictureBox(std::shared_ptr<Bitmap> bmp)`
+  * `.Image(std::shared_ptr<Bitmap> bmp)`
+  * `.SizeMode(PictureBoxSizeMode mode)`
+  * `.BindImage(Signal<std::shared_ptr<Bitmap>>& sig)`
+
+* **驗收標準 (Acceptance Criteria)**：
+  1. 完整實作上述所有列舉、結構、類別與成員函數，API 簽章 100% 對齊設計。
+  2. 單元測試 (`tests/graphics_gdi_test.cpp`) 涵蓋率達 100%，對每個 API 提供 Dedicated Test Case。
+  3. 驗證多執行緒並發寫入與讀取時（包含 10 個執行緒密集隨機呼叫 `SetPixel`/`GetPixel` 與 `AddLine`/`GetBounds`），無 Data Race、無記憶體洩漏且執行緒安全同步。
+  4. 驗證 `PictureBox` 於 5 種 `SizeMode` 下排版測量（`DesiredSize`）與渲染拉伸裁切數學無誤。
+  5. 驗證 Skia 向量加速分支與 CPU 軟體光柵回退分支輸出正確。
+  6. 測試所有公開 API 傳入 `nullptr`、負數維度、非法引數時正確擲出 `std::invalid_argument`。
+
+---
+
 ## 3. 各階段責任矩陣速查
 
 | 模組名稱 | 階段 | 主要包含頭文件目錄 | 核心對標概念 |
@@ -169,3 +388,5 @@ graph TD
 | **Input & Focus** | M5 | `include/ui/input/` | WPF Routed Event System |
 | **RAD Fluent Controls** | M6 | `include/ui/controls/` | WinForms Code-Behind / Avalonia C# Markup |
 | **Application & MVVM** | M7 | `include/ui/app/`, `include/ui/ioc/`, `include/ui/mvvm/` | WinForms `Application.Run` / WPF `DataContext` / .NET Generic Host |
+| **Graphics & PictureBox** | M8 | `include/ui/graphics/`, `include/ui/controls/PictureBox.hpp` | GDI+ (`System.Drawing`) / Skia 2D / WinForms `PictureBox` |
+

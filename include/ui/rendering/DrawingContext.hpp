@@ -10,6 +10,8 @@
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/text/Font.hpp"
 #include "ui/text/TextLayout.hpp"
+#include "ui/graphics/GraphicsPath.hpp"
+#include "ui/graphics/Brush.hpp"
 
 namespace cppui {
 namespace rendering {
@@ -113,6 +115,110 @@ public:
         op.color = color;
         op.nativeLayoutHandle = layout.GetNativeHandle();
         m_displayList.PushOp(DrawOpType::DrawTextLayout, op);
+    }
+
+    /// <summary>
+    /// 繪製橢圓邊框。
+    /// </summary>
+    /// <param name="rect">外接矩形邊界。</param>
+    /// <param name="color">邊框色彩。</param>
+    /// <param name="strokeWidth">邊框粗細。</param>
+    void DrawEllipse(const core::Rect& rect, core::Color color, float strokeWidth = 1.0f) {
+        if (rect.IsEmpty() || color.a == 0 || strokeWidth <= 0.0f) return;
+        core::Rect offsetRect(rect.x + m_currentOffset.x, rect.y + m_currentOffset.y, rect.width, rect.height);
+        DrawEllipseOp op{ offsetRect, color, strokeWidth };
+        m_displayList.PushOp(DrawOpType::DrawEllipse, op);
+    }
+
+    /// <summary>
+    /// 填滿橢圓內部。
+    /// </summary>
+    /// <param name="rect">外接矩形邊界。</param>
+    /// <param name="color">填滿色彩。</param>
+    void FillEllipse(const core::Rect& rect, core::Color color) {
+        if (rect.IsEmpty() || color.a == 0) return;
+        core::Rect offsetRect(rect.x + m_currentOffset.x, rect.y + m_currentOffset.y, rect.width, rect.height);
+        FillEllipseOp op{ offsetRect, color };
+        m_displayList.PushOp(DrawOpType::FillEllipse, op);
+    }
+
+    /// <summary>
+    /// 描繪幾何路徑輪廓。
+    /// </summary>
+    /// <param name="pathPtr">幾何路徑指針。</param>
+    /// <param name="color">輪廓色彩。</param>
+    /// <param name="strokeWidth">描邊粗細。</param>
+    void DrawPath(const void* pathPtr, core::Color color, float strokeWidth = 1.0f) {
+        if (!pathPtr || color.a == 0 || strokeWidth <= 0.0f) return;
+        const auto* path = static_cast<const graphics::GraphicsPath*>(pathPtr);
+        auto points = path->Flatten(0.25f);
+        if (points.size() < 2) return;
+
+        DrawPathOp op;
+        op.color = color;
+        op.strokeWidth = strokeWidth;
+        op.pointCount = static_cast<uint32_t>(points.size());
+        m_displayList.PushOpWithData(DrawOpType::DrawPath, op, points.data(), points.size() * sizeof(core::Point));
+    }
+
+    /// <summary>
+    /// 填滿幾何路徑內部 (支援畫刷與退回純色)。
+    /// </summary>
+    /// <param name="pathPtr">幾何路徑指針。</param>
+    /// <param name="brushPtr">畫刷指針 (如 LinearGradientBrush)。</param>
+    /// <param name="fallbackColor">備用填滿色彩。</param>
+    /// <param name="fillMode">填色模式。</param>
+    void FillPath(const void* pathPtr, const void* brushPtr, core::Color fallbackColor, uint8_t fillMode = 0) {
+        if (!pathPtr) return;
+        const auto* path = static_cast<const graphics::GraphicsPath*>(pathPtr);
+        auto points = path->Flatten(0.25f);
+        if (points.size() < 3) return;
+
+        FillPathOp op;
+        op.color = fallbackColor;
+        op.fillMode = fillMode;
+        op.hasGradient = 0;
+        op.reserved = 0;
+        op.pointCount = static_cast<uint32_t>(points.size());
+        op.bounds = path->GetBounds();
+
+        if (brushPtr) {
+            const auto* brush = static_cast<const graphics::Brush*>(brushPtr);
+            if (brush->GetType() == graphics::BrushType::LinearGradient) {
+                const auto* grad = static_cast<const graphics::LinearGradientBrush*>(brush);
+                op.hasGradient = 1;
+                op.gradStart = grad->GetStartPoint();
+                op.gradEnd = grad->GetEndPoint();
+                op.gradStartColor = grad->GetStartColor();
+                op.gradEndColor = grad->GetEndColor();
+            }
+        }
+
+        m_displayList.PushOpWithData(DrawOpType::FillPath, op, points.data(), points.size() * sizeof(core::Point));
+    }
+
+    /// <summary>
+    /// 填滿幾何路徑內部。
+    /// </summary>
+    /// <param name="pathPtr">幾何路徑指針。</param>
+    /// <param name="color">填滿色彩。</param>
+    /// <param name="fillMode">填色模式。</param>
+    void FillPath(const void* pathPtr, core::Color color, uint8_t fillMode = 0) {
+        FillPath(pathPtr, nullptr, color, fillMode);
+    }
+
+    /// <summary>
+    /// 繪製點陣影像。
+    /// </summary>
+    /// <param name="bitmapPtr">點陣影像指針。</param>
+    /// <param name="destRect">目標繪製矩形。</param>
+    /// <param name="srcRect">來源影像裁切矩形。</param>
+    /// <param name="opacity">不透明度 (0.0f ~ 1.0f)。</param>
+    void DrawImage(const void* bitmapPtr, const core::Rect& destRect, const core::Rect& srcRect, float opacity = 1.0f) {
+        if (!bitmapPtr || destRect.IsEmpty() || opacity <= 0.0f) return;
+        core::Rect offsetDest(destRect.x + m_currentOffset.x, destRect.y + m_currentOffset.y, destRect.width, destRect.height);
+        DrawImageOp op{ offsetDest, srcRect, bitmapPtr, opacity };
+        m_displayList.PushOp(DrawOpType::DrawImage, op);
     }
 
     /// <summary>
