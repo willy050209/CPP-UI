@@ -1,3 +1,9 @@
+/*
+ * File: main.cpp
+ * Purpose: Milestone 7 demo illustrating Application host builder, IoC DI, and MVVM patterns.
+ */
+
+#include <cstdint>
 #include <memory>
 #include <string>
 #include "compat/compat.hpp"
@@ -9,12 +15,19 @@
 #include "ui/dsl/Fluent.hpp"
 #include "ui/reactive/Signal.hpp"
 
-using namespace cppui;
-using namespace cppui::app;
-using namespace cppui::mvvm;
-using namespace cppui::dsl;
-using namespace cppui::core;
-using namespace cppui::reactive;
+namespace m7_demo {
+
+namespace text = cppui::text;
+using cppui::mvvm::ViewModelBase;
+using cppui::mvvm::RelayCommand;
+using cppui::reactive::Signal;
+using cppui::app::Form;
+using cppui::app::FormStartPosition;
+using cppui::app::FormClosingEventArgs;
+using cppui::app::FormClosedEventArgs;
+using cppui::core::Color;
+using cppui::core::Thickness;
+using cppui::core::Size;
 
 // =============================================================================
 // 1. 領域服務介面與實作 (Domain Service & Implementation for IoC)
@@ -36,7 +49,7 @@ public:
     }
 
 private:
-    int m_queryCount = 0;
+    int32_t m_queryCount = 0;
 };
 
 // =============================================================================
@@ -69,12 +82,12 @@ public:
         });
 
         // 監聽 Counter 改變以更新 ResetCommand 的 CanExecute 狀態
-        Counter.Subscribe([this](int) {
+        Counter.Subscribe([this](int32_t) {
             ResetCommand->NotifyCanExecuteChanged();
         });
     }
 
-    Signal<int> Counter{ 0 };
+    Signal<int32_t> Counter{ 0 };
     Signal<std::string> CityName{ "Taipei" };
     Signal<std::string> WeatherReport{ "點擊按鈕查詢天氣..." };
     Signal<std::string> StatusMessage{ "歡迎體驗 CPPUI M7 現代化 Application 與 MVVM 架構！" };
@@ -95,6 +108,8 @@ class MainDashboardForm : public Form {
 public:
     explicit MainDashboardForm(std::shared_ptr<DashboardViewModel> vm)
         : m_vm(vm) {
+        using namespace cppui;
+        using namespace cppui::dsl;
 
         SetTitle("CPPUI M7 - Modern Application & MVVM Architecture Showcase");
         SetFormSize(1024, 700);
@@ -138,7 +153,7 @@ public:
                                     .FontWeight(text::FontWeight::Bold)
                                     .Foreground(Color(80, 220, 140, 255))
                                     .Margin(0.0f, 8.0f)
-                                    .BindText(vm->Counter, [](int val) {
+                                    .BindText(vm->Counter, [](int32_t val) {
                                         return "計數器數值: " + std::to_string(val);
                                     }),
 
@@ -265,11 +280,18 @@ private:
     std::shared_ptr<DashboardViewModel> m_vm;
 };
 
+} // namespace m7_demo
+
 // =============================================================================
 // 4. 程式進入點 (極速 Host 依賴注入與 Application::Run 啟動)
 // =============================================================================
 
 int main() {
+    using namespace cppui;
+    using namespace cppui::app;
+    using namespace cppui::ioc;
+    using namespace m7_demo;
+
     compat::println("==================================================");
     compat::println(" CPPUI Milestone 7: Application & MVVM Demo");
     compat::println("==================================================");

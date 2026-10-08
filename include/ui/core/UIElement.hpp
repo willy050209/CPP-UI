@@ -1,5 +1,12 @@
+/*
+ * File: UIElement.hpp
+ * Purpose: Declares the core UIElement base class with layout sizing, hit testing,
+ *          focus management, and routed events.
+ */
+
 #pragma once
 
+#include <cstdint>
 #include <limits>
 #include <algorithm>
 #include <functional>
@@ -141,8 +148,8 @@ public:
     COMPAT_NODISCARD bool IsFocused() const noexcept { return m_isFocused; }
     void SetFocusedInternal(bool focused) noexcept;
 
-    COMPAT_NODISCARD int GetTabIndex() const noexcept { return m_tabIndex; }
-    void SetTabIndex(int index) noexcept { m_tabIndex = index; }
+    COMPAT_NODISCARD int32_t GetTabIndex() const noexcept { return m_tabIndex; }
+    void SetTabIndex(int32_t index) noexcept { m_tabIndex = index; }
 
     COMPAT_NODISCARD bool IsTabStop() const noexcept { return m_isTabStop; }
     void SetTabStop(bool tabStop) noexcept { m_isTabStop = tabStop; }
@@ -159,7 +166,7 @@ protected:
     bool                        m_isHitTestVisible = true;
     bool                        m_isFocusable = false;
     bool                        m_isFocused = false;
-    int                         m_tabIndex = 0;
+    int32_t                     m_tabIndex = 0;
     bool                        m_isTabStop = true;
 
     Thickness                   m_margin{ 0.0f, 0.0f, 0.0f, 0.0f };

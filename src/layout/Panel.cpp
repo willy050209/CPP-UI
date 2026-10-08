@@ -1,10 +1,22 @@
+/*
+ * File: Panel.cpp
+ * Purpose: Implements Panel child management, visual hierarchy sync, and fail-fast validation.
+ */
+
 #include "ui/layout/Panel.hpp"
+#include <stdexcept>
+#include <utility>
 
 namespace cppui {
 namespace layout {
 
 void Panel::AddChild(std::shared_ptr<core::UIElement> child) {
-    if (!child || child.get() == this) return;
+    if (!child) {
+        throw std::invalid_argument("Panel::AddChild: child cannot be null.");
+    }
+    if (child.get() == this) {
+        throw std::invalid_argument("Panel::AddChild: cannot add panel as child of itself.");
+    }
 
     AddVisualChild(child);
     m_children.push_back(std::move(child));
@@ -12,7 +24,9 @@ void Panel::AddChild(std::shared_ptr<core::UIElement> child) {
 }
 
 void Panel::RemoveChild(const std::shared_ptr<core::UIElement>& child) {
-    if (!child) return;
+    if (!child) {
+        throw std::invalid_argument("Panel::RemoveChild: child cannot be null.");
+    }
 
     RemoveVisualChild(child);
     for (auto it = m_children.begin(); it != m_children.end(); ++it) {

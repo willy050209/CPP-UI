@@ -1,7 +1,13 @@
+/*
+ * File: PlatformWindowWin32.hpp
+ * Purpose: Declares the Win32 platform window implementation for native Windows execution.
+ */
+
 #pragma once
 
 #ifdef _WIN32
 
+#include <cstdint>
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -43,7 +49,7 @@ public:
     }
 
     void PollEvents() override;
-    bool WaitEvents(int timeoutMs = -1) override;
+    bool WaitEvents(int32_t timeoutMs = -1) override;
     void WakeUp() override;
 
     void RequestRedraw() override;

@@ -1,7 +1,13 @@
+/*
+ * File: Button.cpp
+ * Purpose: Implements Button interaction state machine, routing, and command execution.
+ */
+
 #include "ui/controls/Button.hpp"
 #include "ui/input/InputManager.hpp"
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/mvvm/ICommand.hpp"
+#include <stdexcept>
 
 namespace cppui {
 namespace controls {
@@ -123,15 +129,16 @@ void Button::OnClick(std::function<void()> handler) {
 }
 
 void Button::SetCommand(std::shared_ptr<mvvm::ICommand> command) {
-    m_command = command;
-    if (m_command) {
-        m_command->AddCanExecuteChangedHandler([this]() {
-            if (m_command) {
-                SetEnabled(m_command->CanExecute());
-            }
-        });
-        SetEnabled(m_command->CanExecute());
+    if (!command) {
+        throw std::invalid_argument("Button::SetCommand: command cannot be null.");
     }
+    m_command = command;
+    m_command->AddCanExecuteChangedHandler([this]() {
+        if (m_command) {
+            SetEnabled(m_command->CanExecute());
+        }
+    });
+    SetEnabled(m_command->CanExecute());
 }
 
 void Button::RaiseClick() {

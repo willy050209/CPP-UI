@@ -1,5 +1,12 @@
+/**
+ * @file pal_crossplatform_test.cpp
+ * @brief 跨平台通用 PAL (PlatformWindowGeneric)、事件注入、軟體光柵備援與防禦性邊界單元測試
+ */
+
 #include <cassert>
 #include <vector>
+#include <cstdint>
+#include <stdexcept>
 #include "compat/compat.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
@@ -132,6 +139,32 @@ int main() {
     window->Close();
     assert(window->IsClosed());
     compat::println("[PASS] PlatformWindowGeneric Close lifecycle");
+
+    // 9. 測試 PlatformWindowFactory 契約邊界 (Fail-Fast Checks)
+    bool zeroWidthCaught = false;
+    try {
+        WindowDesc invalidDesc;
+        invalidDesc.width = 0;
+        invalidDesc.height = 100;
+        auto unused = PlatformWindowFactory::CreateGeneric(invalidDesc);
+        (void)unused;
+    } catch (const std::invalid_argument&) {
+        zeroWidthCaught = true;
+    }
+    assert(zeroWidthCaught);
+
+    bool zeroCreateCaught = false;
+    try {
+        WindowDesc invalidDesc;
+        invalidDesc.width = 0;
+        invalidDesc.height = 0;
+        auto unused = PlatformWindowFactory::Create(invalidDesc);
+        (void)unused;
+    } catch (const std::invalid_argument&) {
+        zeroCreateCaught = true;
+    }
+    assert(zeroCreateCaught);
+    compat::println("[PASS] PlatformWindowFactory zero dimensions exception verified");
 
     compat::println("[CPPUI Test] All cross-platform generic PAL tests passed successfully!");
     return 0;

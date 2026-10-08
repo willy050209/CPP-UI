@@ -1,3 +1,8 @@
+/*
+ * File: TextShaper.cpp
+ * Purpose: Implements complex text shaping, glyph mapping, and advance calculations.
+ */
+
 #include "ui/text/TextShaper.hpp"
 #ifdef _WIN32
 #include "DirectWriteTextEngine.hpp"
@@ -15,7 +20,7 @@ namespace {
 class ShapingCaptureRenderer : public IDWriteTextRenderer {
 public:
     ShapingCaptureRenderer(const cppui::text::FontDescriptor& font, std::vector<cppui::text::ShapedRun>& outRuns)
-        : m_font(font), m_runs(outRuns), m_refCount(1) {}
+        : m_font(font), m_runs(outRuns) {}
 
     // IUnknown
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override {
@@ -30,13 +35,11 @@ public:
     }
 
     ULONG STDMETHODCALLTYPE AddRef() override {
-        return ++m_refCount;
+        return 1;
     }
 
     ULONG STDMETHODCALLTYPE Release() override {
-        ULONG count = --m_refCount;
-        if (count == 0) delete this;
-        return count;
+        return 1;
     }
 
     // IDWritePixelSnapping
@@ -109,7 +112,6 @@ public:
 private:
     cppui::text::FontDescriptor            m_font;
     std::vector<cppui::text::ShapedRun>&  m_runs;
-    ULONG                                  m_refCount;
 };
 
 } // anonymous namespace
@@ -134,9 +136,8 @@ struct TextShaper::Impl {
         );
 
         if (pLayout) {
-            auto* renderer = new ShapingCaptureRenderer(font, runs);
-            pLayout->Draw(nullptr, renderer, 0.0f, 0.0f);
-            renderer->Release();
+            ShapingCaptureRenderer renderer(font, runs);
+            pLayout->Draw(nullptr, &renderer, 0.0f, 0.0f);
             pLayout->Release();
         }
 #else
@@ -156,7 +157,7 @@ struct TextShaper::Impl {
     }
 };
 
-TextShaper::TextShaper() : m_impl(new Impl()) {}
+TextShaper::TextShaper() : m_impl(std::make_unique<Impl>()) {}
 TextShaper::~TextShaper() = default;
 
 std::vector<ShapedRun> TextShaper::Shape(compat::string_view text, const FontDescriptor& font) const {

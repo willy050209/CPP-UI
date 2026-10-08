@@ -1,3 +1,8 @@
+/*
+ * File: TextLayoutEngine.cpp
+ * Purpose: Implements high-level text layout formatting, line wrapping, and metrics.
+ */
+
 #include "ui/text/TextLayoutEngine.hpp"
 #include "TextLayoutImpl.hpp"
 #include <algorithm>
@@ -150,7 +155,7 @@ TextLayoutEngine& TextLayoutEngine::Get() {
     return instance;
 }
 
-TextLayoutEngine::TextLayoutEngine() : m_impl(new Impl()) {}
+TextLayoutEngine::TextLayoutEngine() : m_impl(std::make_unique<Impl>()) {}
 TextLayoutEngine::~TextLayoutEngine() = default;
 
 TextLayout TextLayoutEngine::CreateLayout(

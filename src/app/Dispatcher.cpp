@@ -1,5 +1,11 @@
+/*
+ * File: Dispatcher.cpp
+ * Purpose: Implements the UI thread Dispatcher with fail-fast validation and thread-safe execution.
+ */
+
 #include "ui/app/Dispatcher.hpp"
 #include "ui/app/Application.hpp"
+#include <stdexcept>
 #include <vector>
 
 namespace cppui {
@@ -9,7 +15,9 @@ Dispatcher::Dispatcher()
     : m_mainThreadId(std::this_thread::get_id()), m_hasMainThreadId(true) {}
 
 void Dispatcher::InvokeAsync(std::function<void()> action) {
-    if (!action) return;
+    if (!action) {
+        throw std::invalid_argument("Dispatcher::InvokeAsync: action cannot be empty.");
+    }
 
     {
         std::lock_guard<std::mutex> lock(m_mutex);

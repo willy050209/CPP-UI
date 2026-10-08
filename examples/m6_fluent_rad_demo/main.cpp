@@ -1,3 +1,9 @@
+/*
+ * File: main.cpp
+ * Purpose: Milestone 6 demo illustrating fluent RAD DSL and reactive signals.
+ */
+
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <memory>
@@ -28,14 +34,14 @@
 #include "ui/input/InputManager.hpp"
 #include "ui/input/FocusManager.hpp"
 
-using namespace cppui;
-using namespace cppui::core;
-using namespace cppui::reactive;
-using namespace cppui::dsl;
-using namespace cppui::rendering;
-using namespace cppui::input;
-
 int main() {
+    using namespace cppui;
+    using namespace cppui::core;
+    using namespace cppui::reactive;
+    using namespace cppui::dsl;
+    using namespace cppui::rendering;
+    using namespace cppui::input;
+
     compat::println("=================================================");
     compat::println(" [CPPUI M6] Fluent RAD DSL & Reactive UI Demo   ");
     compat::println("=================================================");
@@ -61,7 +67,7 @@ int main() {
     DisplayListRenderer renderer;
 
     // 2. 宣告響應式狀態 (Reactive Signals)
-    Signal<int> clickCounter(0);
+    Signal<int32_t> clickCounter(0);
     Signal<std::string> statusMessage("歡迎使用 CPPUI M6 Fluent RAD DSL 宣告式介面！");
 
     // 3. 使用 Fluent RAD DSL 宣告現代化桌面 UI 階層架構 (< 60 行語意化構建)
@@ -100,7 +106,7 @@ int main() {
                             .FontWeight(text::FontWeight::Bold)
                             .Foreground(Color(80, 200, 120, 255))
                             .Margin(0.0f, 6.0f)
-                            .BindText(clickCounter, [](int count) {
+                            .BindText(clickCounter, [](int32_t count) {
                                 return "點擊次數: " + std::to_string(count);
                             }),
 

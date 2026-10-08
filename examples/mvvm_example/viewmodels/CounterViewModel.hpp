@@ -1,3 +1,8 @@
+/*
+ * File: CounterViewModel.hpp
+ * Purpose: Declares CounterViewModel mediating between CounterModel and CounterForm.
+ */
+
 #pragma once
 
 #include "ui/mvvm/ViewModelBase.hpp"
@@ -6,8 +11,14 @@
 #include <memory>
 #include <string>
 
+/// <summary>
+/// 計數器展示視圖模型 (ViewModel)
+/// </summary>
 class CounterViewModel : public cppui::mvvm::ViewModelBase {
 public:
+    /// <summary>
+    /// 建構 CounterViewModel 並初始化指令與狀態。
+    /// </summary>
     CounterViewModel();
     ~CounterViewModel() override = default;
 

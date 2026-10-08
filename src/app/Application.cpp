@@ -1,6 +1,14 @@
+/*
+ * File: Application.cpp
+ * Purpose: Implements the Application static hub managing application lifecycle,
+ *          event message loops, active forms, dispatching tasks, and fail-fast validation.
+ */
+
 #include "ui/app/Application.hpp"
 #include "ui/app/AppBuilder.hpp"
 #include <algorithm>
+#include <cstdint>
+#include <stdexcept>
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -33,21 +41,7 @@ std::shared_ptr<ioc::IServiceProvider> s_serviceProvider;
 PlatformBackend s_platformBackend = PlatformBackend::Win32;
 Dispatcher s_dispatcher;
 
-} // anonymous namespace
-
-int Application::Run() {
-    return Run(std::shared_ptr<Form>(nullptr));
-}
-
-int Application::Run(Form* mainForm) {
-    if (!mainForm) {
-        return Run();
-    }
-    std::shared_ptr<Form> sharedForm(mainForm);
-    return Run(sharedForm);
-}
-
-int Application::Run(std::shared_ptr<Form> mainForm) {
+static int32_t RunInternal(std::shared_ptr<Form> mainForm) {
     s_mainForm = mainForm;
     s_isRunning = true;
     s_exitRequested = false;
@@ -55,7 +49,7 @@ int Application::Run(std::shared_ptr<Form> mainForm) {
 
     if (mainForm) {
         mainForm->Show();
-        SetActiveForm(mainForm);
+        Application::SetActiveForm(mainForm);
     }
 
     // 主訊息迴圈
@@ -113,8 +107,29 @@ int Application::Run(std::shared_ptr<Form> mainForm) {
         }
     }
 
-    Exit();
+    Application::Exit();
     return 0;
+}
+
+} // anonymous namespace
+
+int32_t Application::Run() {
+    return RunInternal(nullptr);
+}
+
+int32_t Application::Run(Form* mainForm) {
+    if (!mainForm) {
+        throw std::invalid_argument("Application::Run: mainForm cannot be null.");
+    }
+    std::shared_ptr<Form> sharedForm(mainForm);
+    return RunInternal(sharedForm);
+}
+
+int32_t Application::Run(std::shared_ptr<Form> mainForm) {
+    if (!mainForm) {
+        throw std::invalid_argument("Application::Run: mainForm cannot be null.");
+    }
+    return RunInternal(mainForm);
 }
 
 void Application::Exit() {
@@ -237,7 +252,10 @@ void Application::AddIdleHandler(IdleCallback handler) {
 }
 
 void Application::SetServiceProvider(std::shared_ptr<ioc::IServiceProvider> provider) {
-    s_serviceProvider = provider;
+    if (!provider) {
+        throw std::invalid_argument("Application::SetServiceProvider: provider cannot be null.");
+    }
+    s_serviceProvider = std::move(provider);
 }
 
 std::shared_ptr<ioc::IServiceProvider> Application::GetServices() noexcept {
@@ -245,7 +263,9 @@ std::shared_ptr<ioc::IServiceProvider> Application::GetServices() noexcept {
 }
 
 void Application::RegisterForm(std::shared_ptr<Form> form) {
-    if (!form) return;
+    if (!form) {
+        throw std::invalid_argument("Application::RegisterForm: form cannot be null.");
+    }
     for (const auto& existing : s_openForms) {
         if (existing.get() == form.get()) return;
     }
@@ -254,7 +274,9 @@ void Application::RegisterForm(std::shared_ptr<Form> form) {
 }
 
 void Application::UnregisterForm(Form* form) {
-    if (!form) return;
+    if (!form) {
+        throw std::invalid_argument("Application::UnregisterForm: form cannot be null.");
+    }
     s_openForms.erase(
         std::remove_if(s_openForms.begin(), s_openForms.end(),
             [form](const std::shared_ptr<Form>& item) {
@@ -289,6 +311,9 @@ void Application::SetPlatformBackend(PlatformBackend backend) noexcept {
 }
 
 void Application::Post(std::function<void()> action) {
+    if (!action) {
+        throw std::invalid_argument("Application::Post: action cannot be empty.");
+    }
     s_dispatcher.Post(std::move(action));
 }
 

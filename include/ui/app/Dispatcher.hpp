@@ -1,11 +1,18 @@
+/*
+ * File: Dispatcher.hpp
+ * Purpose: Declares the UI thread Dispatcher for thread-safe action queuing and marshalling.
+ */
+
 #pragma once
 
-#include "compat/compat.hpp"
 #include <functional>
-#include <queue>
 #include <mutex>
+#include <queue>
+#include <stdexcept>
 #include <thread>
 #include <utility>
+
+#include "compat/compat.hpp"
 
 namespace cppui {
 namespace app {
@@ -24,34 +31,40 @@ public:
     Dispatcher& operator=(const Dispatcher&) = delete;
 
     /// <summary>
-    /// 以非同步方式在 UI 執行緒上排隊並執行操作 (對標 WPF Dispatcher.InvokeAsync)
+    /// 以非同步方式在 UI 執行緒上排隊並執行操作 (對標 WPF Dispatcher.InvokeAsync)。
     /// </summary>
+    /// <param name="action">待排隊調度的回呼函式，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 action 為空時擲出。</exception>
     void InvokeAsync(std::function<void()> action);
 
     /// <summary>
-    /// 便捷別名：投遞任務至 UI 執行緒
+    /// 便捷別名：投遞任務至 UI 執行緒。
     /// </summary>
+    /// <param name="action">待排隊調度的回呼函式，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 action 為空時擲出。</exception>
     void Post(std::function<void()> action) {
         InvokeAsync(std::move(action));
     }
 
     /// <summary>
-    /// 檢查呼叫端是否運行於 UI 主執行緒 (對標 WPF Dispatcher.CheckAccess)
+    /// 檢查呼叫端是否運行於 UI 主執行緒 (對標 WPF Dispatcher.CheckAccess)。
     /// </summary>
+    /// <returns>若為 UI 主執行緒傳回 true，否則傳回 false。</returns>
     COMPAT_NODISCARD bool CheckAccess() const noexcept;
 
     /// <summary>
-    /// 消耗並執行佇列中所有待處理的任務 (僅限 UI 執行緒呼叫)
+    /// 消耗並執行佇列中所有待處理的任務 (僅限 UI 執行緒呼叫)。
     /// </summary>
     void DrainTasks();
 
     /// <summary>
-    /// 設定關聯的主執行緒 ID
+    /// 設定關聯的主執行緒 ID。
     /// </summary>
+    /// <param name="threadId">主執行緒 ID。</param>
     void SetMainThreadId(std::thread::id threadId) noexcept;
 
     /// <summary>
-    /// 清除所有待處理任務
+    /// 清除所有待處理任務。
     /// </summary>
     void Clear();
 
@@ -59,7 +72,7 @@ private:
     mutable std::mutex m_mutex;
     std::queue<std::function<void()>> m_queue;
     std::thread::id m_mainThreadId;
-    bool m_hasMainThreadId = false;
+    bool m_hasMainThreadId{false};
 };
 
 } // namespace app

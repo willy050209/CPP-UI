@@ -1,5 +1,11 @@
+/*
+ * File: main.cpp
+ * Purpose: Milestone 4 demo illustrating the visual tree and two-pass layout engine.
+ */
+
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 #include <memory>
 #include <string>
@@ -22,14 +28,14 @@
 #include "ui/rendering/DisplayListRenderer.hpp"
 #include "../../src/rendering/backend/SoftwareRenderContext.hpp"
 
-using namespace cppui;
-using namespace cppui::core;
-using namespace cppui::layout;
-using namespace cppui::controls;
-using namespace cppui::pal;
-using namespace cppui::rendering;
-
 int main() {
+    using namespace cppui;
+    using namespace cppui::core;
+    using namespace cppui::layout;
+    using namespace cppui::controls;
+    using namespace cppui::pal;
+    using namespace cppui::rendering;
+
     compat::println("================================================================");
     compat::println(" CPPUI Milestone 4: Visual Tree & Two-Pass Layout Engine Demo   ");
     compat::println("================================================================");
@@ -133,7 +139,7 @@ int main() {
     contentPanel->AddChild(leftColumnBorder);
 
     // 輔助函式: 建立卡片元件 (黃金比例：寬敞內距、清晰字體層級、良好行距)
-    int cardCounter = 0;
+    int32_t cardCounter = 0;
     auto createCard = [&](const std::string& title, const std::string& descText, Color accent) {
         auto card = std::make_shared<Border>();
         card->SetBackground(Color(36, 40, 52, 255));
@@ -231,7 +237,7 @@ int main() {
     mainStack->AddChild(footerBorder);
 
     // 狀態管理
-    int colorIdx = 0;
+    int32_t colorIdx = 0;
     std::vector<Color> titleColors = {
         Color(255, 255, 255, 255),
         Color(100, 220, 255, 255),
@@ -240,7 +246,7 @@ int main() {
         Color(255, 130, 200, 255)
     };
 
-    int alignIdx = 0;
+    int32_t alignIdx = 0;
     std::vector<HorizontalAlignment> aligns = {
         HorizontalAlignment::Left,
         HorizontalAlignment::Center,

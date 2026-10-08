@@ -1,3 +1,8 @@
+/*
+ * File: main.cpp
+ * Purpose: Milestone 1 demo illustrating platform window creation, event loop, and rendering context.
+ */
+
 #include <chrono>
 #include <cmath>
 #include "compat/compat.hpp"

@@ -1,4 +1,10 @@
+/**
+ * @file smoke_test.cpp
+ * @brief 基礎環境冒煙測試（compat 字串視圖、optional、expected、span、views 管道與幾何結構）
+ */
+
 #include <cassert>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 
@@ -13,13 +19,13 @@ int main() {
     compat::println("[PASS] compat::string_view: {}", frameworkName);
 
     // 2. 驗證 compat::optional
-    compat::optional<int> optVal = 42;
+    compat::optional<int32_t> optVal = 42;
     assert(optVal.has_value());
     assert(*optVal == 42);
     compat::println("[PASS] compat::optional: {}", *optVal);
 
     // 3. 驗證 compat::expected
-    compat::expected<int, const char*> result = 100;
+    compat::expected<int32_t, const char*> result = 100;
     assert(result.has_value());
     assert(*result == 100);
     compat::println("[PASS] compat::expected: {}", *result);
@@ -43,22 +49,22 @@ int main() {
     compat::println("[PASS] Color (SteelBlue RGBA)");
 
     // 6. 驗證 compat::span
-    int arr[] = { 10, 20, 30, 40, 50 };
-    compat::span<int> sp(arr);
+    int32_t arr[] = { 10, 20, 30, 40, 50 };
+    compat::span<int32_t> sp(arr);
     assert(sp.size() == 5);
     assert(sp[0] == 10);
     assert(sp.back() == 50);
-    compat::span<int> sub = sp.subspan(1, 3);
+    compat::span<int32_t> sub = sp.subspan(1, 3);
     assert(sub.size() == 3);
     assert(sub[0] == 20);
     compat::println("[PASS] compat::span (size={}, subspan={})", sp.size(), sub.size());
 
     // 7. 驗證 compat::views 惰性管道
-    int sum = 0;
+    int32_t sum = 0;
     auto pipe = compat::views::iota(1, 10)
-        | compat::views::filter([](int n) { return n % 2 == 0; })
+        | compat::views::filter([](int32_t n) { return n % 2 == 0; })
         | compat::views::take(3);
-    compat::ranges::for_each(pipe, [&](int v) {
+    compat::ranges::for_each(pipe, [&](int32_t v) {
         sum += v;
     });
     assert(sum == (2 + 4 + 6));

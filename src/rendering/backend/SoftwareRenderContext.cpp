@@ -1,6 +1,12 @@
+/*
+ * File: SoftwareRenderContext.cpp
+ * Purpose: Implements the CPU software rasterizer and render target for 2D primitives and text.
+ */
+
 #include "SoftwareRenderContext.hpp"
 #include "compat/compat.hpp"
 #include "../../text/TextLayoutImpl.hpp"
+#include <cstdint>
 #include <cmath>
 #include <algorithm>
 
@@ -304,17 +310,17 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
     if (text.empty() || m_width == 0 || m_height == 0 || color.a == 0) return;
 
 #ifdef _WIN32
-    int wideLen = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0);
+    int32_t wideLen = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int32_t>(text.size()), nullptr, 0);
     if (wideLen > 0) {
         std::vector<wchar_t> wideText(static_cast<size_t>(wideLen));
-        MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), wideText.data(), wideLen);
+        MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int32_t>(text.size()), wideText.data(), wideLen);
 
         std::vector<wchar_t> wideFamily(family.size() + 1, 0);
-        MultiByteToWideChar(CP_UTF8, 0, family.data(), static_cast<int>(family.size()), wideFamily.data(), static_cast<int>(family.size()));
+        MultiByteToWideChar(CP_UTF8, 0, family.data(), static_cast<int32_t>(family.size()), wideFamily.data(), static_cast<int32_t>(family.size()));
 
         HDC memDC = CreateCompatibleDC(nullptr);
         if (memDC) {
-            int fontH = static_cast<int>(size);
+            int32_t fontH = static_cast<int32_t>(size);
             HFONT hFont = CreateFontW(
                 fontH, 0, 0, 0,
                 weight,
@@ -329,8 +335,8 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
             SIZE textSize = {};
             GetTextExtentPoint32W(memDC, wideText.data(), wideLen, &textSize);
 
-            int textW = textSize.cx;
-            int textH = textSize.cy;
+            int32_t textW = textSize.cx;
+            int32_t textH = textSize.cy;
             if (textW > 0 && textH > 0) {
                 BITMAPINFO bmi = {};
                 bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -356,13 +362,13 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
                     int32_t dstY0 = static_cast<int32_t>(origin.y);
                     float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
-                    for (int y = 0; y < textH; ++y) {
-                        int dstY = dstY0 + y;
-                        if (dstY < 0 || dstY >= static_cast<int>(m_height)) continue;
+                    for (int32_t y = 0; y < textH; ++y) {
+                        int32_t dstY = dstY0 + y;
+                        if (dstY < 0 || dstY >= static_cast<int32_t>(m_height)) continue;
 
-                        for (int x = 0; x < textW; ++x) {
-                            int dstX = dstX0 + x;
-                            if (dstX < 0 || dstX >= static_cast<int>(m_width)) continue;
+                        for (int32_t x = 0; x < textW; ++x) {
+                            int32_t dstX = dstX0 + x;
+                            if (dstX < 0 || dstX >= static_cast<int32_t>(m_width)) continue;
 
                             uint32_t maskVal = mask[y * textW + x] & 0xFF;
                             if (maskVal == 0) continue;
@@ -401,15 +407,15 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
 #endif
 
     // 純 C++ 跨平台 8x8 點陣字型光柵化備援 (零作業系統依賴)
-    int scale = std::max(1, static_cast<int>(std::round(size / 8.0f)));
-    int glyphW = 8 * scale;
-    int curX = static_cast<int>(origin.x);
-    int curY = static_cast<int>(origin.y);
+    int32_t scale = std::max(1, static_cast<int32_t>(std::round(size / 8.0f)));
+    int32_t glyphW = 8 * scale;
+    int32_t curX = static_cast<int32_t>(origin.x);
+    int32_t curY = static_cast<int32_t>(origin.y);
     float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
     for (char c : text) {
         if (c == '\n') {
-            curX = static_cast<int>(origin.x);
+            curX = static_cast<int32_t>(origin.x);
             curY += 8 * scale + 2;
             continue;
         }
@@ -417,16 +423,16 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
         if (uc < 32 || uc > 126) uc = 32;
         const uint8_t* glyphBits = s_font8x8[uc - 32];
 
-        for (int r = 0; r < 8; ++r) {
+        for (int32_t r = 0; r < 8; ++r) {
             uint8_t rowBits = glyphBits[r];
-            for (int col = 0; col < 8; ++col) {
+            for (int32_t col = 0; col < 8; ++col) {
                 if (rowBits & (0x80 >> col)) {
-                    for (int dy = 0; dy < scale; ++dy) {
-                        int py = curY + r * scale + dy;
-                        if (py < 0 || py >= static_cast<int>(m_height)) continue;
-                        for (int dx = 0; dx < scale; ++dx) {
-                            int px = curX + col * scale + dx;
-                            if (px < 0 || px >= static_cast<int>(m_width)) continue;
+                    for (int32_t dy = 0; dy < scale; ++dy) {
+                        int32_t py = curY + r * scale + dy;
+                        if (py < 0 || py >= static_cast<int32_t>(m_height)) continue;
+                        for (int32_t dx = 0; dx < scale; ++dx) {
+                            int32_t px = curX + col * scale + dx;
+                            if (px < 0 || px >= static_cast<int32_t>(m_width)) continue;
 
                             size_t dstIdx = static_cast<size_t>(py) * m_width + px;
                             uint32_t dstPixel = m_pixels[dstIdx];
@@ -476,8 +482,8 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
 
     float boundW = layoutW + leftPad + rightPad;
     float boundH = layoutH + topPad + bottomPad;
-    int textW = static_cast<int>(std::ceil(boundW));
-    int textH = static_cast<int>(std::ceil(boundH));
+    int32_t textW = static_cast<int32_t>(std::ceil(boundW));
+    int32_t textH = static_cast<int32_t>(std::ceil(boundH));
     if (textW <= 0 || textH <= 0) return;
 
     // 限制最大點陣尺寸防止記憶體溢出
@@ -511,13 +517,13 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
             int32_t dstY0 = static_cast<int32_t>(origin.y - topPad);
             float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
-            for (int y = 0; y < textH; ++y) {
-                int dstY = dstY0 + y;
-                if (dstY < 0 || dstY >= static_cast<int>(m_height)) continue;
+            for (int32_t y = 0; y < textH; ++y) {
+                int32_t dstY = dstY0 + y;
+                if (dstY < 0 || dstY >= static_cast<int32_t>(m_height)) continue;
 
-                for (int x = 0; x < textW; ++x) {
-                    int dstX = dstX0 + x;
-                    if (dstX < 0 || dstX >= static_cast<int>(m_width)) continue;
+                for (int32_t x = 0; x < textW; ++x) {
+                    int32_t dstX = dstX0 + x;
+                    if (dstX < 0 || dstX >= static_cast<int32_t>(m_width)) continue;
 
                     uint32_t pixel = mask[y * textW + x];
                     uint8_t r = static_cast<uint8_t>((pixel >> 16) & 0xFF);

@@ -1,5 +1,11 @@
+/**
+ * @file text_pipeline_test.cpp
+ * @brief 文字管線（字型管理器、塑形、BiDi、換行、版面配置、命中測試與基準測試）單元測試
+ */
+
 #include <cassert>
 #include <chrono>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/text/Font.hpp"
 #include "ui/text/FontManager.hpp"
@@ -151,9 +157,9 @@ int main() {
     // 7. MeasureText 效能壓測 (10,000 次查詢)
     // -------------------------------------------------------------------------
     compat::println("[Test 7] MeasureText Performance Benchmark...");
-    const int BENCH_ITERATIONS = 10000;
+    const size_t BENCH_ITERATIONS = 10000;
     auto t0 = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < BENCH_ITERATIONS; ++i) {
+    for (size_t i = 0; i < BENCH_ITERATIONS; ++i) {
         core::Size sz = engine.MeasureText("Performance Measurement String 測試", defFont, 300.0f);
         (void)sz;
     }

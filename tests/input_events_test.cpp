@@ -1,6 +1,12 @@
+/**
+ * @file input_events_test.cpp
+ * @brief 輸入路由、冒泡與穿透事件、焦點管理與原始輸入管線單元測試
+ */
+
 #include <string>
 #include <vector>
 #include <cassert>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/core/Visual.hpp"
@@ -19,18 +25,20 @@
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/InputManager.hpp"
 
-using namespace cppui;
-using namespace cppui::core;
-using namespace cppui::layout;
-using namespace cppui::input;
-
-class TestElement : public UIElement {
+namespace {
+class TestElement : public cppui::core::UIElement {
 public:
     std::string name;
     explicit TestElement(std::string n) : name(std::move(n)) {}
 };
+} // anonymous namespace
 
 int main() {
+    using namespace cppui;
+    using namespace cppui::core;
+    using namespace cppui::layout;
+    using namespace cppui::input;
+
     compat::println("=================================================");
     compat::println(" [CPPUI M5] Input & Routed Events System Tests   ");
     compat::println("=================================================");

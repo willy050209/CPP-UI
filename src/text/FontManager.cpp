@@ -1,3 +1,8 @@
+/*
+ * File: FontManager.cpp
+ * Purpose: Implements system font query, fallback detection, and default font selection.
+ */
+
 #include "ui/text/FontManager.hpp"
 #ifdef _WIN32
 #include "DirectWriteTextEngine.hpp"
@@ -36,7 +41,7 @@ FontManager& FontManager::Get() {
     return instance;
 }
 
-FontManager::FontManager() : m_impl(new Impl()) {}
+FontManager::FontManager() : m_impl(std::make_unique<Impl>()) {}
 FontManager::~FontManager() = default;
 
 FontDescriptor FontManager::GetDefaultFont(float size) const {

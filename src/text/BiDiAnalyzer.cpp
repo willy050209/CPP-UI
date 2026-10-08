@@ -1,3 +1,8 @@
+/*
+ * File: BiDiAnalyzer.cpp
+ * Purpose: Implements bidirectional text analysis and Unicode script segmenting.
+ */
+
 #include "ui/text/BiDiAnalyzer.hpp"
 #include <cstdint>
 
@@ -142,7 +147,7 @@ struct BiDiAnalyzer::Impl {
     }
 };
 
-BiDiAnalyzer::BiDiAnalyzer() : m_impl(new Impl()) {}
+BiDiAnalyzer::BiDiAnalyzer() : m_impl(std::make_unique<Impl>()) {}
 BiDiAnalyzer::~BiDiAnalyzer() = default;
 
 std::vector<BiDiRun> BiDiAnalyzer::Analyze(compat::string_view text, BiDiDirection defaultDir) const {

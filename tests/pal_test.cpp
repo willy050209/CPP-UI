@@ -1,4 +1,10 @@
+/**
+ * @file pal_test.cpp
+ * @brief 平台抽象層 (PAL) 原始事件封裝、修飾鍵運算與軟體光柵化單元測試
+ */
+
 #include <cassert>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 #include "ui/rendering/backend/IRenderContext.hpp"

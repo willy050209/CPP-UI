@@ -1,17 +1,23 @@
-#include "CounterModel.hpp"
+/*
+ * File: CounterModel.cpp
+ * Purpose: Implements CounterModel bounds checking and state manipulation methods.
+ */
 
-CounterModel::CounterModel(int initialValue, int minValue, int maxValue)
+#include "CounterModel.hpp"
+#include <cstdint>
+
+CounterModel::CounterModel(int32_t initialValue, int32_t minValue, int32_t maxValue)
     : m_value(initialValue), m_minValue(minValue), m_maxValue(maxValue) {}
 
-int CounterModel::GetValue() const noexcept {
+int32_t CounterModel::GetValue() const noexcept {
     return m_value;
 }
 
-int CounterModel::GetMinValue() const noexcept {
+int32_t CounterModel::GetMinValue() const noexcept {
     return m_minValue;
 }
 
-int CounterModel::GetMaxValue() const noexcept {
+int32_t CounterModel::GetMaxValue() const noexcept {
     return m_maxValue;
 }
 

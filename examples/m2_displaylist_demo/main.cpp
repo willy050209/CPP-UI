@@ -1,3 +1,8 @@
+/*
+ * File: main.cpp
+ * Purpose: Milestone 2 demo illustrating DisplayList command stream recording and rendering.
+ */
+
 #include <chrono>
 #include <cmath>
 #include "compat/compat.hpp"

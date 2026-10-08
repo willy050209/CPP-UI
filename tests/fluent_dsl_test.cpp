@@ -1,4 +1,10 @@
+/**
+ * @file fluent_dsl_test.cpp
+ * @brief 流式 RAD DSL、反應式 Signal 與 UI 屬性自動繫結單元測試
+ */
+
 #include <cassert>
+#include <cstdint>
 #include <string>
 #include <memory>
 #include "compat/compat.hpp"
@@ -18,12 +24,12 @@
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/input/PointerEventArgs.hpp"
 
-using namespace cppui;
-using namespace cppui::core;
-using namespace cppui::reactive;
-using namespace cppui::dsl;
-
 int main() {
+    using namespace cppui;
+    using namespace cppui::core;
+    using namespace cppui::reactive;
+    using namespace cppui::dsl;
+
     compat::println("=================================================");
     compat::println(" [CPPUI M6] Fluent RAD DSL & Reactive Signal Tests");
     compat::println("=================================================");
@@ -99,13 +105,13 @@ int main() {
     // -------------------------------------------------------------------------
     compat::println("[Test 3] Signal<T> Reactive Updates and Automatic UI Binding...");
     {
-        Signal<int> counter(0);
+        Signal<int32_t> counter(0);
         assert(counter.Get() == 0);
         assert(*counter == 0);
 
-        int observedVal = 0;
-        int observedOld = -1;
-        size_t subId = counter.Subscribe([&](int newVal, int oldVal) {
+        int32_t observedVal = 0;
+        int32_t observedOld = -1;
+        size_t subId = counter.Subscribe([&](int32_t newVal, int32_t oldVal) {
             observedVal = newVal;
             observedOld = oldVal;
         });
@@ -128,8 +134,8 @@ int main() {
         assert(observedVal == 42); // Not updated after unsubscribe
 
         // UIBuilder BindText integration
-        Signal<int> score(100);
-        auto labelBuilder = Label("Initial").BindText(score, [](int val) {
+        Signal<int32_t> score(100);
+        auto labelBuilder = Label("Initial").BindText(score, [](int32_t val) {
             return "Score: " + std::to_string(val);
         });
 

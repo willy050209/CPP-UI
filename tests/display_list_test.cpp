@@ -1,5 +1,11 @@
+/**
+ * @file display_list_test.cpp
+ * @brief LinearArena 記憶體對齊、DisplayList 指令錄製、遍歷與渲染器單元測試
+ */
+
 #include <cassert>
 #include <chrono>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/rendering/LinearArena.hpp"

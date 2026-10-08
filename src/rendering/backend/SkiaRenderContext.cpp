@@ -1,4 +1,10 @@
+/*
+ * File: SkiaRenderContext.cpp
+ * Purpose: Implements the Skia 2D graphics rendering context with software fallback.
+ */
+
 #include "SkiaRenderContext.hpp"
+#include <cstdint>
 #include <cstring>
 
 namespace cppui {
@@ -16,8 +22,8 @@ bool SkiaRenderContext::Init(void* nativeWindowHandle, uint32_t width, uint32_t 
 
 #if defined(CPPUI_HAS_SKIA) && CPPUI_HAS_SKIA
     SkImageInfo info = SkImageInfo::Make(
-        static_cast<int>(width > 0 ? width : 1),
-        static_cast<int>(height > 0 ? height : 1),
+        static_cast<int32_t>(width > 0 ? width : 1),
+        static_cast<int32_t>(height > 0 ? height : 1),
         kBGRA_8888_SkColorType,
         kPremul_SkAlphaType
     );
@@ -42,8 +48,8 @@ void SkiaRenderContext::Resize(uint32_t width, uint32_t height) {
 #if defined(CPPUI_HAS_SKIA) && CPPUI_HAS_SKIA
     if (m_useSkia) {
         SkImageInfo info = SkImageInfo::Make(
-            static_cast<int>(width > 0 ? width : 1),
-            static_cast<int>(height > 0 ? height : 1),
+            static_cast<int32_t>(width > 0 ? width : 1),
+            static_cast<int32_t>(height > 0 ? height : 1),
             kBGRA_8888_SkColorType,
             kPremul_SkAlphaType
         );

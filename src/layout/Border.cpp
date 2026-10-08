@@ -1,10 +1,19 @@
+/*
+ * File: Border.cpp
+ * Purpose: Implements Border measurement, arrangement, and rendering.
+ */
+
 #include "ui/layout/Border.hpp"
 #include <algorithm>
+#include <stdexcept>
 
 namespace cppui {
 namespace layout {
 
 void Border::SetChild(std::shared_ptr<core::UIElement> child) {
+    if (!child) {
+        throw std::invalid_argument("Border::SetChild: child cannot be null.");
+    }
     if (m_child == child) return;
 
     if (m_child) {

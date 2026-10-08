@@ -1,6 +1,14 @@
+/*
+ * File: Button.hpp
+ * Purpose: Declares Button control with click routing, states, and MVVM command execution.
+ */
+
 #pragma once
 
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <stdexcept>
 #include "compat/compat.hpp"
 #include "ui/controls/ContentControl.hpp"
 #include "ui/input/RoutedEvent.hpp"
@@ -53,7 +61,14 @@ public:
     void OnClick(std::function<void()> handler);
 
     // --- MVVM 命令綁定 ---
+
+    /// <summary>
+    /// 綁定 MVVM 命令 (ICommand) 至按鈕。
+    /// </summary>
+    /// <param name="command">命令實例智慧指標，不可為 nullptr。</param>
+    /// <exception cref="std::invalid_argument">當 command 為 nullptr 時擲出。</exception>
     void SetCommand(std::shared_ptr<mvvm::ICommand> command);
+
     COMPAT_NODISCARD std::shared_ptr<mvvm::ICommand> GetCommand() const noexcept { return m_command; }
 
     void OnRender(rendering::DrawingContext& dc) override;

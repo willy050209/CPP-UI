@@ -1,6 +1,14 @@
+/*
+ * File: Border.hpp
+ * Purpose: Declares Border, a container element that draws a background, border,
+ *          and padding around a single child element.
+ */
+
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <stdexcept>
 #include "compat/compat.hpp"
 #include "ui/core/UIElement.hpp"
 
@@ -16,7 +24,17 @@ public:
     Border() = default;
     ~Border() override = default;
 
+    /// <summary>
+    /// 取得當前承載之子元件 raw 指標。
+    /// </summary>
+    /// <returns>子元件指標，若無則傳回 nullptr。</returns>
     COMPAT_NODISCARD core::UIElement* GetChild() const noexcept { return m_child.get(); }
+
+    /// <summary>
+    /// 設定內部裝飾之子元件。
+    /// </summary>
+    /// <param name="child">子元件智慧指標，不可為 nullptr。</param>
+    /// <exception cref="std::invalid_argument">當 child 為 nullptr 時擲出。</exception>
     void SetChild(std::shared_ptr<core::UIElement> child);
 
     COMPAT_NODISCARD core::Color GetBackground() const noexcept { return m_background; }

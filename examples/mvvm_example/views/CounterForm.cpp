@@ -1,11 +1,15 @@
+/**
+ * @file CounterForm.cpp
+ * @brief MVVM 範例之計數器視窗表單視圖實作
+ */
+
 #include "CounterForm.hpp"
 #include "ui/dsl/Fluent.hpp"
 
-using namespace cppui;
-using namespace cppui::dsl;
-
 CounterForm::CounterForm(std::shared_ptr<CounterViewModel> viewModel)
     : m_viewModel(viewModel) {
+    using namespace cppui;
+    using namespace cppui::dsl;
 
     SetTitle("CPPUI - MVVM Architecture Example");
     SetFormSize(560, 360);

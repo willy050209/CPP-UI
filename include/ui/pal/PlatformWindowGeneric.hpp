@@ -1,5 +1,11 @@
+/*
+ * File: PlatformWindowGeneric.hpp
+ * Purpose: Declares PlatformWindowGeneric for cross-platform headless and testing environments.
+ */
+
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include <string>
 #include <memory>
@@ -45,7 +51,7 @@ public:
     // 事件通知與調度
     void SetEventCallback(EventCallback callback) override;
     void PollEvents() override;
-    bool WaitEvents(int timeoutMs = -1) override;
+    bool WaitEvents(int32_t timeoutMs = -1) override;
     void WakeUp() override;
 
     // 觸發視窗重繪請求

@@ -1,3 +1,8 @@
+/*
+ * File: main.cpp
+ * Purpose: Entry point for the IoC container sample demonstrating dependency injection and host bootstrapping.
+ */
+
 #include "ui/app/Application.hpp"
 #include "ui/app/AppBuilder.hpp"
 #include "services/ConsoleLogger.hpp"

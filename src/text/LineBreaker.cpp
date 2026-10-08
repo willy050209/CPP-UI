@@ -1,3 +1,8 @@
+/*
+ * File: LineBreaker.cpp
+ * Purpose: Implements Unicode UAX#14 line break detection and word boundary analysis.
+ */
+
 #include "ui/text/LineBreaker.hpp"
 #include <cstdint>
 
@@ -144,7 +149,7 @@ struct LineBreaker::Impl {
     }
 };
 
-LineBreaker::LineBreaker() : m_impl(new Impl()) {}
+LineBreaker::LineBreaker() : m_impl(std::make_unique<Impl>()) {}
 LineBreaker::~LineBreaker() = default;
 
 std::vector<LineBreak> LineBreaker::FindBreaks(compat::string_view text) const {

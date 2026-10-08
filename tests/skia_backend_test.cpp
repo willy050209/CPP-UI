@@ -1,4 +1,10 @@
+/**
+ * @file skia_backend_test.cpp
+ * @brief Skia 渲染後端生命週期、雙引擎回退、幾何繪製與幀重播單元測試
+ */
+
 #include <cassert>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/rendering/backend/IRenderContext.hpp"
 #include "../src/rendering/backend/SkiaRenderContext.hpp"

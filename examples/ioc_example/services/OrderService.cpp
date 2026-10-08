@@ -1,4 +1,10 @@
+/*
+ * File: OrderService.cpp
+ * Purpose: Implements OrderService order registration, aggregation, and logging.
+ */
+
 #include "OrderService.hpp"
+#include <cstdint>
 #include <numeric>
 
 OrderService::OrderService(std::shared_ptr<ILogger> logger)
@@ -12,8 +18,8 @@ std::vector<Order> OrderService::GetOrders() const {
     return m_orders;
 }
 
-int OrderService::GetOrderCount() const {
-    return static_cast<int>(m_orders.size());
+int32_t OrderService::GetOrderCount() const {
+    return static_cast<int32_t>(m_orders.size());
 }
 
 double OrderService::GetTotalRevenue() const {

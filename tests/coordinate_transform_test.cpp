@@ -1,33 +1,43 @@
+/**
+ * @file coordinate_transform_test.cpp
+ * @brief 高 DPI 物理座標與邏輯座標雙向轉換及防禦機制單元測試
+ */
+
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/core/CoordinateTransform.hpp"
 
-using namespace cppui::core;
+namespace {
 
 static bool ApproxEqual(float a, float b, float eps = 1e-4f) noexcept {
     return std::fabs(a - b) <= eps;
 }
 
-static bool ApproxEqual(Point a, Point b, float eps = 1e-4f) noexcept {
+static bool ApproxEqual(cppui::core::Point a, cppui::core::Point b, float eps = 1e-4f) noexcept {
     return ApproxEqual(a.x, b.x, eps) && ApproxEqual(a.y, b.y, eps);
 }
 
-static bool ApproxEqual(Size a, Size b, float eps = 1e-4f) noexcept {
+static bool ApproxEqual(cppui::core::Size a, cppui::core::Size b, float eps = 1e-4f) noexcept {
     return ApproxEqual(a.width, b.width, eps) && ApproxEqual(a.height, b.height, eps);
 }
 
-static bool ApproxEqual(Rect a, Rect b, float eps = 1e-4f) noexcept {
+static bool ApproxEqual(cppui::core::Rect a, cppui::core::Rect b, float eps = 1e-4f) noexcept {
     return ApproxEqual(a.x, b.x, eps) && ApproxEqual(a.y, b.y, eps) &&
            ApproxEqual(a.width, b.width, eps) && ApproxEqual(a.height, b.height, eps);
 }
 
-static bool ApproxEqual(Thickness a, Thickness b, float eps = 1e-4f) noexcept {
+static bool ApproxEqual(cppui::core::Thickness a, cppui::core::Thickness b, float eps = 1e-4f) noexcept {
     return ApproxEqual(a.left, b.left, eps) && ApproxEqual(a.top, b.top, eps) &&
            ApproxEqual(a.right, b.right, eps) && ApproxEqual(a.bottom, b.bottom, eps);
 }
 
+} // anonymous namespace
+
 int main() {
+    using namespace cppui::core;
+
     compat::println("=================================================");
     compat::println(" [CPPUI] CoordinateTransform Verification Tests ");
     compat::println("=================================================");

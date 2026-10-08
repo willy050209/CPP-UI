@@ -1,17 +1,23 @@
+/*
+ * File: OrderViewModel.cpp
+ * Purpose: Implements OrderViewModel presentation logic and command handlers.
+ */
+
 #include "OrderViewModel.hpp"
+#include <cstdint>
 
 OrderViewModel::OrderViewModel(std::shared_ptr<IOrderService> orderService)
     : m_orderService(orderService) {
 
     PlaceOrderCommand = std::make_shared<cppui::mvvm::RelayCommand>([this]() {
         if (!m_orderService) return;
-        static int customerIdx = 1;
+        static int32_t customerIdx = 1;
         std::string customer = "企業客戶 #" + std::to_string(customerIdx++);
         double amount = 1200.0 + (customerIdx * 350.0);
 
         m_orderService->CreateOrder(customer, amount);
 
-        std::string action = "最新操作：成功建立 " + customer + " 訂單 ($" + std::to_string(static_cast<int>(amount)) + ")";
+        std::string action = "最新操作：成功建立 " + customer + " 訂單 ($" + std::to_string(static_cast<int32_t>(amount)) + ")";
         SetProperty(m_lastActionText, action, "LastActionText");
 
         RefreshSummary();
@@ -31,10 +37,10 @@ compat::string_view OrderViewModel::GetLastActionText() const noexcept {
 
 void OrderViewModel::RefreshSummary() {
     if (!m_orderService) return;
-    int count = m_orderService->GetOrderCount();
+    int32_t count = m_orderService->GetOrderCount();
     double revenue = m_orderService->GetTotalRevenue();
 
     std::string summary = "累計訂單總數: " + std::to_string(count) +
-                          " 筆  |  總營收金額: $" + std::to_string(static_cast<int>(revenue));
+                          " 筆  |  總營收金額: $" + std::to_string(static_cast<int32_t>(revenue));
     SetProperty(m_summaryText, summary, "SummaryText");
 }

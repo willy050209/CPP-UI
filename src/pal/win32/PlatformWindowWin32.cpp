@@ -1,7 +1,14 @@
+/*
+ * File: PlatformWindowWin32.cpp
+ * Purpose: Implements the native Win32 PlatformWindow for message dispatching,
+ *          DPI awareness, and frame presentation.
+ */
+
 #ifdef _WIN32
 
 #include "PlatformWindowWin32.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
+#include <cstdint>
 #include <windowsx.h>
 #include <shellscalingapi.h>
 
@@ -25,10 +32,10 @@ namespace {
 
     std::wstring Utf8ToUtf16(compat::string_view utf8Str) {
         if (utf8Str.empty()) return L"";
-        int len = MultiByteToWideChar(CP_UTF8, 0, utf8Str.data(), static_cast<int>(utf8Str.length()), nullptr, 0);
+        int32_t len = MultiByteToWideChar(CP_UTF8, 0, utf8Str.data(), static_cast<int32_t>(utf8Str.length()), nullptr, 0);
         if (len <= 0) return L"";
         std::wstring result(len, L'\0');
-        MultiByteToWideChar(CP_UTF8, 0, utf8Str.data(), static_cast<int>(utf8Str.length()), &result[0], len);
+        MultiByteToWideChar(CP_UTF8, 0, utf8Str.data(), static_cast<int32_t>(utf8Str.length()), &result[0], len);
         return result;
     }
 } // namespace
@@ -65,8 +72,8 @@ PlatformWindowWin32::PlatformWindowWin32(const WindowDesc& desc)
     RECT rc = { 0, 0, static_cast<LONG>(m_width), static_cast<LONG>(m_height) };
     AdjustWindowRectEx(&rc, style, FALSE, 0);
 
-    int windowWidth = rc.right - rc.left;
-    int windowHeight = rc.bottom - rc.top;
+    int32_t windowWidth = rc.right - rc.left;
+    int32_t windowHeight = rc.bottom - rc.top;
 
     std::wstring wideTitle = Utf8ToUtf16(desc.title);
 
@@ -166,7 +173,7 @@ void PlatformWindowWin32::PollEvents() {
     }
 }
 
-bool PlatformWindowWin32::WaitEvents(int timeoutMs) {
+bool PlatformWindowWin32::WaitEvents(int32_t timeoutMs) {
     if (!m_hwnd || m_isClosed) return false;
 
     DWORD timeout = (timeoutMs < 0) ? INFINITE : static_cast<DWORD>(timeoutMs);
@@ -206,8 +213,8 @@ void PlatformWindowWin32::PresentFramebuffer(compat::span<const uint32_t> pixelB
 
     ::StretchDIBits(
         hdc,
-        0, 0, static_cast<int>(width), static_cast<int>(height),
-        0, 0, static_cast<int>(width), static_cast<int>(height),
+        0, 0, static_cast<int32_t>(width), static_cast<int32_t>(height),
+        0, 0, static_cast<int32_t>(width), static_cast<int32_t>(height),
         pixelBuffer.data(),
         &bmi,
         DIB_RGB_COLORS,
@@ -234,9 +241,8 @@ KeyModifiers PlatformWindowWin32::QueryCurrentModifiers() const noexcept {
 }
 
 uint64_t PlatformWindowWin32::GetCurrentTimestampMs() const noexcept {
-    using namespace std::chrono;
     return static_cast<uint64_t>(
-        duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count()
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()
     );
 }
 
@@ -260,8 +266,8 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
 
     switch (msg) {
         case WM_MOUSEMOVE: {
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+            int32_t x = GET_X_LPARAM(lParam);
+            int32_t y = GET_Y_LPARAM(lParam);
 
             if (!m_isTrackingMouse) {
                 TRACKMOUSEEVENT tme = {};
@@ -297,8 +303,8 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
         case WM_RBUTTONDOWN:
         case WM_MBUTTONDOWN: {
             SetCapture(m_hwnd);
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+            int32_t x = GET_X_LPARAM(lParam);
+            int32_t y = GET_Y_LPARAM(lParam);
             core::Point clientPos(static_cast<float>(x), static_cast<float>(y));
             core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
             core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
@@ -315,8 +321,8 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
         case WM_RBUTTONUP:
         case WM_MBUTTONUP: {
             ReleaseCapture();
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+            int32_t x = GET_X_LPARAM(lParam);
+            int32_t y = GET_Y_LPARAM(lParam);
             core::Point clientPos(static_cast<float>(x), static_cast<float>(y));
             core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
             core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
@@ -335,7 +341,7 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             core::Point clientPos(static_cast<float>(pt.x), static_cast<float>(pt.y));
             core::Point physicalPos(static_cast<float>(pt.x), static_cast<float>(pt.y));
             core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
-            int deltaY = GET_WHEEL_DELTA_WPARAM(wParam);
+            int32_t deltaY = GET_WHEEL_DELTA_WPARAM(wParam);
 
             DispatchEvent(RawInputEvent::MakeMouseWheel(clientPos, physicalPos, logicalPos, deltaY, 0, mods, ts));
             return 0;

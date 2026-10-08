@@ -1,3 +1,9 @@
+/*
+ * File: main.cpp
+ * Purpose: Milestone 5 demo illustrating pointer events, routed events, and focus navigation.
+ */
+
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <memory>
@@ -26,15 +32,28 @@
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/input/FocusEventArgs.hpp"
 #include "ui/input/EventRoute.hpp"
-#include "ui/input/FocusManager.hpp"
+#include "ui/text/Font.hpp"
 #include "ui/input/InputManager.hpp"
 
-using namespace cppui;
-using namespace cppui::core;
-using namespace cppui::layout;
-using namespace cppui::controls;
-using namespace cppui::rendering;
-using namespace cppui::input;
+namespace demo {
+
+namespace text = cppui::text;
+using cppui::core::Color;
+using cppui::core::Thickness;
+using cppui::core::Size;
+using cppui::core::Point;
+using cppui::core::Rect;
+using cppui::layout::Border;
+using cppui::layout::StackPanel;
+using cppui::layout::HorizontalAlignment;
+using cppui::layout::VerticalAlignment;
+using cppui::controls::TextBlock;
+using cppui::rendering::DrawingContext;
+using cppui::input::PointerEventArgs;
+using cppui::input::KeyEventArgs;
+using cppui::input::TextInputEventArgs;
+using cppui::input::RoutedEventArgs;
+using cppui::input::FocusEventArgs;
 
 // =============================================================================
 // 自訂互動按鈕元件 (具備 Hover 變光、Pressed 下壓、Focus Ring 霓虹外框與點擊回呼)
@@ -205,10 +224,20 @@ private:
     std::shared_ptr<TextBlock> m_textBlock;
 };
 
+} // namespace demo
+
 // =============================================================================
 // 主程式入口
 // =============================================================================
 int main() {
+    using namespace cppui;
+    using namespace cppui::core;
+    using namespace cppui::layout;
+    using namespace cppui::controls;
+    using namespace cppui::rendering;
+    using namespace cppui::input;
+    using namespace demo;
+
     compat::println("=================================================");
     compat::println(" [CPPUI M5] Input & Routed Events Interactive Demo");
     compat::println("=================================================");
@@ -308,7 +337,7 @@ int main() {
 
     // 日誌項目容器 (保留最近 8 條)
     std::vector<std::shared_ptr<TextBlock>> logBlocks;
-    for (int i = 0; i < 9; ++i) {
+    for (int32_t i = 0; i < 9; ++i) {
         auto tb = std::make_shared<TextBlock>(i == 0 ? "系統就緒，請在左側點擊按鈕或按下 Tab 鍵切換焦點..." : "");
         tb->SetFontSize(12.0f);
         tb->SetFontFamily("Consolas");
@@ -347,8 +376,8 @@ int main() {
     btnRow->SetSpacing(12.0f);
     card1Stack->AddChild(btnRow);
 
-    int likeCount = 0;
-    int rocketCount = 0;
+    int32_t likeCount = 0;
+    int32_t rocketCount = 0;
 
     auto btnLike = std::make_shared<ModernButton>("👍 讚數: 0", Color(45, 75, 130, 255), Color(60, 100, 175, 255), Color(35, 60, 105, 255));
     btnLike->SetTabIndex(1);

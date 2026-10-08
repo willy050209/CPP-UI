@@ -1,6 +1,13 @@
+/**
+ * @file controls_test.cpp
+ * @brief 控制項基礎架構、ContentControl、Button、CheckBox、TextBox 與 Grid 排版單元測試
+ */
+
 #include <cassert>
+#include <cstdint>
 #include <string>
 #include <memory>
+#include <stdexcept>
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/core/UIElement.hpp"
@@ -10,19 +17,21 @@
 #include "ui/controls/CheckBox.hpp"
 #include "ui/controls/TextBox.hpp"
 #include "ui/layout/Grid.hpp"
+#include "ui/layout/Border.hpp"
+#include "ui/layout/Panel.hpp"
 #include "ui/input/InputManager.hpp"
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/input/PointerEventArgs.hpp"
 #include "ui/input/EventRoute.hpp"
 
-using namespace cppui;
-using namespace cppui::core;
-using namespace cppui::controls;
-using namespace cppui::layout;
-using namespace cppui::input;
-
 int main() {
+    using namespace cppui;
+    using namespace cppui::core;
+    using namespace cppui::controls;
+    using namespace cppui::layout;
+    using namespace cppui::input;
+
     compat::println("=================================================");
     compat::println(" [CPPUI M6] Controls & Grid Layout Tests        ");
     compat::println("=================================================");
@@ -119,7 +128,7 @@ int main() {
         auto btn = std::make_shared<Button>("點擊我");
         btn->SetVisualBounds(Rect(0.0f, 0.0f, 120.0f, 40.0f));
 
-        int clickCount = 0;
+        int32_t clickCount = 0;
         btn->OnClick([&](Button& b) {
             assert(&b == btn.get());
             clickCount++;
@@ -163,7 +172,7 @@ int main() {
         assert(!cb->IsChecked());
 
         bool lastCheckedState = false;
-        int eventCount = 0;
+        int32_t eventCount = 0;
 
         cb->OnCheckedChanged([&](bool isChecked) {
             lastCheckedState = isChecked;
@@ -288,6 +297,65 @@ int main() {
         assert(cell11->GetRenderBounds().height == 240.0f);
 
         compat::println("  [PASS] Grid multi-cell proportional allocation verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 7] Fail-Fast Argument Null Validation
+    // -------------------------------------------------------------------------
+    compat::println("[Test 7] Fail-Fast Argument Null Validation...");
+    {
+        // 1. ContentControl::SetContent(nullptr) 應擲出 std::invalid_argument
+        bool ccNullCaught = false;
+        try {
+            ContentControl cc;
+            std::shared_ptr<UIElement> nullElem;
+            cc.SetContent(nullElem);
+        } catch (const std::invalid_argument&) {
+            ccNullCaught = true;
+        }
+        assert(ccNullCaught);
+
+        // 2. Border::SetChild(nullptr) 應擲出 std::invalid_argument
+        bool borderNullCaught = false;
+        try {
+            Border b;
+            b.SetChild(nullptr);
+        } catch (const std::invalid_argument&) {
+            borderNullCaught = true;
+        }
+        assert(borderNullCaught);
+
+        // 3. Panel::AddChild(nullptr) 應擲出 std::invalid_argument
+        bool panelAddNullCaught = false;
+        try {
+            Panel p;
+            p.AddChild(nullptr);
+        } catch (const std::invalid_argument&) {
+            panelAddNullCaught = true;
+        }
+        assert(panelAddNullCaught);
+
+        // 4. Panel::RemoveChild(nullptr) 應擲出 std::invalid_argument
+        bool panelRemoveNullCaught = false;
+        try {
+            Panel p;
+            p.RemoveChild(nullptr);
+        } catch (const std::invalid_argument&) {
+            panelRemoveNullCaught = true;
+        }
+        assert(panelRemoveNullCaught);
+
+        // 5. Button::SetCommand(nullptr) 應擲出 std::invalid_argument
+        bool btnCommandNullCaught = false;
+        try {
+            Button btn("Cmd");
+            btn.SetCommand(nullptr);
+        } catch (const std::invalid_argument&) {
+            btnCommandNullCaught = true;
+        }
+        assert(btnCommandNullCaught);
+
+        compat::println("  [PASS] Fail-Fast contracts verified for Control, Border, Panel, and Button.");
     }
 
     compat::println("=================================================");

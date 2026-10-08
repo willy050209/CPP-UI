@@ -1,11 +1,14 @@
+/*
+ * File: OrderForm.cpp
+ * Purpose: Implements OrderForm layout and UI data bindings for the IoC sample.
+ */
+
 #include "OrderForm.hpp"
 #include "ui/dsl/Fluent.hpp"
 
-using namespace cppui;
-using namespace cppui::dsl;
-
 OrderForm::OrderForm(std::shared_ptr<OrderViewModel> viewModel)
     : m_viewModel(viewModel) {
+    using namespace cppui::dsl;
 
     SetTitle("CPPUI - Enterprise IoC & Dependency Injection Example");
     SetFormSize(620, 380);
@@ -13,11 +16,11 @@ OrderForm::OrderForm(std::shared_ptr<OrderViewModel> viewModel)
 
     m_summaryLabel = Label(m_viewModel ? m_viewModel->GetSummaryText() : "")
         .FontSize(18.0f)
-        .Foreground(core::Color(100, 220, 255, 255));
+        .Foreground(cppui::core::Color(100, 220, 255, 255));
 
     m_actionLabel = Label(m_viewModel ? m_viewModel->GetLastActionText() : "")
         .FontSize(14.0f)
-        .Foreground(core::Color(200, 200, 200, 255));
+        .Foreground(cppui::core::Color(200, 200, 200, 255));
 
     // 監聽 ViewModel 變更以自動重繪
     if (m_viewModel) {
@@ -31,11 +34,22 @@ OrderForm::OrderForm(std::shared_ptr<OrderViewModel> viewModel)
         });
     }
 
+    auto orderBtn = Button("＋ 透過 IoC 服務建立新訂單")
+        .FontSize(15.0f)
+        .Padding(cppui::core::Thickness(20.0f, 10.0f, 20.0f, 10.0f))
+        .Background(cppui::core::Color(13, 110, 253, 255))
+        .Foreground(cppui::core::Colors::White)
+        .CornerRadius(6.0f);
+
+    if (m_viewModel && m_viewModel->PlaceOrderCommand) {
+        orderBtn.Command(m_viewModel->PlaceOrderCommand);
+    }
+
     SetContent(
         VStack({
             Label("依賴注入與服務容器架構展示 (IoC Container)")
                 .FontSize(20.0f)
-                .Foreground(core::Colors::White),
+                .Foreground(cppui::core::Colors::White),
 
             Border(
                 VStack({
@@ -44,26 +58,20 @@ OrderForm::OrderForm(std::shared_ptr<OrderViewModel> viewModel)
                 })
                 .Spacing(10.0f)
             )
-            .Padding(core::Thickness(18.0f))
-            .Background(core::Color(30, 34, 46, 255))
-            .BorderBrush(core::Color(64, 76, 102, 255))
+            .Padding(cppui::core::Thickness(18.0f))
+            .Background(cppui::core::Color(30, 34, 46, 255))
+            .BorderBrush(cppui::core::Color(64, 76, 102, 255))
             .BorderThickness(1.0f)
             .CornerRadius(8.0f),
 
             HStack({
-                Button("＋ 透過 IoC 服務建立新訂單")
-                    .FontSize(15.0f)
-                    .Padding(core::Thickness(20.0f, 10.0f, 20.0f, 10.0f))
-                    .Background(core::Color(13, 110, 253, 255))
-                    .Foreground(core::Colors::White)
-                    .CornerRadius(6.0f)
-                    .Command(m_viewModel ? m_viewModel->PlaceOrderCommand : nullptr),
+                orderBtn,
 
                 Button("關閉系統")
                     .FontSize(15.0f)
-                    .Padding(core::Thickness(20.0f, 10.0f, 20.0f, 10.0f))
-                    .Background(core::Color(108, 117, 125, 255))
-                    .Foreground(core::Colors::White)
+                    .Padding(cppui::core::Thickness(20.0f, 10.0f, 20.0f, 10.0f))
+                    .Background(cppui::core::Color(108, 117, 125, 255))
+                    .Foreground(cppui::core::Colors::White)
                     .CornerRadius(6.0f)
                     .OnClick([this]() {
                         Close();
@@ -71,7 +79,7 @@ OrderForm::OrderForm(std::shared_ptr<OrderViewModel> viewModel)
             })
             .Spacing(12.0f)
         })
-        .Padding(core::Thickness(28.0f))
+        .Padding(cppui::core::Thickness(28.0f))
         .Spacing(20.0f)
     );
 }

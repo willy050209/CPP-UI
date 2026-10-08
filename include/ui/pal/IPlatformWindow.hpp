@@ -1,5 +1,11 @@
+/*
+ * File: IPlatformWindow.hpp
+ * Purpose: Declares the IPlatformWindow platform abstraction layer interface.
+ */
+
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include "compat/compat.hpp"
@@ -50,7 +56,7 @@ public:
 
     // 訊息輪詢與等待
     virtual void PollEvents() = 0;
-    virtual bool WaitEvents(int timeoutMs = -1) = 0;
+    virtual bool WaitEvents(int32_t timeoutMs = -1) = 0;
 
     /// <summary>
     /// 喚醒處於 WaitEvents 等待狀態的原生訊息迴圈 (支援跨執行緒調用)

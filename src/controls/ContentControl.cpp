@@ -1,5 +1,11 @@
+/*
+ * File: ContentControl.cpp
+ * Purpose: Implements ContentControl child hosting, measurement, and layout.
+ */
+
 #include "ui/controls/ContentControl.hpp"
 #include <algorithm>
+#include <stdexcept>
 
 namespace cppui {
 namespace controls {
@@ -15,6 +21,9 @@ ContentControl::ContentControl(std::shared_ptr<core::UIElement> content) {
 }
 
 void ContentControl::SetContent(std::shared_ptr<core::UIElement> content) {
+    if (!content) {
+        throw std::invalid_argument("ContentControl::SetContent: content cannot be null.");
+    }
     if (m_content == content) return;
 
     if (m_content) {

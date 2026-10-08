@@ -1,5 +1,11 @@
+/*
+ * File: RawInputEvent.hpp
+ * Purpose: Defines platform raw input event structures and factory helpers.
+ */
+
 #pragma once
 
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 
@@ -142,7 +148,7 @@ struct RawInputEvent {
         return MakeMouseMove(pos, pos, pos, mods, ts);
     }
 
-    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point clientPos, core::Point physicalPos, core::Point logicalPos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point clientPos, core::Point physicalPos, core::Point logicalPos, RawMouseButton btn, int32_t clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseDown;
         e.modifiers = mods;
@@ -151,11 +157,11 @@ struct RawInputEvent {
         return e;
     }
 
-    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point clientPos, core::Point physicalPos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point clientPos, core::Point physicalPos, RawMouseButton btn, int32_t clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
         return MakeMouseDown(clientPos, physicalPos, clientPos, btn, clicks, mods, ts);
     }
 
-    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point pos, RawMouseButton btn, int clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseDown(core::Point pos, RawMouseButton btn, int32_t clicks, KeyModifiers mods, uint64_t ts = 0) noexcept {
         return MakeMouseDown(pos, pos, pos, btn, clicks, mods, ts);
     }
 
@@ -176,7 +182,7 @@ struct RawInputEvent {
         return MakeMouseUp(pos, pos, pos, btn, mods, ts);
     }
 
-    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point clientPos, core::Point physicalPos, core::Point logicalPos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point clientPos, core::Point physicalPos, core::Point logicalPos, int32_t deltaY, int32_t deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
         RawInputEvent e;
         e.type = RawEventType::MouseWheel;
         e.modifiers = mods;
@@ -185,11 +191,11 @@ struct RawInputEvent {
         return e;
     }
 
-    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point clientPos, core::Point physicalPos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point clientPos, core::Point physicalPos, int32_t deltaY, int32_t deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
         return MakeMouseWheel(clientPos, physicalPos, clientPos, deltaY, deltaX, mods, ts);
     }
 
-    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point pos, int deltaY, int deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
+    COMPAT_NODISCARD static RawInputEvent MakeMouseWheel(core::Point pos, int32_t deltaY, int32_t deltaX, KeyModifiers mods, uint64_t ts = 0) noexcept {
         return MakeMouseWheel(pos, pos, pos, deltaY, deltaX, mods, ts);
     }
 

@@ -1,12 +1,20 @@
+/**
+ * @file app_form_test.cpp
+ * @brief Application & Form 生命週期、事件迴圈、後端切換與契約例外單元測試
+ */
+
 #include "compat/compat.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/app/AppBuilder.hpp"
+#include "ui/core/Exceptions.hpp"
 #include <cassert>
+#include <cstdint>
 #include <vector>
 #include <string>
 #include <thread>
 #include <atomic>
+#include <stdexcept>
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -15,11 +23,10 @@
 #include <windows.h>
 #endif
 
-using namespace cppui;
-using namespace cppui::app;
+namespace {
 
 // 測試用 Form 衍生類別
-class LifecycleTestForm : public Form {
+class LifecycleTestForm : public cppui::app::Form {
 public:
     LifecycleTestForm() {
         SetTitle("Lifecycle Test Form");
@@ -27,25 +34,25 @@ public:
     }
 
     void OnLoad() override {
-        Form::OnLoad();
+        cppui::app::Form::OnLoad();
         events.push_back("Load");
     }
 
     void OnShown() override {
-        Form::OnShown();
+        cppui::app::Form::OnShown();
         events.push_back("Shown");
     }
 
-    void OnFormClosing(FormClosingEventArgs& e) override {
-        Form::OnFormClosing(e);
+    void OnFormClosing(cppui::app::FormClosingEventArgs& e) override {
+        cppui::app::Form::OnFormClosing(e);
         events.push_back("Closing");
         if (cancelClose) {
             e.Cancel = true;
         }
     }
 
-    void OnFormClosed(FormClosedEventArgs& e) override {
-        Form::OnFormClosed(e);
+    void OnFormClosed(cppui::app::FormClosedEventArgs& e) override {
+        cppui::app::Form::OnFormClosed(e);
         events.push_back("Closed");
     }
 
@@ -53,7 +60,28 @@ public:
     bool cancelClose = false;
 };
 
-void TestFormPropertiesAndDefaults() {
+class AutoCloseForm : public cppui::app::Form {
+public:
+    AutoCloseForm() {
+        SetTitle("Auto Close Form");
+    }
+
+    void OnShown() override {
+        cppui::app::Form::OnShown();
+#if defined(_WIN32)
+        if (GetPlatformWindow() && GetPlatformWindow()->GetNativeHandle()) {
+            ::PostMessageW(static_cast<HWND>(GetPlatformWindow()->GetNativeHandle()), WM_CLOSE, 0, 0);
+        } else {
+            Close();
+        }
+#else
+        Close();
+#endif
+    }
+};
+
+static void TestFormPropertiesAndDefaults() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 Form 基本屬性與預設值...");
     auto form = std::make_shared<Form>();
 
@@ -80,7 +108,7 @@ void TestFormPropertiesAndDefaults() {
     compat::println("  ✔ Form 屬性讀寫驗證通過！");
 }
 
-void TestFormLifecycle() {
+static void TestFormLifecycle() {
     compat::println("[Test] 測試 Form 生命週期回呼與取消關閉機制...");
     auto form = std::make_shared<LifecycleTestForm>();
 
@@ -109,7 +137,8 @@ void TestFormLifecycle() {
     compat::println("  ✔ Form 生命週期與 FormClosing 取消機制驗證通過！");
 }
 
-void TestFormModalDialogResult() {
+static void TestFormModalDialogResult() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 Form 模態對話框與 DialogResult...");
     auto form = std::make_shared<Form>();
 
@@ -120,7 +149,8 @@ void TestFormModalDialogResult() {
     compat::println("  ✔ Form DialogResult 驗證通過！");
 }
 
-void TestApplicationManagement() {
+static void TestApplicationManagement() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 Application 全域中樞與表單登記...");
 
     assert(Application::GetShutdownMode() == ShutdownMode::OnMainWindowClose);
@@ -157,7 +187,8 @@ void TestApplicationManagement() {
     compat::println("  ✔ Application 全域表單登記與中樞管理驗證通過！");
 }
 
-void TestAppBuilderGenericHost() {
+static void TestAppBuilderGenericHost() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 AppBuilder 與 Generic Host 啟動流...");
     auto builder = Application::CreateBuilder();
 
@@ -172,7 +203,8 @@ void TestAppBuilderGenericHost() {
     compat::println("  ✔ AppBuilder 與 Host 服務解析驗證通過！");
 }
 
-void TestApplicationExitAndIdleHandlers() {
+static void TestApplicationExitAndIdleHandlers() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 Application 全域 Exit 與 Idle 監聽回呼...");
     static bool s_idleTriggered = false;
     static bool s_exitTriggered = false;
@@ -196,7 +228,8 @@ void TestApplicationExitAndIdleHandlers() {
     compat::println("  ✔ Application 全域 Exit / Idle 回呼調度驗證通過！");
 }
 
-void TestFormDelegatesAndCancel() {
+static void TestFormDelegatesAndCancel() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 Form 外部委派監聽 (AddClosingHandler / AddClosedHandler)...");
     auto form = std::make_shared<Form>();
     form->SetTitle("Delegate Form");
@@ -234,27 +267,7 @@ void TestFormDelegatesAndCancel() {
     compat::println("  ✔ Form 外部委派監聽與取消關閉機制驗證通過！");
 }
 
-class AutoCloseForm : public Form {
-public:
-    AutoCloseForm() {
-        SetTitle("Auto Close Form");
-    }
-
-    void OnShown() override {
-        Form::OnShown();
-#if defined(_WIN32)
-        if (GetPlatformWindow() && GetPlatformWindow()->GetNativeHandle()) {
-            ::PostMessageW(static_cast<HWND>(GetPlatformWindow()->GetNativeHandle()), WM_CLOSE, 0, 0);
-        } else {
-            Close();
-        }
-#else
-        Close();
-#endif
-    }
-};
-
-void TestWindowClosePlatformEventHandling() {
+static void TestWindowClosePlatformEventHandling() {
     compat::println("[Test] 測試原生 WM_CLOSE / WindowClose 事件分發與取消機制...");
     auto form = std::make_shared<LifecycleTestForm>();
     form->Show();
@@ -290,18 +303,20 @@ void TestWindowClosePlatformEventHandling() {
     compat::println("  ✔ 原生關閉事件分發與取消機制驗證通過！");
 }
 
-void TestApplicationRunCleanExit() {
+static void TestApplicationRunCleanExit() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 Application::Run 於主視窗關閉時乾淨退出訊息迴圈...");
     Application::SetShutdownMode(ShutdownMode::OnMainWindowClose);
     auto form = std::make_shared<AutoCloseForm>();
-    int exitCode = Application::Run(form);
+    int32_t exitCode = Application::Run(form);
     assert(exitCode == 0);
     assert(Application::IsRunning() == false);
     assert(form->IsDisposed() == true);
     compat::println("  ✔ Application::Run 主視窗關閉退出迴圈驗證通過！");
 }
 
-void TestPlatformBackendSelection() {
+static void TestPlatformBackendSelection() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 PlatformBackend 選擇與 AppBuilder 鏈式配置...");
     
     // 預設為 Win32
@@ -334,7 +349,8 @@ void TestPlatformBackendSelection() {
     compat::println("  ✔ PlatformBackend 選擇與 AppBuilder 配置驗證通過！");
 }
 
-void TestDispatcherCrossThreadExecution() {
+static void TestDispatcherCrossThreadExecution() {
+    using namespace cppui::app;
     compat::println("[Test] 測試 Dispatcher 跨執行緒任務投遞與 UI 執行緒執行...");
 
     assert(Application::CheckAccess() == true);
@@ -368,6 +384,93 @@ void TestDispatcherCrossThreadExecution() {
     compat::println("  ✔ Dispatcher 跨執行緒非同步任務調度與主執行緒執行驗證通過！");
 }
 
+static void TestFailFastContracts() {
+    using namespace cppui::app;
+    compat::println("[Test] 測試 Application 契約防禦與例外驗證 (Fail-Fast Checks)...");
+
+    // 1. Application::Run((Form*)nullptr) 應擲出 std::invalid_argument
+    bool caughtRawNullRun = false;
+    try {
+        cppui::app::Form* nullForm = nullptr;
+        Application::Run(nullForm);
+    } catch (const std::invalid_argument&) {
+        caughtRawNullRun = true;
+    }
+    assert(caughtRawNullRun);
+
+    // 2. Application::Run(shared_ptr<Form>(nullptr)) 應擲出 std::invalid_argument
+    bool caughtSharedNullRun = false;
+    try {
+        std::shared_ptr<cppui::app::Form> nullSharedForm;
+        Application::Run(nullSharedForm);
+    } catch (const std::invalid_argument&) {
+        caughtSharedNullRun = true;
+    }
+    assert(caughtSharedNullRun);
+
+    // 3. Application::Post(nullptr) 應擲出 std::invalid_argument
+    bool caughtNullPost = false;
+    try {
+        std::function<void()> emptyAction;
+        Application::Post(emptyAction);
+    } catch (const std::invalid_argument&) {
+        caughtNullPost = true;
+    }
+    assert(caughtNullPost);
+
+    // 4. Application::SetServiceProvider(nullptr) 應擲出 std::invalid_argument
+    bool caughtNullProvider = false;
+    try {
+        Application::SetServiceProvider(nullptr);
+    } catch (const std::invalid_argument&) {
+        caughtNullProvider = true;
+    }
+    assert(caughtNullProvider);
+
+    // 5. Application::RegisterForm(nullptr) 應擲出 std::invalid_argument
+    bool caughtNullRegister = false;
+    try {
+        Application::RegisterForm(nullptr);
+    } catch (const std::invalid_argument&) {
+        caughtNullRegister = true;
+    }
+    assert(caughtNullRegister);
+
+    // 6. Application::UnregisterForm(nullptr) 應擲出 std::invalid_argument
+    bool caughtNullUnregister = false;
+    try {
+        Application::UnregisterForm(nullptr);
+    } catch (const std::invalid_argument&) {
+        caughtNullUnregister = true;
+    }
+    assert(caughtNullUnregister);
+
+    // 7. Application::GetRequiredService<T>() 當無服務提供者時應擲出 InvalidOperationException
+    bool caughtInvalidOpService = false;
+    try {
+        auto unused = Application::GetRequiredService<LifecycleTestForm>();
+        (void)unused;
+    } catch (const cppui::core::InvalidOperationException&) {
+        caughtInvalidOpService = true;
+    }
+    assert(caughtInvalidOpService);
+
+    // 8. AppHost Run(nullptr) 應擲出 std::invalid_argument
+    bool caughtHostNullRun = false;
+    try {
+        auto host = Application::CreateBuilder().Build();
+        std::shared_ptr<cppui::app::Form> nullForm;
+        host.Run(nullForm);
+    } catch (const std::invalid_argument&) {
+        caughtHostNullRun = true;
+    }
+    assert(caughtHostNullRun);
+
+    compat::println("  ✔ Application & AppHost 契約防禦與例外驗證通過！");
+}
+
+} // anonymous namespace
+
 int main() {
     compat::println("==================================================");
     compat::println(" CPPUI Application & Form TDD Unit Test Suite");
@@ -384,9 +487,10 @@ int main() {
     TestApplicationRunCleanExit();
     TestPlatformBackendSelection();
     TestDispatcherCrossThreadExecution();
+    TestFailFastContracts();
 
     compat::println("==================================================");
-    compat::println(" 全部 11 項 Application & Form 單元測試通過！");
+    compat::println(" 全部 12 項 Application & Form 單元測試通過！");
     compat::println("==================================================");
     return 0;
 }

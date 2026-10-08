@@ -1,4 +1,10 @@
+/*
+ * File: DirectWriteTextEngine.cpp
+ * Purpose: Implements the DirectWrite text layout, shaping, and measurement engine for Windows.
+ */
+
 #include "DirectWriteTextEngine.hpp"
+#include <cstdint>
 
 #ifdef _WIN32
 
@@ -38,11 +44,11 @@ DirectWriteTextEngine::~DirectWriteTextEngine() {
 std::wstring DirectWriteTextEngine::Utf8ToUtf16(compat::string_view utf8Str) {
     if (utf8Str.empty()) return std::wstring();
 
-    int len = MultiByteToWideChar(
+    int32_t len = MultiByteToWideChar(
         CP_UTF8,
         0,
         utf8Str.data(),
-        static_cast<int>(utf8Str.size()),
+        static_cast<int32_t>(utf8Str.size()),
         nullptr,
         0
     );
@@ -53,7 +59,7 @@ std::wstring DirectWriteTextEngine::Utf8ToUtf16(compat::string_view utf8Str) {
         CP_UTF8,
         0,
         utf8Str.data(),
-        static_cast<int>(utf8Str.size()),
+        static_cast<int32_t>(utf8Str.size()),
         &result[0],
         len
     );
@@ -63,11 +69,11 @@ std::wstring DirectWriteTextEngine::Utf8ToUtf16(compat::string_view utf8Str) {
 std::string DirectWriteTextEngine::Utf16ToUtf8(const wchar_t* utf16Str, size_t length) {
     if (!utf16Str || length == 0) return std::string();
 
-    int len = WideCharToMultiByte(
+    int32_t len = WideCharToMultiByte(
         CP_UTF8,
         0,
         utf16Str,
-        static_cast<int>(length),
+        static_cast<int32_t>(length),
         nullptr,
         0,
         nullptr,
@@ -80,7 +86,7 @@ std::string DirectWriteTextEngine::Utf16ToUtf8(const wchar_t* utf16Str, size_t l
         CP_UTF8,
         0,
         utf16Str,
-        static_cast<int>(length),
+        static_cast<int32_t>(length),
         &result[0],
         len,
         nullptr,
@@ -95,9 +101,9 @@ IDWriteTextFormat* DirectWriteTextEngine::GetOrCreateTextFormat(const FontDescri
     // 依據字型屬性建構快取識別字串
     std::string key = std::string(font.GetFamily().data(), font.GetFamily().size())
                     + "_" + std::to_string(font.GetSize())
-                    + "_" + std::to_string(static_cast<int>(font.GetWeight()))
-                    + "_" + std::to_string(static_cast<int>(font.GetStyle()))
-                    + "_" + std::to_string(static_cast<int>(font.GetStretch()));
+                    + "_" + std::to_string(static_cast<uint16_t>(font.GetWeight()))
+                    + "_" + std::to_string(static_cast<uint32_t>(font.GetStyle()))
+                    + "_" + std::to_string(static_cast<uint32_t>(font.GetStretch()));
 
     auto it = m_formatCache.find(key);
     if (it != m_formatCache.end()) {

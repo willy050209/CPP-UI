@@ -1,3 +1,8 @@
+/*
+ * File: main.cpp
+ * Purpose: Milestone 3 demo illustrating text pipeline, font selection, and typography metrics.
+ */
+
 #include <chrono>
 #include <cmath>
 #include <vector>

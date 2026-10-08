@@ -1,20 +1,25 @@
+/**
+ * @file ioc_container_test.cpp
+ * @brief IoC 控制反轉容器之生命週期 (Transient/Singleton)、依賴解析與執行緒安全單元測試
+ */
+
 #include "compat/compat.hpp"
 #include "ui/ioc/IServiceProvider.hpp"
 #include "ui/ioc/ServiceCollection.hpp"
 #include <cassert>
+#include <cstdint>
 #include <string>
 #include <thread>
 #include <vector>
 
-using namespace cppui;
-using namespace cppui::ioc;
+namespace {
 
 // 測試介面與實作
 class ILogger {
 public:
     virtual ~ILogger() = default;
     virtual void Log(compat::string_view msg) = 0;
-    virtual int GetCount() const = 0;
+    virtual int32_t GetCount() const = 0;
 };
 
 class ConsoleLogger : public ILogger {
@@ -22,11 +27,11 @@ public:
     void Log(compat::string_view) override {
         m_count++;
     }
-    int GetCount() const override {
+    int32_t GetCount() const override {
         return m_count;
     }
 private:
-    int m_count = 0;
+    int32_t m_count = 0;
 };
 
 class IUserService {
@@ -54,7 +59,8 @@ private:
     std::shared_ptr<ILogger> m_logger;
 };
 
-void TestTransientLifetime() {
+static void TestTransientLifetime() {
+    using namespace cppui::ioc;
     compat::println("[Test] 測試 Transient 瞬態生命週期...");
     ServiceCollection services;
     services.AddTransient<ILogger, ConsoleLogger>();
@@ -76,7 +82,8 @@ void TestTransientLifetime() {
     compat::println("  ✔ Transient 生命週期驗證通過！");
 }
 
-void TestSingletonLifetime() {
+static void TestSingletonLifetime() {
+    using namespace cppui::ioc;
     compat::println("[Test] 測試 Singleton 單例生命週期...");
     ServiceCollection services;
     services.AddSingleton<ILogger, ConsoleLogger>();
@@ -97,7 +104,8 @@ void TestSingletonLifetime() {
     compat::println("  ✔ Singleton 生命週期驗證通過！");
 }
 
-void TestInstanceSingleton() {
+static void TestInstanceSingleton() {
+    using namespace cppui::ioc;
     compat::println("[Test] 測試實例單例註冊...");
     auto existingInstance = std::make_shared<ConsoleLogger>();
     existingInstance->Log("Init");
@@ -114,7 +122,8 @@ void TestInstanceSingleton() {
     compat::println("  ✔ 實例單例註冊驗證通過！");
 }
 
-void TestFactoryRegistrationWithDependency() {
+static void TestFactoryRegistrationWithDependency() {
+    using namespace cppui::ioc;
     compat::println("[Test] 測試帶有依賴注入之工廠註冊...");
     ServiceCollection services;
     services.AddSingleton<ILogger, ConsoleLogger>();
@@ -133,7 +142,8 @@ void TestFactoryRegistrationWithDependency() {
     compat::println("  ✔ 工廠依賴注入解析驗證通過！");
 }
 
-void TestUnregisteredService() {
+static void TestUnregisteredService() {
+    using namespace cppui::ioc;
     compat::println("[Test] 測試未註冊服務查詢...");
     ServiceCollection services;
     auto provider = services.BuildServiceProvider();
@@ -144,7 +154,8 @@ void TestUnregisteredService() {
     compat::println("  ✔ 未註冊服務查詢回傳 nullptr 驗證通過！");
 }
 
-void TestGetRequiredServiceBehavior() {
+static void TestGetRequiredServiceBehavior() {
+    using namespace cppui::ioc;
     compat::println("[Test] 測試 GetRequiredService 成功與失敗行為...");
     ServiceCollection services;
     services.AddSingleton<ILogger, ConsoleLogger>();
@@ -200,7 +211,8 @@ private:
     std::shared_ptr<IRepository> m_repo;
 };
 
-void TestMultiLevelDependencyInjection() {
+static void TestMultiLevelDependencyInjection() {
+    using namespace cppui::ioc;
     compat::println("[Test] 測試多層相依性注入級聯解析 (A -> B -> C)...");
     ServiceCollection services;
     services.AddSingleton<IDatabase, SqlDatabase>();
@@ -220,17 +232,18 @@ void TestMultiLevelDependencyInjection() {
     compat::println("  ✔ 多層相依性注入解析驗證通過！");
 }
 
-void TestThreadSafeSingleton() {
+static void TestThreadSafeSingleton() {
+    using namespace cppui::ioc;
     compat::println("[Test] 測試 Singleton 於多執行緒環境下並發解析之安全保護...");
     ServiceCollection services;
     services.AddSingleton<ILogger, ConsoleLogger>();
     auto provider = services.BuildServiceProvider();
 
-    const int threadCount = 8;
+    const size_t threadCount = 8;
     std::vector<std::thread> threads;
     std::vector<std::shared_ptr<ILogger>> resolvedLoggers(threadCount);
 
-    for (int i = 0; i < threadCount; ++i) {
+    for (size_t i = 0; i < threadCount; ++i) {
         threads.emplace_back([&, i]() {
             resolvedLoggers[i] = provider->GetRequiredService<ILogger>();
         });
@@ -241,13 +254,15 @@ void TestThreadSafeSingleton() {
     }
 
     // 驗證所有執行緒解析出同一實例指標
-    for (int i = 1; i < threadCount; ++i) {
+    for (size_t i = 1; i < threadCount; ++i) {
         assert(resolvedLoggers[i] != nullptr);
         assert(resolvedLoggers[i] == resolvedLoggers[0]);
     }
 
     compat::println("  ✔ Singleton 多執行緒並發解析執行緒安全驗證通過！");
 }
+
+} // anonymous namespace
 
 int main() {
     compat::println("==================================================");

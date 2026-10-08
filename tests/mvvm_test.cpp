@@ -1,3 +1,8 @@
+/**
+ * @file mvvm_test.cpp
+ * @brief MVVM 架構（ViewModelBase、RelayCommand、DataContext 繼承、執行緒自動封送）單元測試
+ */
+
 #include "compat/compat.hpp"
 #include "ui/mvvm/ViewModelBase.hpp"
 #include "ui/mvvm/ICommand.hpp"
@@ -7,21 +12,19 @@
 #include "ui/layout/Border.hpp"
 #include "ui/app/Application.hpp"
 #include <cassert>
+#include <cstdint>
 #include <string>
 #include <thread>
 #include <atomic>
 
-using namespace cppui;
-using namespace cppui::mvvm;
-using namespace cppui::controls;
-using namespace cppui::layout;
+namespace {
 
 // 測試 ViewModel
-class CounterViewModel : public ViewModelBase {
+class CounterViewModel : public cppui::mvvm::ViewModelBase {
 public:
-    int GetCount() const noexcept { return m_count; }
+    int32_t GetCount() const noexcept { return m_count; }
 
-    bool SetCount(int newCount) {
+    bool SetCount(int32_t newCount) {
         return SetProperty(m_count, newCount, "Count");
     }
 
@@ -33,16 +36,16 @@ public:
     }
 
 private:
-    int m_count = 0;
+    int32_t m_count = 0;
     std::string m_title = "Initial Title";
 };
 
-void TestViewModelPropertyChanged() {
+static void TestViewModelPropertyChanged() {
     compat::println("[Test] 測試 ViewModelBase 屬性變更通知...");
     CounterViewModel vm;
 
     std::string changedProperty;
-    int changeCount = 0;
+    int32_t changeCount = 0;
     vm.AddPropertyChangedHandler([&](compat::string_view propName) {
         changedProperty = std::string(propName.data(), propName.size());
         changeCount++;
@@ -72,7 +75,8 @@ void TestViewModelPropertyChanged() {
     compat::println("  ✔ ViewModelBase 屬性變更與重複值保護驗證通過！");
 }
 
-void TestRelayCommandExecution() {
+static void TestRelayCommandExecution() {
+    using namespace cppui::mvvm;
     compat::println("[Test] 測試 RelayCommand 執行與可執行狀態...");
     bool executed = false;
     bool canRun = false;
@@ -118,7 +122,9 @@ void TestRelayCommandExecution() {
     compat::println("  ✔ RelayCommand 執行、狀態通知與工廠函數驗證通過！");
 }
 
-void TestButtonCommandBindingAndCanExecute() {
+static void TestButtonCommandBindingAndCanExecute() {
+    using namespace cppui::mvvm;
+    using namespace cppui::controls;
     compat::println("[Test] 測試 Button 命令綁定與 IsEnabled 自動連動...");
     bool cmdRan = false;
     bool allowed = false;
@@ -146,8 +152,6 @@ void TestButtonCommandBindingAndCanExecute() {
     assert(btn->IsEnabled() == true);
 
     // 觸發按鈕點擊
-    // 透過外部直接呼叫或者內部狀態機
-    // 這裡驗證 Command 本身可被執行
     if (btn->IsEnabled() && btn->GetCommand()->CanExecute()) {
         btn->GetCommand()->Execute();
     }
@@ -156,7 +160,9 @@ void TestButtonCommandBindingAndCanExecute() {
     compat::println("  ✔ Button Command 綁定與自動啟用/禁用連動驗證通過！");
 }
 
-void TestDataContextVisualTreeInheritance() {
+static void TestDataContextVisualTreeInheritance() {
+    using namespace cppui::layout;
+    using namespace cppui::controls;
     compat::println("[Test] 測試 DataContext 沿視覺樹繼承...");
     auto rootPanel = std::make_shared<StackPanel>();
     auto border = std::make_shared<Border>();
@@ -196,26 +202,27 @@ void TestDataContextVisualTreeInheritance() {
     compat::println("  ✔ DataContext 視覺樹向下繼承與局部覆寫驗證通過！");
 }
 
-void TestRelayCommandWithParameter() {
+static void TestRelayCommandWithParameter() {
+    using namespace cppui::mvvm;
     compat::println("[Test] 測試 RelayCommand 攜帶參數之 Execute 與 CanExecute...");
-    int receivedValue = 0;
+    int32_t receivedValue = 0;
     auto cmd = std::make_shared<RelayCommand>(
         [&](void* p) {
             if (p) {
-                receivedValue = *static_cast<int*>(p);
+                receivedValue = *static_cast<int32_t*>(p);
             }
         },
         [](void* p) -> bool {
             if (!p) return false;
-            return *static_cast<int*>(p) > 0;
+            return *static_cast<int32_t*>(p) > 0;
         }
     );
 
-    int testNeg = -5;
+    int32_t testNeg = -5;
     assert(cmd->CanExecute(&testNeg) == false);
     (void)testNeg;
 
-    int testPos = 42;
+    int32_t testPos = 42;
     assert(cmd->CanExecute(&testPos) == true);
 
     cmd->Execute(&testPos);
@@ -225,12 +232,12 @@ void TestRelayCommandWithParameter() {
     compat::println("  ✔ RelayCommand 參數化命令執行與判定驗證通過！");
 }
 
-void TestMultiplePropertyChangedObservers() {
+static void TestMultiplePropertyChangedObservers() {
     compat::println("[Test] 測試 ViewModelBase 多觀察者廣播...");
     CounterViewModel vm;
 
-    int observer1Count = 0;
-    int observer2Count = 0;
+    int32_t observer1Count = 0;
+    int32_t observer2Count = 0;
     std::string obs1Prop;
     std::string obs2Prop;
 
@@ -254,7 +261,9 @@ void TestMultiplePropertyChangedObservers() {
     compat::println("  ✔ ViewModelBase 多重觀察者廣播驗證通過！");
 }
 
-void TestDeepDataContextVisualTreeOverride() {
+static void TestDeepDataContextVisualTreeOverride() {
+    using namespace cppui::layout;
+    using namespace cppui::controls;
     compat::println("[Test] 測試深層視覺樹 DataContext 多層級局部覆寫...");
     auto root = std::make_shared<StackPanel>();
     auto childBranch1 = std::make_shared<Border>();
@@ -284,11 +293,11 @@ void TestDeepDataContextVisualTreeOverride() {
     compat::println("  ✔ 深層視覺樹 DataContext 多層級繼承與分支隔離驗證通過！");
 }
 
-void TestViewModelBackgroundThreadMarshalling() {
+static void TestViewModelBackgroundThreadMarshalling() {
     compat::println("[Test] 測試 ViewModelBase 背景執行緒屬性變更自動封送至主執行緒...");
     auto vm = std::make_shared<CounterViewModel>();
 
-    std::atomic<int> notificationCount{0};
+    std::atomic<int32_t> notificationCount{0};
     std::thread::id receivedThreadId;
     std::string receivedProperty;
 
@@ -309,7 +318,7 @@ void TestViewModelBackgroundThreadMarshalling() {
     assert(notificationCount == 0);
 
     // 主執行緒處理事件佇列
-    app::Application::DoEvents();
+    cppui::app::Application::DoEvents();
 
     // 驗證回呼已在主執行緒安全執行
     assert(notificationCount == 1);
@@ -319,6 +328,8 @@ void TestViewModelBackgroundThreadMarshalling() {
 
     compat::println("  ✔ ViewModelBase 背景執行緒屬性變更自動封送 (Thread Marshalling) 驗證通過！");
 }
+
+} // anonymous namespace
 
 int main() {
     compat::println("==================================================");

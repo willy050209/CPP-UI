@@ -1,6 +1,12 @@
+/*
+ * File: PlatformWindowGeneric.cpp
+ * Purpose: Implements the Generic PAL Window for headless and testing platforms.
+ */
+
 #include "ui/pal/PlatformWindowGeneric.hpp"
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <thread>
 
 namespace cppui {
@@ -136,7 +142,7 @@ void PlatformWindowGeneric::PollEvents() {
     }
 }
 
-bool PlatformWindowGeneric::WaitEvents(int timeoutMs) {
+bool PlatformWindowGeneric::WaitEvents(int32_t timeoutMs) {
     if (m_isClosed) return false;
 
     {

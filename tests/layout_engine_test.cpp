@@ -1,6 +1,12 @@
+/**
+ * @file layout_engine_test.cpp
+ * @brief Measure/Arrange 佈局約束、面板（StackPanel、Border、Canvas）與快取效能單元測試
+ */
+
 #include <cassert>
 #include <chrono>
 #include <memory>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/core/Visual.hpp"
 #include "ui/core/UIElement.hpp"
@@ -13,12 +19,12 @@
 #include "ui/controls/TextBlock.hpp"
 #include "ui/rendering/DrawingContext.hpp"
 
-using namespace cppui;
-using namespace cppui::core;
-using namespace cppui::layout;
-using namespace cppui::controls;
-
 int main() {
+    using namespace cppui;
+    using namespace cppui::core;
+    using namespace cppui::layout;
+    using namespace cppui::controls;
+
     compat::println("=================================================");
     compat::println(" [CPPUI M4] Layout Engine & Visual Tree Tests    ");
     compat::println("=================================================");

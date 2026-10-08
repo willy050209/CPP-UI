@@ -1,3 +1,8 @@
+/*
+ * File: Form.cpp
+ * Purpose: Implements Form desktop window lifecycle, rendering loop, and input handling.
+ */
+
 #include "ui/app/Form.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/input/InputManager.hpp"
@@ -184,12 +189,12 @@ void Form::EnsurePlatformWindow() {
 
     m_window = pal::PlatformWindowFactory::Create(desc);
     if (Application::GetPlatformBackend() == PlatformBackend::Skia) {
-        auto skiaCtx = std::unique_ptr<rendering::SkiaRenderContext>(new rendering::SkiaRenderContext());
+        auto skiaCtx = std::make_unique<rendering::SkiaRenderContext>();
         skiaCtx->Init(m_window->GetNativeHandle(), m_width, m_height);
         m_renderContext = std::move(skiaCtx);
     } else {
         if (!m_renderTarget) {
-            m_renderTarget = std::unique_ptr<rendering::SoftwareRenderTarget>(new rendering::SoftwareRenderTarget());
+            m_renderTarget = std::make_unique<rendering::SoftwareRenderTarget>();
         }
         m_renderTarget->Resize(m_width, m_height);
     }
@@ -227,7 +232,7 @@ void Form::RenderFrame() {
 
     if (Application::GetPlatformBackend() == PlatformBackend::Skia) {
         if (!m_renderContext) {
-            auto skiaCtx = std::unique_ptr<rendering::SkiaRenderContext>(new rendering::SkiaRenderContext());
+            auto skiaCtx = std::make_unique<rendering::SkiaRenderContext>();
             skiaCtx->Init(m_window->GetNativeHandle(), m_width, m_height);
             m_renderContext = std::move(skiaCtx);
         }
@@ -245,7 +250,7 @@ void Form::RenderFrame() {
         }
     } else {
         if (!m_renderTarget) {
-            m_renderTarget = std::unique_ptr<rendering::SoftwareRenderTarget>(new rendering::SoftwareRenderTarget());
+            m_renderTarget = std::make_unique<rendering::SoftwareRenderTarget>();
             m_renderTarget->Resize(m_width, m_height);
         }
 
