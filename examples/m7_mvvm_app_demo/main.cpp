@@ -45,7 +45,7 @@ public:
         m_queryCount++;
         std::string c(city.data(), city.size());
         if (c.empty()) c = "Taipei";
-        return c + " - 晴時多雲 26°C (查詢次數: " + std::to_string(m_queryCount) + ")";
+        return c + " - 晴時多雲 26°C (查詢次數: " + compat::to_string(m_queryCount) + ")";
     }
 
 private:
@@ -64,7 +64,7 @@ public:
         // 綁定指令動作 (RelayCommand)
         IncrementCommand = std::make_shared<RelayCommand>([this]() {
             Counter = Counter.Get() + 1;
-            StatusMessage = "計數器已更新為: " + std::to_string(Counter.Get());
+            StatusMessage = "計數器已更新為: " + compat::to_string(Counter.Get());
         });
 
         ResetCommand = std::make_shared<RelayCommand>([this]() {
@@ -154,7 +154,7 @@ public:
                                     .Foreground(Color(80, 220, 140, 255))
                                     .Margin(0.0f, 8.0f)
                                     .BindText(vm->Counter, [](int32_t val) {
-                                        return "計數器數值: " + std::to_string(val);
+                                        return "計數器數值: " + compat::to_string(val);
                                     }),
 
                                 HStack({

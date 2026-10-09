@@ -59,8 +59,8 @@ auto myUi = Border(
         Label("點擊次數: 0")
             .FontSize(16.0f)
             .Foreground(Color(80, 200, 120, 255))
-            .BindText(clickCount, [](int count) {
-                return "點擊次數: " + std::to_string(count);
+            .BindText(clickCount, [](int32_t count) {
+                return "點擊次數: " + compat::to_string(count);
             }),
 
         HStack({

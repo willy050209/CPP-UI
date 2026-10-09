@@ -12,12 +12,12 @@ OrderViewModel::OrderViewModel(std::shared_ptr<IOrderService> orderService)
     PlaceOrderCommand = std::make_shared<cppui::mvvm::RelayCommand>([this]() {
         if (!m_orderService) return;
         static int32_t customerIdx = 1;
-        std::string customer = "企業客戶 #" + std::to_string(customerIdx++);
+        std::string customer = "企業客戶 #" + compat::to_string(customerIdx++);
         double amount = 1200.0 + (customerIdx * 350.0);
 
         m_orderService->CreateOrder(customer, amount);
 
-        std::string action = "最新操作：成功建立 " + customer + " 訂單 ($" + std::to_string(static_cast<int32_t>(amount)) + ")";
+        std::string action = "最新操作：成功建立 " + customer + " 訂單 ($" + compat::to_string(static_cast<int32_t>(amount)) + ")";
         SetProperty(m_lastActionText, action, "LastActionText");
 
         RefreshSummary();
@@ -40,7 +40,7 @@ void OrderViewModel::RefreshSummary() {
     int32_t count = m_orderService->GetOrderCount();
     double revenue = m_orderService->GetTotalRevenue();
 
-    std::string summary = "累計訂單總數: " + std::to_string(count) +
-                          " 筆  |  總營收金額: $" + std::to_string(static_cast<int32_t>(revenue));
+    std::string summary = "累計訂單總數: " + compat::to_string(count) +
+                          " 筆  |  總營收金額: $" + compat::to_string(static_cast<int32_t>(revenue));
     SetProperty(m_summaryText, summary, "SummaryText");
 }

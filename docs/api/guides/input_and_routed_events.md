@@ -163,7 +163,7 @@ void CreateInteractiveCard() {
     btnLike->OnPointerPressed([&, btnText](PointerEventArgs& e) {
         if (e.IsLeftButton()) {
             likeCount++;
-            btnText->SetText("👍 點讚 (" + std::to_string(likeCount) + ")");
+            btnText->SetText("👍 點讚 (" + compat::to_string(likeCount) + ")");
             compat::println("按鈕獲點擊，當前點讚數: {}", likeCount);
             e.SetHandled(true);
         }

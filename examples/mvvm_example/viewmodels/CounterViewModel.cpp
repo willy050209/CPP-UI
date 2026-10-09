@@ -47,7 +47,7 @@ compat::string_view CounterViewModel::GetStatusMessage() const noexcept {
 }
 
 void CounterViewModel::UpdatePropertiesAndCommands() {
-    std::string newCount = "計數數值: " + std::to_string(m_model.GetValue());
+    std::string newCount = "計數數值: " + compat::to_string(m_model.GetValue());
     SetProperty(m_countText, newCount, "CountText");
 
     std::string newStatus;

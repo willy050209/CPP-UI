@@ -164,7 +164,7 @@ public:
         SetContent(
             VStack({
                 Label("計數器")
-                    .BindText(vm->Count, [](int c) { return "數值: " + std::to_string(c); }),
+                    .BindText(vm->Count, [](int32_t c) { return "數值: " + compat::to_string(c); }),
 
                 Button("增加")
                     .Command(vm->IncrementCommand),

@@ -80,7 +80,7 @@ void RunLongTask() {
 
         // 透過 Dispatcher 將結果派發回 UI 主執行緒安全更新
         cppui::app::Application::Post([=]() {
-            myLabel->SetText("計算完成: " + std::to_string(result));
+            myLabel->SetText("計算完成: " + compat::to_string(result));
         });
     }).detach();
 }

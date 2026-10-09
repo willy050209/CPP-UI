@@ -136,7 +136,7 @@ int main() {
         // UIBuilder BindText integration
         Signal<int32_t> score(100);
         auto labelBuilder = Label("Initial").BindText(score, [](int32_t val) {
-            return "Score: " + std::to_string(val);
+            return "Score: " + compat::to_string(val);
         });
 
         std::shared_ptr<controls::TextBlock> textBlock = labelBuilder.Get();

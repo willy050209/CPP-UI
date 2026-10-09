@@ -276,7 +276,7 @@ int main() {
                     window->Close();
                 } else if (e.key.virtualKey == 'A') { // 新增卡片
                     cardCounter++;
-                    std::string t = "動態卡片 #" + std::to_string(cardCounter);
+                    std::string t = "動態卡片 #" + compat::to_string(cardCounter);
                     std::string d = "觸發 InvalidateMeasure 向上冒泡重排版";
                     Color accent = titleColors[cardCounter % titleColors.size()];
                     cardStack->AddChild(createCard(t, d, accent));
@@ -316,11 +316,8 @@ int main() {
 
         // 1. 更新狀態字串 (於排版更新前執行，確保狀態字串之度量與邊界配置與當前幀同步)
         auto stats = layoutMgr.GetStats();
-        std::string statStr = "【排版引擎即時度量】 累計 Measure: " + std::to_string(stats.totalMeasures)
-                            + " 次 | 累計 Arrange: " + std::to_string(stats.totalArranges)
-                            + " 次 | 視窗解析度: " + std::to_string(currentWidth) + "x" + std::to_string(currentHeight)
-                            + " | 標題對齊: " + alignNames[alignIdx]
-                            + " | 卡片總數: " + std::to_string(cardStack->GetChildrenCount() - 1);
+        std::string statStr = compat::format("【排版引擎即時度量】 累計 Measure: {} 次 | 累計 Arrange: {} 次 | 視窗解析度: {}x{} | 標題對齊: {} | 卡片總數: {}",
+            stats.totalMeasures, stats.totalArranges, currentWidth, currentHeight, alignNames[alignIdx], cardStack->GetChildrenCount() - 1);
         statusText->SetText(statStr);
 
         // 2. 執行排版更新 (雙階段管線)

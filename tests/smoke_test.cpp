@@ -70,6 +70,41 @@ int main() {
     assert(sum == (2 + 4 + 6));
     compat::println("[PASS] compat::views pipeline (iota | filter | take)");
 
+    // 8. 驗證 compat::to_string
+    std::string sInt = compat::to_string(42);
+    assert(sInt == "42");
+    std::string sNeg = compat::to_string(-100);
+    assert(sNeg == "-100");
+    std::string sI64 = compat::to_string(static_cast<int64_t>(1234567890123LL));
+    assert(sI64 == "1234567890123");
+    std::string sFlt = compat::to_string(3.5f);
+    assert(sFlt == "3.5");
+    compat::println("[PASS] compat::to_string (int={}, neg={}, int64={}, float={})", sInt, sNeg, sI64, sFlt);
+
+    // 9. 驗證 compat::parse<T> (強型別零例外解析)
+    auto p1 = compat::parse<int32_t>("12345");
+    assert(p1.has_value());
+    assert(*p1 == 12345);
+    auto p2 = compat::parse<int32_t>("-999");
+    assert(p2.has_value());
+    assert(*p2 == -999);
+    auto pFloat = compat::parse<float>("3.5");
+    assert(pFloat.has_value());
+    assert(*pFloat == 3.5f);
+    auto pErr = compat::parse<int32_t>("not_a_number");
+    assert(!pErr.has_value());
+    auto pEmpty = compat::parse<int32_t>("");
+    assert(!pEmpty.has_value());
+    compat::println("[PASS] compat::parse<T> (success & fail-fast unexpected validation)");
+
+    // 10. 驗證 compat::from_chars (底層進位制解析)
+    const char hexStr[] = "1A3F";
+    int32_t hexVal = 0;
+    auto fcRes = compat::from_chars(hexStr, hexStr + 4, hexVal, 16);
+    assert(fcRes.ec == std::errc{});
+    assert(hexVal == 6719);
+    compat::println("[PASS] compat::from_chars (hexStr=1A3F -> val={})", hexVal);
+
     compat::println("[CPPUI Smoke Test] All checks passed successfully!");
     return 0;
 }

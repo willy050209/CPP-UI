@@ -1,4 +1,4 @@
-﻿# 格式化、終端輸出與數值解析 (compat::format, print & parse)
+# 格式化、終端輸出與數值解析 (compat::format, print & parse)
 
 定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
 所屬命名空間：`compat`。
@@ -76,21 +76,21 @@ void PrintExamples() {
 
 ## 4. 數值解析：`compat::parse<T>` 與 `from_chars`
 
-提供比 `std::stoi` / `std::atof` 快上數倍、且**無任何堆積配置、無異常拋出**的高速解析原語：
+專案嚴格禁止使用 `std::stoi` / `std::atof`，全面採用無任何堆積配置、無異常拋出的高速解析原語：
 
 ```cpp
 #include "compat/compat.hpp"
 
 void ParseExamples() {
-    // 1. 高階 parse 介面 (回傳 optional<T>)
-    compat::optional<int> num = compat::parse<int>("12345");
+    // 1. 高階 parse 介面 (回傳 compat::expected<T, compat::string_view>)
+    compat::expected<int32_t, compat::string_view> num = compat::parse<int32_t>("12345");
     if (num) {
         compat::println("解析整數: {}", *num);
     }
 
     // 2. 底層 from_chars (支援 2~36 進位)
     const char hexStr[] = "1A3F";
-    int hexVal = 0;
+    int32_t hexVal = 0;
     auto [ptr, ec] = compat::from_chars(hexStr, hexStr + 4, hexVal, 16);
     if (ec == std::errc{}) {
         compat::println("16 進位解析數值: {}", hexVal); // 6719
@@ -99,6 +99,25 @@ void ParseExamples() {
 ```
 
 * **安全保證**：當解析失敗時，傳入的輸出目標數值**保證絕不被修改**，防止髒數據殘留。
+
+---
+
+## 5. 數值轉字串：`compat::to_string`
+
+為避免 `std::to_string` 的語系依賴與未定義記憶體快取問題，`compat` 提供完全一致且高效的轉換函式：
+
+```cpp
+#include "compat/compat.hpp"
+
+void ToStringExamples() {
+    std::string s1 = compat::to_string(42);         // "42"
+    std::string s2 = compat::to_string(-100);       // "-100"
+    std::string s3 = compat::to_string(3.14f);      // "3.14"
+    std::string s4 = compat::to_string(99999999LL); // "99999999"
+}
+```
+
+多變數組合字串時，優先建議直接使用 `compat::format("{}_{}", a, b)` 以達成單次記憶體配置最佳化。
 
 ---
 

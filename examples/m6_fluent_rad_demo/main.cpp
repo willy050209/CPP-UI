@@ -107,7 +107,7 @@ int main() {
                             .Foreground(Color(80, 200, 120, 255))
                             .Margin(0.0f, 6.0f)
                             .BindText(clickCounter, [](int32_t count) {
-                                return "點擊次數: " + std::to_string(count);
+                                return "點擊次數: " + compat::to_string(count);
                             }),
 
                         HStack({
@@ -119,7 +119,7 @@ int main() {
                                 .CornerRadius(4.0f)
                                 .OnClick([&]() {
                                     clickCounter = clickCounter.Get() + 1;
-                                    statusMessage = "點擊計數已增加至: " + std::to_string(clickCounter.Get());
+                                    statusMessage = "點擊計數已增加至: " + compat::to_string(clickCounter.Get());
                                     window->RequestRedraw();
                                 }),
 
@@ -131,7 +131,7 @@ int main() {
                                 .CornerRadius(4.0f)
                                 .OnClick([&]() {
                                     clickCounter = clickCounter.Get() - 1;
-                                    statusMessage = "點擊計數已減少至: " + std::to_string(clickCounter.Get());
+                                    statusMessage = "點擊計數已減少至: " + compat::to_string(clickCounter.Get());
                                     window->RequestRedraw();
                                 }),
 

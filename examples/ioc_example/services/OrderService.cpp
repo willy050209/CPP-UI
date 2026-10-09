@@ -40,6 +40,6 @@ void OrderService::CreateOrder(compat::string_view customer, double amount) {
     m_orders.push_back(ord);
 
     if (m_logger) {
-        m_logger->Log("新訂單建立成功：#" + std::to_string(ord.id) + " - 客戶: " + ord.customerName);
+        m_logger->Log("新訂單建立成功：#" + compat::to_string(ord.id) + " - 客戶: " + ord.customerName);
     }
 }

@@ -390,14 +390,14 @@ int main() {
 
     btnLike->OnPointerReleased([&](PointerEventArgs&) {
         likeCount++;
-        btnLike->SetText("👍 讚數: " + std::to_string(likeCount));
-        appendLog("[Click Bubble] Target: btnLike | 讚數累計: " + std::to_string(likeCount));
+        btnLike->SetText("👍 讚數: " + compat::to_string(likeCount));
+        appendLog("[Click Bubble] Target: btnLike | 讚數累計: " + compat::to_string(likeCount));
     });
 
     btnRocket->OnPointerReleased([&](PointerEventArgs&) {
         rocketCount++;
-        btnRocket->SetText("🚀 發射: " + std::to_string(rocketCount));
-        appendLog("[Click Bubble] Target: btnRocket | 火箭發射: " + std::to_string(rocketCount));
+        btnRocket->SetText("🚀 發射: " + compat::to_string(rocketCount));
+        appendLog("[Click Bubble] Target: btnRocket | 火箭發射: " + compat::to_string(rocketCount));
     });
 
     btnReset->OnPointerReleased([&](PointerEventArgs&) {
@@ -539,7 +539,7 @@ int main() {
         else if (foc == inputControl.get()) focName = "inputControl (輸入框)";
         else if (foc == btnToggleIntercept.get()) focName = "btnToggleIntercept (阻斷開關)";
 
-        statusText->SetText("【輸入管線即時狀態】 焦點元件: " + focName + " | 視窗解析度: " + std::to_string(currentWidth) + "x" + std::to_string(currentHeight));
+        statusText->SetText(compat::format("【輸入管線即時狀態】 焦點元件: {} | 視窗解析度: {}x{}", focName, currentWidth, currentHeight));
     };
 
     window->SetPaintCallback([&]() {

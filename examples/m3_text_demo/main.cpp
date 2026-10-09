@@ -223,7 +223,7 @@ int main() {
             }
 
             // 顯示即時命中度量資訊
-            std::string hitInfo = "命中字元索引: " + std::to_string(hit.textPosition)
+            std::string hitInfo = "命中字元索引: " + compat::to_string(hit.textPosition)
                                 + " | 後半字元: " + (hit.isTrailingHit ? "TRUE" : "FALSE");
             dc.DrawText(hitInfo, Point(cardInteractive.x + 16.0f, infoY), monoFont, Colors::SteelBlue);
         } else {

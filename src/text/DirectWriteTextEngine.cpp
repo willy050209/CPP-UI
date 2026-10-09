@@ -99,11 +99,12 @@ IDWriteTextFormat* DirectWriteTextEngine::GetOrCreateTextFormat(const FontDescri
     if (!m_factory) return nullptr;
 
     // 依據字型屬性建構快取識別字串
-    std::string key = std::string(font.GetFamily().data(), font.GetFamily().size())
-                    + "_" + std::to_string(font.GetSize())
-                    + "_" + std::to_string(static_cast<uint16_t>(font.GetWeight()))
-                    + "_" + std::to_string(static_cast<uint32_t>(font.GetStyle()))
-                    + "_" + std::to_string(static_cast<uint32_t>(font.GetStretch()));
+    std::string key = compat::format("{}_{}_{}_{}_{}",
+        font.GetFamily(),
+        font.GetSize(),
+        static_cast<uint16_t>(font.GetWeight()),
+        static_cast<uint32_t>(font.GetStyle()),
+        static_cast<uint32_t>(font.GetStretch()));
 
     auto it = m_formatCache.find(key);
     if (it != m_formatCache.end()) {

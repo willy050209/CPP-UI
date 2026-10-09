@@ -57,7 +57,7 @@ AsyncEventForm::AsyncEventForm() {
                                 .Foreground(Color(70, 215, 130, 255))
                                 .Margin(0.0f, 4.0f, 0.0f, 6.0f)
                                 .BindText(m_progress, [](int32_t val) {
-                                    return "目前進度: " + std::to_string(val) + "%";
+                                    return "目前進度: " + compat::to_string(val) + "%";
                                 }),
 
                             // 狀態說明
@@ -188,10 +188,10 @@ void AsyncEventForm::StartBackgroundTask() {
             // 透過 Application::Post 封送回 UI 執行緒
             cppui::app::Application::Post([this, step, workerTid]() {
                 m_progress = step;
-                m_status   = "背景計算進度中... (" + std::to_string(step) + "%)";
+                m_status   = "背景計算進度中... (" + compat::to_string(step) + "%)";
                 m_threadInfo = "Worker TID: " + workerTid + " | UI 調度親和性: PASS (已於主執行緒執行)";
                 if (step % 25 == 0 || step == 100) {
-                    m_logOutput = "[Post 回呼] 主執行緒已接收並更新進度: " + std::to_string(step) + "%";
+                    m_logOutput = "[Post 回呼] 主執行緒已接收並更新進度: " + compat::to_string(step) + "%";
                 }
             });
         }
@@ -229,8 +229,8 @@ void AsyncEventForm::FireOneShotEvent() {
     std::thread([this, currentEventId]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
         cppui::app::Application::Post([this, currentEventId]() {
-            m_status    = "已接收單次背景事件 #" + std::to_string(currentEventId);
-            m_logOutput = "[OneShot] 單次背景事件 #" + std::to_string(currentEventId) + " 已由主執行緒消費處理！";
+            m_status    = "已接收單次背景事件 #" + compat::to_string(currentEventId);
+            m_logOutput = "[OneShot] 單次背景事件 #" + compat::to_string(currentEventId) + " 已由主執行緒消費處理！";
         });
     }).detach();
 }
