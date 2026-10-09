@@ -3,6 +3,8 @@
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/input/PointerEventArgs.hpp"
+#include "ui/theme/ThemeManager.hpp"
+#include "ui/theme/Theme.hpp"
 #include <algorithm>
 
 namespace cppui {
@@ -11,16 +13,23 @@ namespace controls {
 const input::RoutedEvent TextBox::TextChangedEvent(103, "TextChanged", input::RoutingStrategy::Bubble);
 
 TextBox::TextBox() {
+    const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
     SetFocusable(true);
     SetTabStop(true);
-    SetPadding(core::Thickness(10.0f, 6.0f, 10.0f, 6.0f));
-    SetBorderThickness(core::Thickness(1.0f));
-    SetCornerRadius(4.0f);
-    SetBackground(core::Color(26, 30, 40, 255));
-    SetBorderBrush(core::Color(55, 65, 85, 255));
-    SetForeground(core::Color(240, 245, 255, 255));
+    SetPadding(theme.Metrics().paddingInput);
+    SetBorderThickness(theme.Metrics().borderThicknessDefault);
+    SetCornerRadius(theme.Metrics().cornerRadiusSmall);
+    SetBackground(theme.Colors().surfaceBackground);
+    SetBorderBrush(theme.Colors().controlBorder);
+    SetForeground(theme.Colors().textPrimary);
 
-    m_font.SetSize(14.0f);
+    m_focusBorderColor = theme.Colors().controlFocusedBorder;
+    m_placeholderColor = theme.Colors().textPlaceholder;
+    m_font.SetFamily(theme.Typography().fontFamily);
+    m_font.SetSize(theme.Typography().fontSizeBody);
+    m_hasExplicitBackground = false;
+    m_hasExplicitBorder = false;
+    m_hasExplicitForeground = false;
 
     OnPointerPressed([this](input::PointerEventArgs& e) {
         input::FocusManager::Get().SetFocus(this);
@@ -294,6 +303,24 @@ void TextBox::OnRender(rendering::DrawingContext& dc) {
     }
 
     dc.PopClip();
+}
+
+void TextBox::ApplyTheme(const theme::Theme& theme) {
+    Control::ApplyTheme(theme);
+    if (!m_hasExplicitBackground) {
+        m_background = theme.Colors().surfaceBackground;
+    }
+    if (!m_hasExplicitBorder) {
+        m_borderBrush = theme.Colors().controlBorder;
+        m_focusBorderColor = theme.Colors().controlFocusedBorder;
+    }
+    m_placeholderColor = theme.Colors().textPlaceholder;
+    if (!m_hasExplicitFont) {
+        m_font.SetFamily(theme.Typography().fontFamily);
+        m_font.SetSize(theme.Typography().fontSizeBody);
+        InvalidateLayout();
+    }
+    InvalidateVisual();
 }
 
 } // namespace controls

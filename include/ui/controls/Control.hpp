@@ -28,6 +28,10 @@ namespace app {
 class Form;
 } // namespace app
 
+namespace theme {
+class Theme;
+} // namespace theme
+
 namespace controls {
 
 /// <summary>
@@ -487,6 +491,24 @@ public:
     /// <param name="fg">前景色。</param>
     void SetForeColor(core::Color fg) { SetForeground(fg); }
 
+    /// <summary>
+    /// 套用主題規格代幣至控制項 (若屬性未被顯式覆寫則更新)。
+    /// </summary>
+    /// <param name="theme">欲套用之 Theme 常數引用。</param>
+    virtual void ApplyTheme(const theme::Theme& theme);
+
+    /// <summary>檢查控制項是否被使用者顯式自訂背景色。</summary>
+    /// <returns>若有顯式設定傳回 true。</returns>
+    COMPAT_NODISCARD bool HasExplicitBackground() const noexcept { return m_hasExplicitBackground; }
+
+    /// <summary>檢查控制項是否被使用者顯式自訂前景文字色。</summary>
+    /// <returns>若有顯式設定傳回 true。</returns>
+    COMPAT_NODISCARD bool HasExplicitForeground() const noexcept { return m_hasExplicitForeground; }
+
+    /// <summary>檢查控制項是否被使用者顯式自訂邊框色。</summary>
+    /// <returns>若有顯式設定傳回 true。</returns>
+    COMPAT_NODISCARD bool HasExplicitBorder() const noexcept { return m_hasExplicitBorder; }
+
     // --- 9. 視覺樹與階層導航 (Hierarchy Navigation) ---
 
     /// <summary>
@@ -765,6 +787,9 @@ protected:
     core::Thickness         m_borderThickness{ 0.0f };
     float                   m_cornerRadius = 0.0f;
     core::Point             m_location{ 0.0f, 0.0f };
+    bool                    m_hasExplicitBackground = false;
+    bool                    m_hasExplicitForeground = false;
+    bool                    m_hasExplicitBorder = false;
 
     // 佈局掛起計數
     uint32_t                m_layoutSuspendCount = 0;

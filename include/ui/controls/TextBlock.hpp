@@ -14,6 +14,11 @@
 #include "ui/rendering/DrawingContext.hpp"
 
 namespace cppui {
+
+namespace theme {
+class Theme;
+} // namespace theme
+
 namespace controls {
 
 /// <summary>
@@ -171,16 +176,24 @@ public:
     /// <param name="dc">繪圖上下文。</param>
     void OnRender(rendering::DrawingContext& dc) override;
 
+    /// <summary>
+    /// 套用主題規格代幣至文字區塊。
+    /// </summary>
+    /// <param name="theme">欲套用之 Theme 常數引用。</param>
+    void ApplyTheme(const theme::Theme& theme);
+
 private:
     std::string           m_text;
     text::FontDescriptor  m_font;
-    core::Color           m_foreground{ 0, 0, 0, 255 }; // 預設黑字
+    core::Color           m_foreground{ 255, 255, 255, 255 };
     text::TextWrapping    m_wrapping = text::TextWrapping::WordWrap;
     text::TextAlignment   m_alignment = text::TextAlignment::Left;
     text::TextTrimming    m_trimming = text::TextTrimming::None;
 
     text::TextLayout      m_textLayout;
     bool                  m_isLayoutDirty = true;
+    bool                  m_hasExplicitForeground = false;
+    bool                  m_hasExplicitFont = false;
 };
 
 } // namespace controls

@@ -7,6 +7,9 @@
 #pragma once
 
 #include <memory>
+#include <string>
+#include <vector>
+#include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/text/Font.hpp"
 
@@ -73,6 +76,56 @@ public:
     /// <param name="font">目標字型描述符。</param>
     /// <returns>對應之字型度量資訊結構。</returns>
     COMPAT_NODISCARD FontMetrics GetFontMetrics(const FontDescriptor& font) const;
+
+    /// <summary>
+    /// 全域設定預設 UI 字型家族 (例如 "Inter"、"Noto Sans")。
+    /// </summary>
+    /// <param name="familyName">字型家族名稱視圖，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 familyName 為空時擲出。</exception>
+    void SetDefaultFontFamily(compat::string_view familyName);
+
+    /// <summary>
+    /// 全域設定預設中文字型家族。
+    /// </summary>
+    /// <param name="familyName">字型家族名稱視圖，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 familyName 為空時擲出。</exception>
+    void SetDefaultChineseFontFamily(compat::string_view familyName);
+
+    /// <summary>
+    /// 全域設定預設等寬字型家族。
+    /// </summary>
+    /// <param name="familyName">字型家族名稱視圖，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 familyName 為空時擲出。</exception>
+    void SetDefaultMonospaceFontFamily(compat::string_view familyName);
+
+    /// <summary>
+    /// 重設字型家族為作業系統原廠預設狀態。
+    /// </summary>
+    void ResetDefaultFonts();
+
+    /// <summary>
+    /// 自實體檔案註冊並載入字型檔案 (TTF / OTF)，使其可供 DirectWrite、GDI 與跨平台管線使用。
+    /// </summary>
+    /// <param name="filePath">字型檔案路徑，不可為空。</param>
+    /// <param name="customFamilyName">可選之自訂字型家族別名。</param>
+    /// <returns>若註冊成功傳回 true，失敗傳回 false。</returns>
+    /// <exception cref="std::invalid_argument">當 filePath 為空或檔案不存在時擲出。</exception>
+    bool RegisterFontFile(compat::string_view filePath, compat::string_view customFamilyName = "");
+
+    /// <summary>
+    /// 自記憶體二進位緩衝區註冊並載入字型資料。
+    /// </summary>
+    /// <param name="fontData">記憶體字型資料 byte span，不可為空。</param>
+    /// <param name="customFamilyName">字型家族識別名稱，不可為空。</param>
+    /// <returns>若註冊成功傳回 true，失敗傳回 false。</returns>
+    /// <exception cref="std::invalid_argument">當 fontData 為空或 customFamilyName 為空時擲出。</exception>
+    bool RegisterFontFromMemory(compat::span<const uint8_t> fontData, compat::string_view customFamilyName);
+
+    /// <summary>
+    /// 取得所有已透過手動註冊之自訂字型家族名稱清單。
+    /// </summary>
+    /// <returns>字型家族名稱字串向量。</returns>
+    COMPAT_NODISCARD std::vector<std::string> GetRegisteredFontFamilies() const;
 
 private:
     struct Impl;

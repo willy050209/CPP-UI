@@ -79,6 +79,12 @@ public:
     /// <param name="dc">繪圖上下文。</param>
     void OnRender(rendering::DrawingContext& dc) override;
 
+    /// <summary>
+    /// 套用主題規格代幣至核取方塊。
+    /// </summary>
+    /// <param name="theme">欲套用之 Theme 常數引用。</param>
+    void ApplyTheme(const theme::Theme& theme) override;
+
 private:
     bool m_isChecked = false;
     float m_boxSize = 18.0f;

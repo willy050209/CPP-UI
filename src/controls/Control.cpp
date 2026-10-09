@@ -9,6 +9,8 @@
 #include "ui/graphics/Bitmap.hpp"
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/InputManager.hpp"
+#include "ui/theme/ThemeManager.hpp"
+#include "ui/theme/Theme.hpp"
 #include <algorithm>
 #include <stdexcept>
 
@@ -200,7 +202,8 @@ compat::string_view Control::GetFontFamily() const noexcept {
     if (auto parentCtrl = GetParent()) {
         return parentCtrl->GetFontFamily();
     }
-    return "Segoe UI";
+    const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
+    return compat::string_view(theme.Typography().fontFamily.data(), theme.Typography().fontFamily.size());
 }
 
 void Control::SetFontFamily(compat::string_view family) {
@@ -217,7 +220,7 @@ float Control::GetFontSize() const noexcept {
     if (auto parentCtrl = GetParent()) {
         return parentCtrl->GetFontSize();
     }
-    return 14.0f;
+    return theme::ThemeManager::Get().GetCurrentTheme().Typography().fontSizeBody;
 }
 
 void Control::SetFontSize(float size) {
@@ -282,6 +285,7 @@ void Control::SetPadding(const core::Thickness& padding) {
 }
 
 void Control::SetBackground(core::Color bg) {
+    m_hasExplicitBackground = true;
     if (m_background != bg) {
         m_background = bg;
         InvalidateVisual();
@@ -289,6 +293,7 @@ void Control::SetBackground(core::Color bg) {
 }
 
 void Control::SetForeground(core::Color fg) {
+    m_hasExplicitForeground = true;
     if (m_foreground != fg) {
         m_foreground = fg;
         InvalidateVisual();
@@ -296,10 +301,23 @@ void Control::SetForeground(core::Color fg) {
 }
 
 void Control::SetBorderBrush(core::Color brush) {
+    m_hasExplicitBorder = true;
     if (m_borderBrush != brush) {
         m_borderBrush = brush;
         InvalidateVisual();
     }
+}
+
+void Control::ApplyTheme(const theme::Theme& theme) {
+    if (!m_hasExplicitForeground) {
+        m_foreground = theme.Colors().textPrimary;
+    }
+    for (size_t i = 0; i < GetVisualChildrenCount(); ++i) {
+        if (auto* childCtrl = dynamic_cast<Control*>(GetVisualChild(i))) {
+            childCtrl->ApplyTheme(theme);
+        }
+    }
+    InvalidateVisual();
 }
 
 void Control::SetBorderThickness(const core::Thickness& thickness) {

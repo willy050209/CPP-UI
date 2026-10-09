@@ -51,6 +51,45 @@ int main() {
     compat::println("  [PASS] Metrics: ascent={:.1f}, descent={:.1f}, lineHeight={:.1f}",
                     metrics.ascent, metrics.descent, metrics.GetLineHeight());
 
+    // 1.1 測試全域字型設定與重設
+    fm.SetDefaultFontFamily("Inter");
+    assert(fm.GetDefaultFont(16.0f).GetFamily() == "Inter");
+
+    fm.SetDefaultChineseFontFamily("Noto Sans TC");
+    assert(fm.GetDefaultChineseFont(16.0f).GetFamily() == "Noto Sans TC");
+
+    fm.SetDefaultMonospaceFontFamily("JetBrains Mono");
+    assert(fm.GetDefaultMonospaceFont(14.0f).GetFamily() == "JetBrains Mono");
+
+    fm.ResetDefaultFonts();
+    assert(fm.GetDefaultFont(16.0f).GetFamily() != "Inter");
+
+    // 1.2 測試 Fail-Fast 防護
+    bool caughtEmptyFont = false;
+    try {
+        fm.SetDefaultFontFamily("");
+    } catch (const std::invalid_argument&) {
+        caughtEmptyFont = true;
+    }
+    assert(caughtEmptyFont);
+
+    bool caughtNonExistentFile = false;
+    try {
+        fm.RegisterFontFile("non_existent_test_font.ttf");
+    } catch (const std::invalid_argument&) {
+        caughtNonExistentFile = true;
+    }
+    assert(caughtNonExistentFile);
+
+    // 1.3 測試記憶體字型註冊
+    const uint8_t mockFontData[] = { 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    compat::span<const uint8_t> fontSpan(mockFontData, sizeof(mockFontData));
+    fm.RegisterFontFromMemory(fontSpan, "CustomMockFont");
+    assert(fm.HasFontFamily("CustomMockFont"));
+    auto registered = fm.GetRegisteredFontFamilies();
+    assert(std::find(registered.begin(), registered.end(), "CustomMockFont") != registered.end());
+    compat::println("  [PASS] FontManager unified font loading & custom defaults verified.");
+
     // -------------------------------------------------------------------------
     // 2. TextShaper 字符塑形測試
     // -------------------------------------------------------------------------

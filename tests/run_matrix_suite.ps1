@@ -190,7 +190,9 @@ $frameworkSources = @(
     "src\graphics\Brushes.cpp",
     "src\graphics\GraphicsPath.cpp",
     "src\graphics\Bitmap.cpp",
-    "src\graphics\Graphics.cpp"
+    "src\graphics\Graphics.cpp",
+    "src\theme\Theme.cpp",
+    "src\theme\ThemeManager.cpp"
 )
 
 $testTargets = @(
@@ -247,7 +249,7 @@ $testTargets = @(
             "LayoutManager", "TextBlock", "FontManager", "TextShaper", "BiDiAnalyzer",
             "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
             "DisplayListRenderer", "SoftwareRenderContext", "RoutedEvent", "EventRoute",
-            "FocusManager", "InputManager", "Bitmap"
+            "FocusManager", "InputManager", "Bitmap", "Theme", "ThemeManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -263,7 +265,7 @@ $testTargets = @(
             "LayoutManager", "TextBlock", "FontManager", "TextShaper", "BiDiAnalyzer",
             "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
             "DisplayListRenderer", "SoftwareRenderContext", "RoutedEvent", "EventRoute",
-            "FocusManager", "InputManager", "Bitmap"
+            "FocusManager", "InputManager", "Bitmap", "Theme", "ThemeManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -290,7 +292,8 @@ $testTargets = @(
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
-            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -307,7 +310,8 @@ $testTargets = @(
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
-            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -360,7 +364,8 @@ $testTargets = @(
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
-            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -379,7 +384,8 @@ $testTargets = @(
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
-            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -394,7 +400,7 @@ $testTargets = @(
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
             "Control", "UIElement", "Visual", "SoftwareRenderContext", "DisplayListRenderer",
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
-            "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "Theme", "ThemeManager"
         )
         MsvcLibs       = @("gdi32.lib", "user32.lib", "dwrite.lib", "ole32.lib")
         GnuLibs        = @("-lgdi32", "-luser32", "-ldwrite", "-lole32")
@@ -413,7 +419,8 @@ $testTargets = @(
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
-            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox"
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
+            "Theme", "ThemeManager"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
@@ -432,7 +439,25 @@ $testTargets = @(
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
             "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
-            "RoutedEvent", "EventRoute", "FocusManager", "InputManager"
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
+            "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Theme"
+        Source         = "tests\theme_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Theme", "ThemeManager", "Control", "ContentControl", "Button", "TextBox", "CheckBox", "TextBlock",
+            "UIElement", "Visual", "FontManager", "DirectWriteTextEngine",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
+            "DisplayListRenderer", "SoftwareRenderContext", "TextLayout", "TextLayoutEngine",
+            "TextShaper", "BiDiAnalyzer", "LineBreaker", "Bitmap",
+            "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")

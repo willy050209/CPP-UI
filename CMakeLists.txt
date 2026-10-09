@@ -79,6 +79,8 @@ set(CPPUI_SOURCES
     src/graphics/GraphicsPath.cpp
     src/graphics/Bitmap.cpp
     src/graphics/Graphics.cpp
+    src/theme/Theme.cpp
+    src/theme/ThemeManager.cpp
 )
 
 if(WIN32)

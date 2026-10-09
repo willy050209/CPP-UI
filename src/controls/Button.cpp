@@ -7,6 +7,8 @@
 #include "ui/input/InputManager.hpp"
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/mvvm/ICommand.hpp"
+#include "ui/theme/ThemeManager.hpp"
+#include "ui/theme/Theme.hpp"
 #include <stdexcept>
 
 namespace cppui {
@@ -18,13 +20,25 @@ ClickEventArgs::ClickEventArgs(Button* source) noexcept
     : input::RoutedEventArgs(Button::ClickEvent, source) {}
 
 Button::Button() {
+    const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
+    m_normalBackground = theme.Colors().controlBackground;
+    m_hoverBackground = theme.Colors().controlHoverBackground;
+    m_pressedBackground = theme.Colors().controlPressedBackground;
+    m_disabledBackground = theme.Colors().controlDisabledBackground;
+    m_normalBorder = theme.Colors().controlBorder;
+    m_focusBorder = theme.Colors().controlFocusedBorder;
+
     SetFocusable(true);
     SetTabStop(true);
-    SetPadding(core::Thickness(16.0f, 8.0f, 16.0f, 8.0f));
-    SetBorderThickness(core::Thickness(1.0f));
-    SetCornerRadius(4.0f);
+    SetPadding(theme.Metrics().paddingButton);
+    SetBorderThickness(theme.Metrics().borderThicknessDefault);
+    SetCornerRadius(theme.Metrics().cornerRadiusSmall);
     SetBackground(m_normalBackground);
     SetBorderBrush(m_normalBorder);
+    SetForeground(theme.Colors().textPrimary);
+    m_hasExplicitBackground = false;
+    m_hasExplicitBorder = false;
+    m_hasExplicitForeground = false;
 
     OnPointerEntered([this](input::PointerEventArgs&) {
         if (!m_enabled) return;
@@ -181,6 +195,23 @@ void Button::OnRender(rendering::DrawingContext& dc) {
         dc.DrawLine(core::Point(bounds.x, bounds.y), core::Point(bounds.x, bounds.Bottom()), border, m_borderThickness.left);
         dc.DrawLine(core::Point(bounds.Right(), bounds.y), core::Point(bounds.Right(), bounds.Bottom()), border, m_borderThickness.right);
     }
+}
+
+void Button::ApplyTheme(const theme::Theme& theme) {
+    Control::ApplyTheme(theme);
+    if (!m_hasExplicitBackground) {
+        m_normalBackground = theme.Colors().controlBackground;
+        m_hoverBackground = theme.Colors().controlHoverBackground;
+        m_pressedBackground = theme.Colors().controlPressedBackground;
+        m_disabledBackground = theme.Colors().controlDisabledBackground;
+        m_background = m_normalBackground;
+    }
+    if (!m_hasExplicitBorder) {
+        m_normalBorder = theme.Colors().controlBorder;
+        m_focusBorder = theme.Colors().controlFocusedBorder;
+        m_borderBrush = m_normalBorder;
+    }
+    InvalidateVisual();
 }
 
 } // namespace controls

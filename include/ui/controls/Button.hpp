@@ -132,6 +132,12 @@ public:
     /// <param name="dc">繪圖上下文。</param>
     void OnRender(rendering::DrawingContext& dc) override;
 
+    /// <summary>
+    /// 套用主題規格代幣至按鈕。
+    /// </summary>
+    /// <param name="theme">欲套用之 Theme 常數引用。</param>
+    void ApplyTheme(const theme::Theme& theme) override;
+
 protected:
     /// <summary>
     /// 觸發 Click 路由事件並執行繫結命令。

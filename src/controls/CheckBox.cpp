@@ -1,4 +1,6 @@
 #include "ui/controls/CheckBox.hpp"
+#include "ui/theme/ThemeManager.hpp"
+#include "ui/theme/Theme.hpp"
 #include <algorithm>
 
 namespace cppui {
@@ -8,10 +10,12 @@ const input::RoutedEvent CheckBox::CheckedEvent(101, "Checked", input::RoutingSt
 const input::RoutedEvent CheckBox::UncheckedEvent(102, "Unchecked", input::RoutingStrategy::Bubble);
 
 CheckBox::CheckBox() {
+    const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
     SetPadding(core::Thickness(4.0f, 4.0f, 4.0f, 4.0f));
     SetBorderThickness(core::Thickness(0.0f));
     SetBackground(core::Color(0, 0, 0, 0));
-    SetCornerRadius(3.0f);
+    SetCornerRadius(theme.Metrics().cornerRadiusSmall);
+    m_checkColor = theme.Colors().accentPrimary;
 
     // 點擊時切換打勾狀態
     OnClick([this]() {
@@ -114,6 +118,12 @@ void CheckBox::OnRender(rendering::DrawingContext& dc) {
             dc.DrawRoundedRectangle(boxRect, m_cornerRadius, bg);
         }
     }
+}
+
+void CheckBox::ApplyTheme(const theme::Theme& theme) {
+    Button::ApplyTheme(theme);
+    m_checkColor = theme.Colors().accentPrimary;
+    InvalidateVisual();
 }
 
 } // namespace controls

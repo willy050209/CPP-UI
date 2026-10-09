@@ -1,13 +1,19 @@
 #include "ui/controls/TextBlock.hpp"
+#include "ui/theme/ThemeManager.hpp"
+#include "ui/theme/Theme.hpp"
 
 namespace cppui {
 namespace controls {
 
-TextBlock::TextBlock() : m_font("Segoe UI", 14.0f) {
+TextBlock::TextBlock() {
+    const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
+    m_font = text::FontDescriptor(theme.Typography().fontFamily, theme.Typography().fontSizeBody);
+    m_foreground = theme.Colors().textPrimary;
 }
 
 TextBlock::TextBlock(compat::string_view text)
-    : m_text(text.data(), text.size()), m_font("Segoe UI", 14.0f) {
+    : TextBlock() {
+    m_text.assign(text.data(), text.size());
 }
 
 void TextBlock::SetText(compat::string_view text) {
@@ -19,6 +25,7 @@ void TextBlock::SetText(compat::string_view text) {
 }
 
 void TextBlock::SetFont(const text::FontDescriptor& font) {
+    m_hasExplicitFont = true;
     if (m_font != font) {
         m_font = font;
         m_isLayoutDirty = true;
@@ -27,6 +34,7 @@ void TextBlock::SetFont(const text::FontDescriptor& font) {
 }
 
 void TextBlock::SetFontSize(float size) {
+    m_hasExplicitFont = true;
     if (m_font.GetSize() != size) {
         m_font.SetSize(size);
         m_isLayoutDirty = true;
@@ -35,6 +43,7 @@ void TextBlock::SetFontSize(float size) {
 }
 
 void TextBlock::SetFontFamily(compat::string_view family) {
+    m_hasExplicitFont = true;
     if (m_font.GetFamily() != family) {
         m_font.SetFamily(family);
         m_isLayoutDirty = true;
@@ -43,6 +52,7 @@ void TextBlock::SetFontFamily(compat::string_view family) {
 }
 
 void TextBlock::SetFontWeight(text::FontWeight weight) {
+    m_hasExplicitFont = true;
     if (m_font.GetWeight() != weight) {
         m_font.SetWeight(weight);
         m_isLayoutDirty = true;
@@ -51,6 +61,7 @@ void TextBlock::SetFontWeight(text::FontWeight weight) {
 }
 
 void TextBlock::SetFontStyle(text::FontStyle style) {
+    m_hasExplicitFont = true;
     if (m_font.GetStyle() != style) {
         m_font.SetStyle(style);
         m_isLayoutDirty = true;
@@ -59,6 +70,7 @@ void TextBlock::SetFontStyle(text::FontStyle style) {
 }
 
 void TextBlock::SetForeground(core::Color foreground) {
+    m_hasExplicitForeground = true;
     if (m_foreground != foreground) {
         m_foreground = foreground;
         InvalidateVisual();
@@ -137,6 +149,19 @@ void TextBlock::OnRender(rendering::DrawingContext& dc) {
     } else {
         dc.DrawText(m_text, core::Point(0.0f, 0.0f), m_font, m_foreground);
     }
+}
+
+void TextBlock::ApplyTheme(const theme::Theme& theme) {
+    if (!m_hasExplicitForeground) {
+        m_foreground = theme.Colors().textPrimary;
+    }
+    if (!m_hasExplicitFont) {
+        m_font.SetFamily(theme.Typography().fontFamily);
+        m_font.SetSize(theme.Typography().fontSizeBody);
+        m_isLayoutDirty = true;
+        InvalidateMeasure();
+    }
+    InvalidateVisual();
 }
 
 } // namespace controls

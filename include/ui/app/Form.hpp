@@ -242,6 +242,7 @@ private:
 
     std::vector<FormClosingHandler> m_closingHandlers;
     std::vector<FormClosedHandler> m_closedHandlers;
+    size_t m_themeHandlerId = 0;
 };
 
 } // namespace app

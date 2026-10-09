@@ -90,6 +90,11 @@ add_executable(control_class_test control_class_test.cpp)
 target_link_libraries(control_class_test PRIVATE cppui_core)
 add_test(NAME ControlClassTest COMMAND control_class_test)
 
+# 主題與設計代幣 (Theme & Design Tokens) 單元測試
+add_executable(theme_test theme_test.cpp)
+target_link_libraries(theme_test PRIVATE cppui_core)
+add_test(NAME ThemeTest COMMAND theme_test)
+
 
 
 

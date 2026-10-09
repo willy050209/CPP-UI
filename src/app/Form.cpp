@@ -8,6 +8,8 @@
 #include "ui/input/InputManager.hpp"
 #include "ui/layout/LayoutManager.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
+#include "ui/theme/ThemeManager.hpp"
+#include "ui/theme/Theme.hpp"
 #include "../rendering/backend/SoftwareRenderContext.hpp"
 #include "../rendering/backend/SkiaRenderContext.hpp"
 #include <algorithm>
@@ -17,10 +19,25 @@ namespace app {
 
 Form::Form() {
     SetPadding(core::Thickness(0.0f));
-    SetBackground(core::Color(24, 26, 32, 255));
+    const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
+    SetBackground(theme.Colors().windowBackground);
+    m_hasExplicitBackground = false;
+
+    m_themeHandlerId = theme::ThemeManager::Get().AddThemeChangedHandler([this](const theme::Theme& t) {
+        if (!m_hasExplicitBackground) {
+            SetBackground(t.Colors().windowBackground);
+            m_hasExplicitBackground = false;
+        }
+        ApplyTheme(t);
+        InvalidateForm();
+    });
 }
 
 Form::~Form() {
+    if (m_themeHandlerId != 0) {
+        theme::ThemeManager::Get().RemoveThemeChangedHandler(m_themeHandlerId);
+        m_themeHandlerId = 0;
+    }
     if (m_renderContext) {
         m_renderContext->Destroy();
         m_renderContext.reset();
