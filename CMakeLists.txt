@@ -82,10 +82,22 @@ set(CPPUI_SOURCES
 )
 
 if(WIN32)
+    set(CPPUI_HAS_X11 0)
     list(APPEND CPPUI_SOURCES
         src/pal/win32/PlatformWindowWin32.cpp
         src/text/DirectWriteTextEngine.cpp
     )
+else()
+    option(CPPUI_ENABLE_X11 "Enable X11 window backend on Linux" ON)
+    set(CPPUI_HAS_X11 0)
+    if(CPPUI_ENABLE_X11)
+        find_package(X11 QUIET)
+        if(X11_FOUND)
+            set(CPPUI_HAS_X11 1)
+            message(STATUS "X11 detected: ${X11_LIBRARIES}")
+            list(APPEND CPPUI_SOURCES src/pal/x11/PlatformWindowX11.cpp)
+        endif()
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
@@ -107,7 +119,10 @@ endif()
 
 add_library(cppui_core STATIC ${CPPUI_SOURCES})
 target_link_libraries(cppui_core PUBLIC cppui_headers)
-target_compile_definitions(cppui_core PUBLIC CPPUI_HAS_SKIA=${CPPUI_HAS_SKIA})
+target_compile_definitions(cppui_core PUBLIC 
+    CPPUI_HAS_SKIA=${CPPUI_HAS_SKIA}
+    CPPUI_HAS_X11=${CPPUI_HAS_X11}
+)
 
 if(Skia_FOUND)
     target_link_libraries(cppui_core PUBLIC Skia::Skia)
@@ -125,6 +140,10 @@ if(WIN32)
 else()
     find_package(Threads REQUIRED)
     target_link_libraries(cppui_core PUBLIC Threads::Threads)
+    if(CPPUI_HAS_X11)
+        target_include_directories(cppui_core PUBLIC ${X11_INCLUDE_DIR})
+        target_link_libraries(cppui_core PUBLIC ${X11_LIBRARIES})
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------

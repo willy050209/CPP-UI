@@ -48,6 +48,13 @@ add_executable(pal_crossplatform_test pal_crossplatform_test.cpp)
 target_link_libraries(pal_crossplatform_test PRIVATE cppui_core)
 add_test(NAME PalCrossPlatformTest COMMAND pal_crossplatform_test)
 
+# Linux X11 實體視窗測試
+if(CPPUI_HAS_X11)
+    add_executable(pal_x11_test pal_x11_test.cpp)
+    target_link_libraries(pal_x11_test PRIVATE cppui_core)
+    add_test(NAME PalX11Test COMMAND pal_x11_test)
+endif()
+
 # Skia 向量繪圖核心與雙引擎測試
 add_executable(skia_backend_test skia_backend_test.cpp)
 target_link_libraries(skia_backend_test PRIVATE cppui_core)

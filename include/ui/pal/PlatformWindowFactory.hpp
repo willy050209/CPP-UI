@@ -34,6 +34,15 @@ public:
     /// <returns>已建立之視窗實例智慧指標。</returns>
     /// <exception cref="std::invalid_argument">當 desc.width 或 desc.height 為 0 時擲出。</exception>
     COMPAT_NODISCARD static std::shared_ptr<IPlatformWindow> CreateGeneric(const WindowDesc& desc = WindowDesc{});
+
+    /// <summary>
+    /// 明確建立 Linux X11 原生實體視窗 (適用於 WSLg、Linux 桌面環境)。
+    /// </summary>
+    /// <param name="desc">視窗建構描述符，寬高必須大於 0。</param>
+    /// <returns>已建立之 X11 視窗實例智慧指標。</returns>
+    /// <exception cref="std::invalid_argument">當 desc.width 或 desc.height 為 0 時擲出。</exception>
+    /// <exception cref="std::runtime_error">當 X11 支援未編譯或無法連接 DISPLAY 時擲出。</exception>
+    COMPAT_NODISCARD static std::shared_ptr<IPlatformWindow> CreateX11(const WindowDesc& desc = WindowDesc{});
 };
 
 } // namespace pal
