@@ -39,7 +39,7 @@
 | :--- | :--- | :--- |
 | [`FontDescriptor`](../classes/text_font.md) | `class` | 包含字型家族名稱、字級尺寸、粗細與樣式的不可變字型規格。 |
 | [`FontMetrics`](../classes/text_font.md#fontmetrics) | `struct` | 字型度量數值（`ascent`, `descent`, `lineGap`, `capHeight`, `xHeight` 等）。 |
-| [`FontManager`](../classes/text_fontmanager.md) | `class` | 系統字型匹配、預設字型解析與字型度量快取中樞。 |
+| [`FontManager`](../classes/text_fontmanager.md) | `class` | 跨平台字型中樞，支援系統字型匹配、本機/記憶體字型動態載入、全域預設字族管理與度量快取。 |
 | [`ShapedGlyph`](../classes/text_textshaper.md#shapedglyph) | `struct` | 單一塑形字形（OpenType Glyph ID、Cluster 索引、X/Y Advance 與 Offset）。 |
 | [`ShapedRun`](../classes/text_textshaper.md#shapedrun) | `class` | 一組同字型、同流向的連續塑形字符切片（提供 `compat::span` 視圖存取）。 |
 | [`TextShaper`](../classes/text_textshaper.md) | `class` | 將 UTF-8 字串塑形為 OpenType 字符度量列表之核心塑形機。 |

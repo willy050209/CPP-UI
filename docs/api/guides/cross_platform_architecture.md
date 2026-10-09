@@ -19,12 +19,12 @@
 |                   CPPUI 跨平台抽象層 (PAL)                 |
 |             (IPlatformWindow, RawInputEvent, RunLoop)     |
 +-----------------------------------------------------------+
-         |                                          |
-         v                                          v
-+------------------------+             +------------------------+
-|  PlatformWindowWin32   |             | PlatformWindowGeneric  |
-|  (HWND, DIBits, WinMsg)|             | (純記憶體, 事件模擬注入)  |
-+------------------------+             +------------------------+
+         |                       |                       |
+         v                       v                       v
++-----------------------+ +-----------------------+ +-----------------------+
+|  PlatformWindowWin32  | |  PlatformWindowX11    | | PlatformWindowGeneric |
+| (HWND, DIBits, WinMsg)| | (Xlib, XImage, poll)  | |(純記憶體, 事件模擬注入)|
++-----------------------+ +-----------------------+ +-----------------------+
 ```
 
 ---
@@ -34,8 +34,12 @@
 ### 2.1 統一視窗工廠 (`PlatformWindowFactory`)
 使用者或測試框架透過 [`PlatformWindowFactory::Create`](../classes/pal_platformwindowfactory.md) 建立視窗：
 * 在 Windows 平台上，動態建立啟用 Per-Monitor V2 DPI 感知的 `PlatformWindowWin32`。
-* 在非 Windows 平台上，預設回退至純 C++ 記憶體視窗 [`PlatformWindowGeneric`](../classes/pal_platformwindowgeneric.md)。
-* 同時提供 `PlatformWindowFactory::CreateGeneric()`，允許在任何平台強制建立純記憶體視窗進行 CI 離線測試。
+* 在 Linux 平台上，工廠主動偵測 `DISPLAY` 環境變數：
+  * 若處於 WSLg 或 Linux 實體桌面環境且編譯啟用 X11，動態實例化原生 [`PlatformWindowX11`](../classes/pal_platformwindowx11.md)。
+  * 若處於無顯示卡/無 Display 之 Headless CI Docker 容器環境，自動安全回退至純 C++ 記憶體視窗 [`PlatformWindowGeneric`](../classes/pal_platformwindowgeneric.md)。
+* 同時提供明確指定入口：
+  * `PlatformWindowFactory::CreateX11()`：強制建立 Linux 原生實體視窗。
+  * `PlatformWindowFactory::CreateGeneric()`：允許在任何平台強制建立純記憶體視窗進行 CI 離線測試。
 
 ### 2.2 幀緩衝呈現抽象 (`PresentFramebuffer`)
 過去 Demo 範例直接呼叫 Win32 GDI API（`GetDC(hwnd)`, `StretchDIBits(...)`, `ReleaseDC(hwnd, hdc)`），導致程式碼無法在其他作業系統編譯。

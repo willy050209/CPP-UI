@@ -103,3 +103,95 @@ void Paint(DrawingContext& dc, const TextLayout& layout, const FontDescriptor& f
     dc.DrawTextLayout(layout, Point(20.0f, 60.0f), Colors::Yellow);
 }
 ```
+
+---
+
+## 5. 動態載入自訂字型與記憶體字型 (Dynamic Font Loading)
+
+在現代應用程式中，為確保品牌視覺一致性或在無特權環境下執行，CPPUI 提供執行期字型註冊管線。支援自實體檔案或記憶體二進位緩衝區（如內嵌資源、壓縮包解壓）動態註冊字型，並無縫整合至排版與繪圖管線。
+
+### 5.1 註冊本機字型檔案
+
+透過 `FontManager::Get().RegisterFontFile` 註冊 `.ttf` 或 `.otf` 字型：
+
+```cpp
+#include "ui/text/FontManager.hpp"
+#include "ui/text/TextLayoutEngine.hpp"
+#include "compat/compat.hpp"
+
+using namespace cppui::text;
+
+void LoadCustomFontExample() {
+    auto& fm = FontManager::Get();
+
+    // 1. 註冊本機字型檔案，並指定自訂別名（可選）
+    bool ok = fm.RegisterFontFile("assets/fonts/Inter-VariableFont.ttf", "Inter");
+    if (!ok) {
+        compat::println("字型載入失敗！");
+        return;
+    }
+
+    // 2. 設定為全域預設字型家族
+    fm.SetDefaultFontFamily("Inter");
+
+    // 3. 後續建立字型或排版即可自動套用
+    FontDescriptor font = fm.GetDefaultFont(16.0f);
+    compat::println("預設字型家族已更新為: {}", font.familyName);
+}
+```
+
+### 5.2 自記憶體二進位緩衝區載入字型
+
+當字型已編譯為二進位資源（例如 C++ 陣列）或由網路下載至記憶體時，使用 `RegisterFontFromMemory`：
+
+```cpp
+#include "ui/text/FontManager.hpp"
+#include "compat/compat.hpp"
+
+using namespace cppui::text;
+
+// 假想之內嵌字型二進位資料
+extern const uint8_t g_EmbeddedFontData[];
+extern const size_t g_EmbeddedFontSize;
+
+void LoadMemoryFontExample() {
+    auto& fm = FontManager::Get();
+
+    // 封裝為現代唯讀 span
+    compat::span<const uint8_t> data(g_EmbeddedFontData, g_EmbeddedFontSize);
+
+    // 註冊為自訂家族名稱
+    bool ok = fm.RegisterFontFromMemory(data, "AppBrandFont");
+    if (ok) {
+        // 驗證字型是否存在
+        if (fm.HasFontFamily("AppBrandFont")) {
+            // 建構字型描述符
+            FontDescriptor brandFont("AppBrandFont", 18.0f);
+            compat::println("成功使用記憶體字型建立 FontDescriptor！");
+        }
+    }
+}
+```
+
+### 5.3 預設字族管理與復原
+
+可個別自訂通用、繁體中文與等寬字型的預設字族，並在需要時重設回作業系統預設值：
+
+```cpp
+auto& fm = FontManager::Get();
+
+// 設定各語系與用途之預設家族
+fm.SetDefaultFontFamily("Inter");
+fm.SetDefaultChineseFontFamily("Noto Sans TC");
+fm.SetDefaultMonospaceFontFamily("JetBrains Mono");
+
+// 查詢所有已動態註冊之字型家族清單
+std::vector<std::string> families = fm.GetRegisteredFontFamilies();
+for (const auto& fam : families) {
+    compat::println("已註冊家族: {}", fam);
+}
+
+// 重設回作業系統預設值 (Windows: Segoe UI / 微軟正黑體; Linux: DejaVu Sans / Noto Sans CJK TC)
+fm.ResetDefaultFonts();
+```
+

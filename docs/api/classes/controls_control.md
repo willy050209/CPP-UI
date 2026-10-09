@@ -132,3 +132,8 @@
 - `OnLocationChanged(std::function<void(core::Point)>)`: 位置變更事件。
 - `OnMouseEnter(std::function<void()>)` / `OnMouseLeave(std::function<void()>)`: 滑鼠進入/離開事件。
 - `OnPaintHandler(std::function<void(graphics::Graphics&)>)`: 自訂 Paint 繪圖回呼。
+
+### 16. 主題連動與樣式覆寫 (Theme Integration & Style Overrides)
+- `virtual void ApplyTheme(const theme::Theme& theme)`: 響應全域主題切換之虛擬方法。未顯式指定的樣式（如背景色、前景色、圓角、字型）將自動套用傳入主題的最新 Token；已手動設定的屬性予以保留。
+- **顯式屬性覆寫標記**：內部維護 `m_hasExplicitBackground`、`m_hasExplicitForeground`、`m_hasExplicitBorderBrush`、`m_hasExplicitBorderThickness`、`m_hasExplicitCornerRadius`、`m_hasExplicitFontFamily` 與 `m_hasExplicitFontSize`，精確記錄開發者是否有手動指定值。
+- **字型與字級回退**：當未顯式設定字型或字級且無父節點繼承時，`GetFontFamily()` 與 `GetFontSize()` 自動向 [`ThemeManager`](theme_thememanager.md) 查詢當前主題規格，實現零手動配置的全域字型統一。

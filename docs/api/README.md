@@ -22,6 +22,11 @@ graph TD
         Ctrls["Button / CheckBox / TextBox / TextBlock / PictureBox"]
     end
 
+    subgraph ThemeLayer["主題與設計規格層 (cppui::theme)"]
+        ThemeObj["Theme / ColorTokens / TypographyTokens / MetricTokens"]
+        ThemeMgr["ThemeManager (全域單例與動態切換)"]
+    end
+
     subgraph GraphicsLayer["進階圖形排程層 (cppui::graphics)"]
         Graphics["Graphics (統一繪圖排程器)"]
         GObjects["Pen / Brush / GraphicsPath / Bitmap"]
@@ -75,6 +80,8 @@ graph TD
     Factory --> Containers
     Signals --> Ctrls
     Ctrls --> BaseCtrl
+    ThemeMgr --> ThemeObj
+    ThemeObj --> BaseCtrl
     BaseCtrl --> Tree
     Graphics --> DC
     Graphics --> GObjects
@@ -116,6 +123,7 @@ graph TD
 | [`cppui::pal`](namespaces/cppui_pal.md) | **平台抽象層 (PAL)** | 封裝作業系統原生視窗生命週期、主執行緒低延遲事件循環 (RunLoop)、跨平台記憶體通用視窗與統一輸入事件模型。 | [`IPlatformWindow`](classes/pal_iplatformwindow.md), [`PlatformWindowGeneric`](classes/pal_platformwindowgeneric.md), [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md), [`RunLoop`](classes/pal_runloop.md), [`RawInputEvent`](classes/pal_rawinputevent.md) |
 | [`cppui::rendering`](namespaces/cppui_rendering.md) | **繪圖與渲染管線** | 實作高效命令錄製架構，透過自研二進位 DisplayList 與連續平坦 LinearArena 徹底隔離 UI 與光柵化後端，支援 Google Skia (m151) 向量核心與純 C++ 軟體回退。 | [`DrawingContext`](classes/rendering_drawingcontext.md), [`DisplayList`](classes/rendering_displaylist.md), [`DisplayListRenderer`](classes/rendering_displaylistrenderer.md), [`LinearArena`](classes/rendering_lineararena.md), [`DrawOp`](classes/rendering_drawop.md), [`SkiaRenderContext`](classes/rendering_skiarendercontext.md) |
 | [`cppui::text`](namespaces/cppui_text.md) | **文字排版與塑形管線** | 雙軌架構文字引擎，支援系統字型匹配、OpenType 字形塑形、BiDi 雙向分析、UAX #14 斷行、多行折行、省略號與雙向命中測試。 | [`FontDescriptor`](classes/text_font.md), [`FontManager`](classes/text_fontmanager.md), [`TextShaper`](classes/text_textshaper.md), [`BiDiAnalyzer`](classes/text_bidianalyzer.md), [`LineBreaker`](classes/text_linebreaker.md), [`TextLayout`](classes/text_textlayout.md), [`TextLayoutEngine`](classes/text_textlayoutengine.md) |
+| [`cppui::theme`](namespaces/cppui_theme.md) | **集中式主題與設計規格** | 提供設計代幣 (`ColorTokens`, `TypographyTokens`, `MetricTokens`)、語意主題 (`Theme`)、單例管理與動態切換廣播器 (`ThemeManager`)，支援深淺色與高對比模式。 | [`Theme`](classes/theme_theme.md), [`ThemeManager`](classes/theme_thememanager.md), [`ColorTokens`](classes/theme_tokens.md#1-colortokens-色彩代幣), [`TypographyTokens`](classes/theme_tokens.md#2-typographytokens-排版代幣), [`MetricTokens`](classes/theme_tokens.md#3-metricstokens-度量代幣) |
 | [`compat`](namespaces/compat.md) | **向下相容與微架構層** | 提供零依賴現代 C++ Polyfill（C++14/17/20/23/26 雙軌切換）與 12 大功能模組。<br>- [視圖與管道 (`compat::views`)](namespaces/compat_views.md)<br>- [範圍與演算法 (`compat::ranges`)](namespaces/compat_ranges.md)<br>- [錯誤處理 (`compat::expected`)](namespaces/compat_expected.md)<br>- [格式化與終端 (`compat::format/print`)](namespaces/compat_format_print.md) | `compat::string_view`, `compat::span`, `compat::views::*`, `compat::optional`, `compat::expected`, `compat::format`, `compat::print`, `COMPAT_CONSTEXPR_14` |
 
 ---
@@ -182,9 +190,15 @@ graph TD
 ### 平台與視窗 (Platform & Windowing)
 * [`IPlatformWindow`](classes/pal_iplatformwindow.md)：跨平台原生視窗抽象介面。
 * [`PlatformWindowGeneric`](classes/pal_platformwindowgeneric.md)：跨平台純 C++ 記憶體通用視窗，支援 Headless 離線渲染與事件注入。
-* [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md)：原生與通用視窗實例建構工廠。
+* [`PlatformWindowX11`](classes/pal_platformwindowx11.md)：Linux X11 原生視窗實作，整合 Xlib 事件泵、共享記憶體/影像繪製緩衝區 (`PresentFramebuffer`)、管道執行緒喚醒機制與 DPI 感知。
+* [`PlatformWindowFactory`](classes/pal_platformwindowfactory.md)：原生與通用視窗實例建構工廠（自動偵測 Win32 / Linux X11 / Generic）。
 * [`RunLoop`](classes/pal_runloop.md)：主執行緒低延遲事件循環與重繪驅動器。
 * [`RawInputEvent`](classes/pal_rawinputevent.md)：平台統一原生事件封裝（滑鼠客戶區排版坐標、物理坐標、邏輯坐標、鍵盤、視窗幾何、DPI 變更）。
+
+### 集中式主題與設計規格 (Theme & Design Tokens)
+* [`Theme`](classes/theme_theme.md)：語意主題配置，封裝色彩、排版與度量代幣，提供 `Dark()`、`Light()`、`HighContrast()` 預設工廠與 Fluent 鏈式自訂 (`WithAccent`, `WithFontFamily`, `WithCornerRadius`)。
+* [`ThemeManager`](classes/theme_thememanager.md)：全域主題單例中樞，支援執行期動態模式切換 (`SetMode`, `SetCustomTheme`)、觀察者事件監聽 (`AddThemeChangedHandler`) 與所有開啟視窗之自動重繪通知。
+* [`ThemeTokens`](classes/theme_tokens.md)：設計代幣集合，包含 `ColorTokens`（背景、表面、文字、強調色、邊框）、`TypographyTokens`（字級與字重）與 `MetricTokens`（圓角半徑與間距）。
 
 ### 繪圖與命令錄製 (Rendering Pipeline)
 * [`DrawingContext`](classes/rendering_drawingcontext.md)：公開畫布錄製介面，提供矩形、圓角矩形、線段繪製與剪裁棧操作。
@@ -197,7 +211,7 @@ graph TD
 
 ### 文字排版與字型 (Text Pipeline & Typography)
 * [`FontDescriptor`](classes/text_font.md)：字型規格與樣式描述（字號、粗細 `FontWeight`、傾斜 `FontStyle`、字型度量 `FontMetrics`）。
-* [`FontManager`](classes/text_fontmanager.md)：系統字型匹配與快取中樞（預設 UI 字型、繁中字型、等寬字型）。
+* [`FontManager`](classes/text_fontmanager.md)：系統字型匹配與動態註冊中樞，支援 TTF/OTF 檔案註冊 (`RegisterFontFile`)、記憶體字型載入 (`RegisterFontFromMemory`) 與預設字族管理 (`SetDefaultFontFamily`)。
 * [`TextShaper`](classes/text_textshaper.md)：OpenType 字符塑形器與連續塑形切片 (`ShapedRun`, `ShapedGlyph`)。
 * [`BiDiAnalyzer`](classes/text_bidianalyzer.md)：Unicode UAX #9 雙向文字段落分析器（LTR / RTL 區段切分與視覺重排）。
 * [`LineBreaker`](classes/text_linebreaker.md)：Unicode UAX #14 換行斷詞分析器（支援 CJK 標點禁則規範）。
@@ -208,16 +222,17 @@ graph TD
 
 ## 4. 實戰與概念指南 (Guides & Tutorials)
 
+* [**主題與樣式系統指南 (Theme and Styling System Guide)**](guides/theme_and_styling_system.md)：詳解集中式設計代幣、深色/淺色/高對比模式切換、品牌主題客製化、控制項顯式覆寫機制與自訂控制項主題套用實踐。
 * [**GDI+ 風格圖形 API 與 PictureBox 控制項實戰指南**](guides/gdi_plus_graphics_guide.md)：詳解解耦圖形管線架構、Skia 向量加速與 CPU 軟體光柵雙引擎、多執行緒讀寫鎖並發防護、PictureBox 5 種縮放模式與 Skia BSD 授權聲明。
 * [**現代 MVVM 與依賴反轉 (IoC) 架構指南**](guides/mvvm_and_ioc_architecture.md)：深入探討 `Application::Run`、`Form` 生命週期狀態機、取消關閉機制、`ServiceCollection` 依賴注入與 `ViewModelBase` / `RelayCommand` 雙向綁定。
 * [**宣告式 Fluent RAD DSL 與響應式信號開發指南**](guides/fluent_rad_dsl_and_signals.md)：詳解以 `< 50` 行程式碼使用 `VStack`, `HStack`, `Grid`, `Button`, `TextBox` 與 `Signal<T>` 快速宣告桌面 UI、自動雙向資料綁定與事件串接。
-* [**跨平台抽象架構指南**](guides/cross_platform_architecture.md)：詳解 PAL 視窗抽象、純 C++ 記憶體視窗、無外部依賴文字多行排版與 8x8 ASCII 軟體光柵字模庫。
+* [**跨平台抽象架構指南**](guides/cross_platform_architecture.md)：詳解 PAL 視窗抽象、Linux X11 原生視窗支援、純 C++ 記憶體視窗、無外部依賴文字多行排版與 8x8 ASCII 軟體光柵字模庫。
 * [**Skia 向量渲染管線指南**](guides/skia_rendering_pipeline.md)：介紹 Google Skia (m151) 向量繪圖核心整合、DisplayList 指令原生回放與雙引擎優雅回退機制。
 * [**快速入門 (Quickstart)**](guides/quickstart.md)：從零建立第一個 CPPUI 原生視窗、綁定事件循環並完成每秒 60 FPS 畫面繪製。
 * [**輸入管線、路由事件與焦點管理實戰指南**](guides/input_and_routed_events.md)：深入探討雙向路由事件體系（Tunneling + Bubbling）、`e.Handled` 短路阻斷、游標懸停追蹤、指標捕獲與鍵盤 TabIndex 尋路演算法。
 * [**高分屏 DPI 與座標轉換指南**](guides/dpi_and_coordinates.md)：說明設備獨立像素 (DIP)、物理像素、客戶區排版空間與 `CoordinateTransform` 類別的最佳實踐。
 * [**DisplayList 二進位錄製深度解析**](guides/display_list_recording.md)：深入探討命令錄製架構、記憶體池重用、Clip Stack 矩形剪裁與每秒數千萬次操作之微架構調優。
-* [**工業級文字排版與雙向命中測試指南**](guides/text_shaping_and_layout.md)：詳解文字塑形、多行折行、CJK 標點禁則、省略號裁切與文字編輯器游標定位技術。
+* [**工業級文字排版與雙向命中測試指南**](guides/text_shaping_and_layout.md)：詳解文字塑形、多行折行、動態字型檔案與記憶體載入管線、CJK 標點禁則、省略號裁切與文字編輯器游標定位技術。
 * [**雙階段排版管線與髒標記追蹤指南**](guides/layout_pipeline_and_dirty_tracking.md)：詳解 Measure / Arrange 雙階段排版微架構、容器約束、對齊求解與精確髒標記隔離機制。
 
 ---

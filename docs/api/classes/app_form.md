@@ -160,7 +160,21 @@ int main() {
 
 ---
 
+## 全域主題動態連動 (Theme Integration & Dynamic Repaint)
+
+`Form` 與集中式主題系統 [`ThemeManager`](theme_thememanager.md) 深度整合：
+1. **初始背景綁定**：在建構時，預設底色自動綁定至當前主題之 `windowBackground`。
+2. **自動註冊觀察者**：建構式自動向 `ThemeManager::Get().AddThemeChangedHandler` 註冊回呼；當開發者或使用者動態切換主題（如 Dark 轉 Light）時：
+   - 自動將視窗背景色同步至最新主題之 `windowBackground`。
+   - 自動遞迴向下對 RootElement 及其子樹所有控制項調用 `ApplyTheme(newTheme)`。
+   - 主動觸發視窗 `Invalidate()` 進行畫面刷新。
+3. **安全解構退訂**：解構式保證自動呼叫 `RemoveThemeChangedHandler`，杜絕任何懸空回呼或野指標問題。
+
+---
+
 ## 請參閱 (See Also)
 * [`Application` 靜態中樞類別](app_application.md)
+* [`ThemeManager` 全域主題中樞](theme_thememanager.md)
+* [`主題與樣式系統指南`](../guides/theme_and_styling_system.md)
 * [`ViewModelBase` 視圖模型基底](mvvm_viewmodelbase.md)
 * [`現代 MVVM 與 IoC 架構指南`](../guides/mvvm_and_ioc_architecture.md)

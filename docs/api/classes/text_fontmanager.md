@@ -30,13 +30,29 @@ class FontManager;
 
 ## 成員方法 (Methods)
 
+### 1. 預設字型規格查詢
 | 方法名稱 | 傳回值 | 說明 |
 | :--- | :--- | :--- |
-| `GetDefaultFont(float size = 14.0f)` | `FontDescriptor` | 取得作業系統標準預設 UI 字型規格（Windows: `"Segoe UI"`）。 |
-| `GetDefaultChineseFont(float size = 14.0f)` | `FontDescriptor` | 取得系統預設繁體中文 UI 字型（Windows: `"Microsoft JhengHei UI"` / `"Microsoft JhengHei"`）。 |
-| `GetDefaultMonospaceFont(float size = 14.0f)` | `FontDescriptor` | 取得系統預設等寬字型（Windows: `"Cascadia Code"` / `"Consolas"`）。 |
-| `HasFontFamily(compat::string_view familyName)` | `bool` | 查詢系統字型庫中是否存在特定字型家族名稱。 |
+| `GetDefaultFont(float size = 14.0f)` | `FontDescriptor` | 取得系統標準預設 UI 字型規格（預設 Windows: `"Segoe UI"`，可由 `SetDefaultFontFamily` 覆寫）。 |
+| `GetDefaultChineseFont(float size = 14.0f)` | `FontDescriptor` | 取得系統預設繁體中文 UI 字型（預設 Windows: `"Microsoft JhengHei UI"`，可由 `SetDefaultChineseFontFamily` 覆寫）。 |
+| `GetDefaultMonospaceFont(float size = 14.0f)` | `FontDescriptor` | 取得系統預設等寬字型（預設 Windows: `"Cascadia Code"` / `"Consolas"`，可由 `SetDefaultMonospaceFontFamily` 覆寫）。 |
+| `HasFontFamily(compat::string_view familyName)` | `bool` | 查詢系統字型庫或動態註冊庫中是否存在特定字型家族名稱。 |
 | `GetFontMetrics(const FontDescriptor& font)` | `FontMetrics` | 查詢特定字型描述之度量數據（基線、行高、升部、降部）。 |
+
+### 2. 動態字型註冊 (Dynamic Font Loading)
+| 方法名稱 | 傳回值 | 說明與例外 |
+| :--- | :--- | :--- |
+| `RegisterFontFile(compat::string_view path)` | `bool` | 載入本機字型檔（支援 `.ttf`, `.otf`）。Windows 底層調用 `AddFontResourceExW`；跨平臺維護已註冊字族快取。若路徑為空擲出 `std::invalid_argument`。 |
+| `RegisterFontFromMemory(compat::span<const uint8_t> data)` | `bool` | 從記憶體二進位緩衝區載入字型。Windows 底層調用 `AddFontMemResourceEx`。若傳入空緩衝區擲出 `std::invalid_argument`。 |
+| `GetRegisteredFontFamilies()` | `std::vector<std::string>` | 取得透過本類別成功註冊的所有動態字型家族名稱清單。 |
+
+### 3. 全域預設字型管理 (Default Font Family Override)
+| 方法名稱 | 傳回值 | 說明與例外 |
+| :--- | :--- | :--- |
+| `SetDefaultFontFamily(compat::string_view familyName)` | `void` | 覆寫全域預設 UI 字型家族名稱。若為空擲出 `std::invalid_argument`。 |
+| `SetDefaultChineseFontFamily(compat::string_view familyName)` | `void` | 覆寫全域預設繁體中文字型家族名稱。若為空擲出 `std::invalid_argument`。 |
+| `SetDefaultMonospaceFontFamily(compat::string_view familyName)` | `void` | 覆寫全域預設等寬字型家族名稱。若為空擲出 `std::invalid_argument`。 |
+| `ResetDefaultFonts()` | `void` | 重設全域預設字型為作業系統原始出廠預設值。 |
 
 ---
 
@@ -48,19 +64,27 @@ class FontManager;
 
 using namespace cppui::text;
 
-void CheckSystemFonts() {
+void FontManagementDemo() {
     FontManager& fm = FontManager::Get();
 
-    // 取得預設字型
+    // 1. 動態載入專案自訂字型檔 (如思源黑體)
+    bool loaded = fm.RegisterFontFile("assets/fonts/NotoSansTC-Regular.otf");
+    if (loaded) {
+        compat::println("自訂字型載入成功！");
+        // 設定為全域繁體中文預設字型
+        fm.SetDefaultChineseFontFamily("Noto Sans TC");
+    }
+
+    // 2. 取得當前套用之預設中文字型規格
     FontDescriptor uiFont = fm.GetDefaultChineseFont(16.0f);
     FontMetrics metrics = fm.GetFontMetrics(uiFont);
 
-    compat::println("字型家族: {}", uiFont.GetFamily());
-    compat::println("推薦行高: {:.2f} px (升部: {:.2f}, 降部: {:.2f})",
-                    metrics.GetLineHeight(), metrics.ascent, metrics.descent);
+    compat::println("目前繁中字型: {}, 行高: {:.2f} px",
+                    uiFont.GetFamily(), metrics.GetLineHeight());
 
-    // 檢驗字型是否存在
-    bool hasArial = fm.HasFontFamily("Arial");
-    compat::println("系統是否具備 Arial: {}", hasArial ? "YES" : "NO");
+    // 3. 列出所有動態註冊之字型
+    for (const auto& family : fm.GetRegisteredFontFamilies()) {
+        compat::println("動態註冊家族: {}", family);
+    }
 }
 ```
