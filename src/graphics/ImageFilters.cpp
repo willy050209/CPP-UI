@@ -114,16 +114,16 @@ void ImageFilters::Threshold(Bitmap& bmp, uint8_t threshold, ThresholdType type,
         uint8_t outY = 0;
         switch (type) {
             case ThresholdType::Binary:
-                outY = (y >= threshold) ? 255 : 0;
+                outY = (y > threshold) ? 255 : 0;
                 break;
             case ThresholdType::BinaryInverted:
-                outY = (y >= threshold) ? 0 : 255;
+                outY = (y > threshold) ? 0 : 255;
                 break;
             case ThresholdType::Truncate:
                 outY = (y > threshold) ? threshold : y;
                 break;
             case ThresholdType::ToZero:
-                outY = (y >= threshold) ? y : 0;
+                outY = (y > threshold) ? y : 0;
                 break;
         }
 
@@ -519,65 +519,64 @@ void ImageFilters::DetectEdges(Bitmap& bmp, EdgeOperator op, const ParallelOptio
     const uint32_t height = bmp.GetHeight();
     if (width == 0 || height == 0) return;
 
+    std::vector<uint8_t> gray(static_cast<size_t>(width) * height);
+    auto srcSpan = bmp.GetPixelSpan();
+    for (size_t i = 0; i < gray.size(); ++i) {
+        gray[i] = LuminanceBT601(
+            static_cast<uint8_t>((srcSpan[i] >> 16) & 0xFF),
+            static_cast<uint8_t>((srcSpan[i] >> 8) & 0xFF),
+            static_cast<uint8_t>(srcSpan[i] & 0xFF)
+        );
+    }
+
+    auto getGray = [&](int32_t x, int32_t y) -> int32_t {
+        x = compat::clamp(x, 0, static_cast<int32_t>(width) - 1);
+        y = compat::clamp(y, 0, static_cast<int32_t>(height) - 1);
+        return static_cast<int32_t>(gray[static_cast<size_t>(y) * width + x]);
+    };
+
     if (op == EdgeOperator::Laplacian) {
-        Kernel2D lap;
-        lap.width = 3;
-        lap.height = 3;
-        lap.anchorX = 1;
-        lap.anchorY = 1;
-        lap.weights = { 0, 1, 0, 1, -4, 1, 0, 1, 0 };
-        lap.divisor = 1;
-
-        Bitmap gray(bmp);
-        Grayscale(gray, GrayscaleMethod::BT601, options);
-        Bitmap dst(width, height);
-        ConvolutionEngine::Convolve2D(gray, dst, lap, BorderMode::Replicate, options);
-
-        PixelOps::ForEach(bmp, [&dst](uint32_t x, uint32_t y, uint32_t& p) {
-            uint32_t lp = dst.GetPixel(x, y).ToArgb();
-            int32_t val = std::abs(static_cast<int32_t>((lp >> 16) & 0xFF) - 128) * 2;
-            uint8_t mag = static_cast<uint8_t>(compat::clamp(val, 0, 255));
+        PixelOps::ForEach(bmp, [&](uint32_t x, uint32_t y, uint32_t& p) {
+            int32_t ix = static_cast<int32_t>(x);
+            int32_t iy = static_cast<int32_t>(y);
+            int32_t val = getGray(ix, iy - 1) + getGray(ix - 1, iy) +
+                          getGray(ix + 1, iy) + getGray(ix, iy + 1) -
+                          4 * getGray(ix, iy);
+            uint8_t mag = static_cast<uint8_t>(compat::clamp(std::abs(val), 0, 255));
             p = (0xFF << 24) | (mag << 16) | (mag << 8) | mag;
         }, options);
         return;
     }
 
-    SeparableKernel kX;
-    SeparableKernel kY;
-    if (op == EdgeOperator::Prewitt) {
-        kX = ConvolutionEngine::CreatePrewittKernelX();
-        kY = ConvolutionEngine::CreatePrewittKernelY();
-    } else if (op == EdgeOperator::Scharr) {
-        kX.radiusX = 1; kX.radiusY = 1;
-        kX.hWeights = { -1, 0, 1 }; kX.vWeights = { 3, 10, 3 };
-        kX.hDivisor = 1; kX.vDivisor = 1;
+    PixelOps::ForEach(bmp, [&](uint32_t x, uint32_t y, uint32_t& p) {
+        int32_t ix = static_cast<int32_t>(x);
+        int32_t iy = static_cast<int32_t>(y);
 
-        kY.radiusX = 1; kY.radiusY = 1;
-        kY.hWeights = { 3, 10, 3 }; kY.vWeights = { -1, 0, 1 };
-        kY.hDivisor = 1; kY.vDivisor = 1;
-    } else {
-        kX = ConvolutionEngine::CreateSobelKernelX();
-        kY = ConvolutionEngine::CreateSobelKernelY();
-    }
+        int32_t p00 = getGray(ix - 1, iy - 1);
+        int32_t p01 = getGray(ix,     iy - 1);
+        int32_t p02 = getGray(ix + 1, iy - 1);
+        int32_t p10 = getGray(ix - 1, iy);
+        int32_t p12 = getGray(ix + 1, iy);
+        int32_t p20 = getGray(ix - 1, iy + 1);
+        int32_t p21 = getGray(ix,     iy + 1);
+        int32_t p22 = getGray(ix + 1, iy + 1);
 
-    Bitmap gray(bmp);
-    Grayscale(gray, GrayscaleMethod::BT601, options);
+        int32_t gx = 0;
+        int32_t gy = 0;
 
-    Bitmap dstX(width, height);
-    Bitmap dstY(width, height);
-    ConvolutionEngine::ConvolveSeparable(gray, dstX, kX, BorderMode::Replicate, options);
-    ConvolutionEngine::ConvolveSeparable(gray, dstY, kY, BorderMode::Replicate, options);
-
-    auto spanX = dstX.GetPixelSpan();
-    auto spanY = dstY.GetPixelSpan();
-
-    PixelOps::ForEach(bmp, [&spanX, &spanY, width, op](uint32_t x, uint32_t y, uint32_t& p) {
-        size_t idx = static_cast<size_t>(y) * width + x;
-        int32_t gx = static_cast<int32_t>((spanX[idx] >> 16) & 0xFF) - 128;
-        int32_t gy = static_cast<int32_t>((spanY[idx] >> 16) & 0xFF) - 128;
-        if (op == EdgeOperator::Scharr) {
-            gx /= 2; gy /= 2;
+        if (op == EdgeOperator::Prewitt) {
+            gx = (-p00 + p02) + (-p10 + p12) + (-p20 + p22);
+            gy = (-p00 - p01 - p02) + (p20 + p21 + p22);
+        } else if (op == EdgeOperator::Scharr) {
+            gx = 3 * (-p00 + p02) + 10 * (-p10 + p12) + 3 * (-p20 + p22);
+            gy = (-3 * p00 - 10 * p01 - 3 * p02) + (3 * p20 + 10 * p21 + 3 * p22);
+            gx /= 2;
+            gy /= 2;
+        } else {
+            gx = (-p00 + p02) + 2 * (-p10 + p12) + (-p20 + p22);
+            gy = (-p00 - 2 * p01 - p02) + (p20 + 2 * p21 + p22);
         }
+
         int32_t mag = static_cast<int32_t>(std::round(std::sqrt(gx * gx + gy * gy)));
         uint8_t outM = static_cast<uint8_t>(compat::clamp(mag, 0, 255));
         p = (0xFF << 24) | (outM << 16) | (outM << 8) | outM;

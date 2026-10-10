@@ -28,6 +28,8 @@ int main() {
     assert(reinterpret_cast<uintptr_t>(p1) % 8 == 0);
     assert(reinterpret_cast<uintptr_t>(p2) % 8 == 0);
     assert(static_cast<uint8_t*>(p2) >= static_cast<uint8_t*>(p1) + 3);
+    (void)p1;
+    (void)p2;
     compat::println("[PASS] LinearArena 8-byte alignment verification");
 
     // 2. 測試 DrawingContext 錄製與 DisplayList 訪客遍歷
@@ -47,6 +49,7 @@ int main() {
     dl.ForEach([&](const DrawOpHeader& header, const void*) {
         inspectedOps++;
         assert(header.size >= sizeof(DrawOpHeader));
+        (void)header;
     });
     assert(inspectedOps == 5);
     compat::println("[PASS] DisplayList ForEach traversal verified");

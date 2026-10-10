@@ -61,6 +61,7 @@ int main() {
     // 檢查 (10, 10) 像素是否為紅色 (BGRA: R=255 -> 0x00FF0000)
     uint32_t redPixel = pixels[10 * 200 + 10];
     assert(((redPixel >> 16) & 0xFF) == 255);
+    (void)redPixel;
     compat::println("[PASS] SoftwareRenderTarget Clear & FillRect");
 
     compat::println("[CPPUI PAL & Backend Test] All tests passed successfully!");

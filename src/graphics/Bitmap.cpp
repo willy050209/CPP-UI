@@ -46,7 +46,8 @@ Bitmap::Bitmap(compat::string_view filename)
     }
 }
 
-Bitmap::Bitmap(const Bitmap& other) {
+Bitmap::Bitmap(const Bitmap& other)
+    : std::enable_shared_from_this<Bitmap>(other) {
     std::shared_lock<std::shared_mutex> lock(other.m_mutex);
     m_width    = other.m_width;
     m_height   = other.m_height;
@@ -55,7 +56,8 @@ Bitmap::Bitmap(const Bitmap& other) {
     m_isLocked = other.m_isLocked;
 }
 
-Bitmap::Bitmap(Bitmap&& other) noexcept {
+Bitmap::Bitmap(Bitmap&& other) noexcept
+    : std::enable_shared_from_this<Bitmap>(std::move(other)) {
     std::unique_lock<std::shared_mutex> lock(other.m_mutex);
     m_width    = other.m_width;
     m_height   = other.m_height;

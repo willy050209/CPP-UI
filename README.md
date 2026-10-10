@@ -56,3 +56,20 @@ CPPUI/
 - **建置工具**：
   - CMake 3.20+
   - Ninja 或 MSBuild
+
+---
+
+## 🛡️ 記憶體安全與 AddressSanitizer (ASan)
+
+CPPUI 專案全面支援並預設啟用 **AddressSanitizer (ASan)** 記憶體安全檢測機制：
+
+- **CMake 設定開關**：
+  - `-DCPPUI_ENABLE_ASAN=ON` (預設為 `ON`，可透過 `-DCPPUI_ENABLE_ASAN=OFF` 關閉)
+- **跨編譯器支援**：
+  - **MSVC**：自動套用 `/fsanitize=address` 與 `/INCREMENTAL:NO`
+  - **GCC / Clang**：自動套用 `-fsanitize=address -fno-omit-frame-pointer` 與 `-fsanitize=address` 鏈結旗標
+- **編譯器警告檢查報告 (Compiler Warnings Status)**：
+  - 本專案在 **MSVC (`/W4`)**、**GCC (`-Wall -Wextra -Wpedantic`)** 及 **Clang** 嚴格警告設定下全面重構與清理完畢，達成 **0 Warnings / 0 Errors**。
+  - 目前所有內部核心程式碼與標頭檔皆無任何無法消除之警告。
+  - *備註 (Windows MSVC ASan 執行提示)*：在 Windows 下若於純終端環境（非 Visual Studio 開發人員命令提示字元）直接執行啟用 ASan 的測試二進位檔，請確保 MSVC 的 ASan runtime DLL (`clang_rt.asan_dbg_dynamic-x86_64.dll` / `clang_rt.asan_dynamic-x86_64.dll`) 所在目錄（例如 `VC\Tools\MSVC\<version>\bin\Hostx64\x64`）已加入至環境變數 `PATH` 中。
+

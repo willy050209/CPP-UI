@@ -22,6 +22,20 @@ else()
 endif()
 
 # -----------------------------------------------------------------------------
+# AddressSanitizer (ASan) 記憶體安全檢查
+# -----------------------------------------------------------------------------
+option(CPPUI_ENABLE_ASAN "Enable AddressSanitizer (ASan)" ON)
+if(CPPUI_ENABLE_ASAN)
+    if(MSVC)
+        add_compile_options(/fsanitize=address)
+        add_link_options(/INCREMENTAL:NO)
+    else()
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+    endif()
+endif()
+
+# -----------------------------------------------------------------------------
 # 核心公共標頭檔介面 (Interface Library)
 # -----------------------------------------------------------------------------
 add_library(cppui_headers INTERFACE)

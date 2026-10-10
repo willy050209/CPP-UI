@@ -24,6 +24,7 @@ int main() {
     SkiaRenderContext ctx;
     bool initOk = ctx.Init(nullptr, 400, 300);
     assert(initOk);
+    (void)initOk;
     compat::println("[PASS] SkiaRenderContext Init (Skia active: {})", ctx.IsSkiaActive());
 
     // 2. 測試 BeginFrame 與 RenderTarget 介面

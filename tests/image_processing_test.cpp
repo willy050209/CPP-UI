@@ -206,17 +206,17 @@ static void TestGrayscale() {
     // 白色: R=255, G=255, B=255
     bmp.SetPixel(1, 1, core::Color(255, 255, 255, 255));
 
-    // 4.1 BT.601: (77*255 + 128) >> 8 = 77
+    // 4.1 BT.601: (77*255 + 128) >> 8 = 77, (150*255 + 128) >> 8 = 149
     auto grayBT601 = ImageFilters::ToGrayscale(bmp, GrayscaleMethod::BT601);
     assert(grayBT601->GetPixel(0, 0).r == 77); // Red
-    assert(grayBT601->GetPixel(1, 0).r == 150); // Green
+    assert(grayBT601->GetPixel(1, 0).r == 149); // Green
     assert(grayBT601->GetPixel(0, 1).r == 29); // Blue
     assert(grayBT601->GetPixel(1, 1).r == 255); // White
 
-    // 4.2 BT.709: (54*255 + 128) >> 8 = 54
+    // 4.2 BT.709: (54*255 + 128) >> 8 = 54, (183*255 + 128) >> 8 = 182
     auto grayBT709 = ImageFilters::ToGrayscale(bmp, GrayscaleMethod::BT709);
     assert(grayBT709->GetPixel(0, 0).r == 54); // Red
-    assert(grayBT709->GetPixel(1, 0).r == 183); // Green
+    assert(grayBT709->GetPixel(1, 0).r == 182); // Green
     assert(grayBT709->GetPixel(0, 1).r == 19); // Blue
 
     // 4.3 Average: 255 / 3 = 85

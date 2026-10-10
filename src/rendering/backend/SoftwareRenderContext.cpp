@@ -577,6 +577,8 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
     float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
 #ifndef _WIN32
+    (void)weight;
+    (void)style;
     auto& ftRes = GetFreeTypeResources();
     bool hasFt = ftRes.EnsureInitialized();
     void* activeFace = nullptr;

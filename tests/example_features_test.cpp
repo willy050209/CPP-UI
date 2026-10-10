@@ -89,6 +89,7 @@ static void TestPlatformSwitchForcedSkia() {
     auto autoHost = autoBuilder.Build();
     int32_t exitCode = autoHost.Run<AutoCloseTestForm>();
     assert(exitCode == 0);
+    (void)exitCode;
 
     // 復原環境
     Application::SetPlatformBackend(original);

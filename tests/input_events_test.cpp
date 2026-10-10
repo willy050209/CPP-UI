@@ -282,11 +282,13 @@ int main() {
 
         bool s1 = FocusManager::Get().SetFocus(elem1.get());
         assert(s1 && elem1->IsFocused() && !elem2->IsFocused());
+        (void)s1;
         assert(FocusManager::Get().GetFocusedElement() == elem1.get());
         assert(focusLog.size() == 1 && focusLog[0] == "Elem1:Got");
 
         bool s2 = FocusManager::Get().SetFocus(elem2.get());
         assert(s2 && !elem1->IsFocused() && elem2->IsFocused());
+        (void)s2;
         assert(FocusManager::Get().GetFocusedElement() == elem2.get());
         assert(focusLog.size() == 3);
         assert(focusLog[1] == "Elem1:Lost");
@@ -374,11 +376,13 @@ int main() {
         inputTarget->OnPointerPressed([&](PointerEventArgs& e) {
             clickPressed = true;
             assert(e.IsLeftButton());
+            (void)e;
         });
 
         inputTarget->OnKeyDown([&](KeyEventArgs& e) {
             keyDownReceived = true;
             assert(e.GetVirtualKey() == 0x41); // 'A'
+            (void)e;
         });
 
         inputTarget->OnTextInput([&](TextInputEventArgs& e) {

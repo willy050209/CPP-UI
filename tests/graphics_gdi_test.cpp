@@ -52,6 +52,7 @@ static void TestColorAndColors() {
     // ToArgb 與 IsEmpty 測試
     uint32_t argbVal = c1.ToArgb();
     assert(argbVal == 0x80FF0064);
+    (void)argbVal;
 
     core::Color emptyColor(0, 0, 0, 0);
     assert(emptyColor.IsEmpty());

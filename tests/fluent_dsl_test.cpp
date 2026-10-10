@@ -177,6 +177,9 @@ int main() {
         assert(layout::Grid::GetRow(c0) == 0 && layout::Grid::GetColumn(c0) == 0 && layout::Grid::GetColumnSpan(c0) == 2);
         assert(layout::Grid::GetRow(c1) == 1 && layout::Grid::GetColumn(c1) == 0);
         assert(layout::Grid::GetRow(c2) == 1 && layout::Grid::GetColumn(c2) == 1);
+        (void)c0;
+        (void)c1;
+        (void)c2;
 
         grid->Measure(Size(800.0f, 600.0f));
         grid->Arrange(Rect(0.0f, 0.0f, 800.0f, 600.0f));

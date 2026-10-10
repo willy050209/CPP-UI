@@ -59,7 +59,7 @@ float Canvas::GetTop(const std::shared_ptr<core::UIElement>& element) {
     return 0.0f;
 }
 
-core::Size Canvas::MeasureOverride(core::Size availableSize) {
+core::Size Canvas::MeasureOverride(core::Size /*availableSize*/) {
     core::Size childConstraint(1000000.0f, 1000000.0f);
     for (const auto& child : m_children) {
         if (child && child->GetVisibility() != Visibility::Collapsed) {
