@@ -130,6 +130,14 @@ public:
     void UnlockBits();
 
     /// <summary>
+    /// 深拷貝複製整幅點陣圖為新 Bitmap 物件。
+    /// 直接透過連續記憶體 std::copy 高效複製，省去逐像素邊界判定開銷。
+    /// </summary>
+    /// <returns>新建立之 Bitmap 共享指標。</returns>
+    /// <exception cref="std::invalid_argument">若來源影像寬高不合法擲出例外。</exception>
+    COMPAT_NODISCARD std::shared_ptr<Bitmap> Clone() const;
+
+    /// <summary>
     /// 擷取局部矩形並深拷貝為新 Bitmap。
     /// </summary>
     /// <param name="rect">來源裁切矩形。</param>

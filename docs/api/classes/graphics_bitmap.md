@@ -130,14 +130,22 @@ void UnlockBits();
 
 ## 6. 裁剪與幾何變換 API (Cropping & Transforms)
 
-### 6.1 子矩形裁剪複製 (`Clone`)
+### 6.1 整圖高效率深拷貝 (`Clone`)
+```cpp
+COMPAT_NODISCARD std::shared_ptr<Bitmap> Clone() const;
+```
+* **功能**：完整複製整幅影像並傳回全新獨立的 `Bitmap` 物件。
+* **效能最佳化**：底層直接採用 `std::copy` 連續記憶體區塊拷貝，完全免除子矩形裁剪時的逐點邊界判定開銷。
+* **執行緒安全**：呼叫期間自動獲得共用讀取鎖（`std::shared_lock`）。
+
+### 6.2 子矩形裁剪複製 (`Clone`)
 ```cpp
 COMPAT_NODISCARD std::shared_ptr<Bitmap> Clone(const core::Rect& rect, PixelFormat format) const;
 ```
 * **功能**：擷取由 `rect` 指定的子矩形區域，並產生獨立的新 `Bitmap` 物件。
-* **邊界防護**：若 `rect` 部分超出原圖邊界，會自動與原圖邊界相交（Intersection）夾止；若完全在邊界之外則產生 1x1 最小空白影像。
+* **邊界防護**：若 `rect` 寬高小於等於 0 擲出 `std::invalid_argument`；若部分超出原圖邊界則自動裁切至邊界內。
 
-### 6.2 旋轉與翻轉 (`RotateFlip`)
+### 6.3 旋轉與翻轉 (`RotateFlip`)
 ```cpp
 void RotateFlip(RotateFlipType rotateFlipType);
 ```

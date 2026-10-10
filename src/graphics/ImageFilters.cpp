@@ -91,7 +91,7 @@ void ImageFilters::Grayscale(Bitmap& bmp, GrayscaleMethod method, const Parallel
 }
 
 std::shared_ptr<Bitmap> ImageFilters::ToGrayscale(const Bitmap& src, GrayscaleMethod method, const ParallelOptions& options) {
-    auto clone = src.Clone(core::Rect(0.0f, 0.0f, static_cast<float>(src.GetWidth()), static_cast<float>(src.GetHeight())), src.GetPixelFormat());
+    auto clone = src.Clone();
     if (clone) {
         Grayscale(*clone, method, options);
     }

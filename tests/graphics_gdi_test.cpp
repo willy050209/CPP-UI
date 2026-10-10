@@ -316,6 +316,31 @@ static void TestBitmap() {
     bmp.UnlockBits();
     assert(bmp.GetPixel(0, 0) == Colors::Gold);
 
+    // 不帶參數全圖高效深拷貝 (std::copy)
+    auto clonedFull = bmp.Clone();
+    assert(clonedFull != nullptr);
+    assert(clonedFull->GetWidth() == bmp.GetWidth());
+    assert(clonedFull->GetHeight() == bmp.GetHeight());
+    assert(clonedFull->GetPixelFormat() == bmp.GetPixelFormat());
+    assert(clonedFull->GetPixel(0, 0) == Colors::Gold);
+    // 深拷貝獨立性驗證：修改複本不影響原圖
+    clonedFull->SetPixel(0, 0, Colors::Crimson);
+    assert(clonedFull->GetPixel(0, 0) == Colors::Crimson);
+    assert(bmp.GetPixel(0, 0) == Colors::Gold);
+
+    // 異常防護測試：無效維度呼叫 Clone 擲出 invalid_argument
+    bool threwInvalid = false;
+    try {
+        Bitmap movedFrom(4, 4);
+        Bitmap sink(std::move(movedFrom));
+        (void)sink;
+        auto badClone = movedFrom.Clone();
+        (void)badClone;
+    } catch (const std::invalid_argument&) {
+        threwInvalid = true;
+    }
+    assert(threwInvalid);
+
     // Clone 裁切
     auto cropped = bmp.Clone(core::Rect(0, 0, 16, 16), PixelFormat::Format32bppArgb);
     assert(cropped->GetWidth() == 16 && cropped->GetHeight() == 16);

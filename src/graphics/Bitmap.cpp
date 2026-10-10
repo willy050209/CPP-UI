@@ -64,6 +64,9 @@ Bitmap::Bitmap(Bitmap&& other) noexcept
     m_format   = other.m_format;
     m_pixels   = std::move(other.m_pixels);
     m_isLocked = other.m_isLocked;
+    other.m_width = 0;
+    other.m_height = 0;
+    other.m_isLocked = false;
 }
 
 Bitmap& Bitmap::operator=(const Bitmap& other) {
@@ -92,6 +95,9 @@ Bitmap& Bitmap::operator=(Bitmap&& other) noexcept {
         m_format   = other.m_format;
         m_pixels   = std::move(other.m_pixels);
         m_isLocked = other.m_isLocked;
+        other.m_width = 0;
+        other.m_height = 0;
+        other.m_isLocked = false;
     }
     return *this;
 }
@@ -156,6 +162,18 @@ void* Bitmap::LockBits(const core::Rect& rect, uint32_t flags) {
 void Bitmap::UnlockBits() {
     std::unique_lock<std::shared_mutex> lock(m_mutex);
     m_isLocked = false;
+}
+
+std::shared_ptr<Bitmap> Bitmap::Clone() const {
+    std::shared_lock<std::shared_mutex> lock(m_mutex);
+
+    if (m_width == 0 || m_height == 0) {
+        throw std::invalid_argument("Bitmap dimensions must be positive to clone.");
+    }
+
+    auto result = std::make_shared<Bitmap>(m_width, m_height, m_format);
+    std::copy(m_pixels.begin(), m_pixels.end(), result->m_pixels.begin());
+    return result;
 }
 
 std::shared_ptr<Bitmap> Bitmap::Clone(const core::Rect& rect, PixelFormat format) const {
