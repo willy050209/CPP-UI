@@ -159,6 +159,7 @@ $frameworkSources = @(
     "src\controls\Button.cpp",
     "src\controls\CheckBox.cpp",
     "src\controls\TextBox.cpp",
+    "src\controls\ScrollViewer.cpp",
     "src\text\FontManager.cpp",
     "src\text\TextShaper.cpp",
     "src\text\BiDiAnalyzer.cpp",
@@ -192,7 +193,15 @@ $frameworkSources = @(
     "src\graphics\Bitmap.cpp",
     "src\graphics\Graphics.cpp",
     "src\theme\Theme.cpp",
-    "src\theme\ThemeManager.cpp"
+    "src\theme\ThemeManager.cpp",
+    "src\dialogs\DialogCommon.cpp",
+    "src\dialogs\MessageBox.cpp",
+    "src\dialogs\MessageBoxForm.cpp",
+    "src\dialogs\FileDialog.cpp",
+    "src\dialogs\OpenFileDialog.cpp",
+    "src\dialogs\SaveFileDialog.cpp",
+    "src\dialogs\FileDialogForm.cpp",
+    "src\dialogs\Win32DialogService.cpp"
 )
 
 $testTargets = @(
@@ -288,7 +297,7 @@ $testTargets = @(
         IsSmoke        = $false
         NeedObjs       = @(
             "Visual", "UIElement", "Panel", "StackPanel", "Border", "Canvas", "Grid",
-            "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox",
+            "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox", "ScrollViewer",
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
@@ -461,6 +470,28 @@ $testTargets = @(
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Dialogs"
+        Source         = "tests\dialogs_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "DialogCommon", "MessageBox", "MessageBoxForm", "FileDialog",
+            "OpenFileDialog", "SaveFileDialog", "FileDialogForm", "Win32DialogService",
+            "Visual", "UIElement", "Panel", "StackPanel", "Border", "Canvas", "Grid",
+            "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox",
+            "ScrollViewer", "Form", "Application", "AppBuilder", "Dispatcher",
+            "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext", "SkiaRenderContext",
+            "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "ServiceCollection",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
+            "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "comdlg32.lib", "shell32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lcomdlg32", "-lshell32")
         HasBench       = $false
         BenchRegex     = ""
     }

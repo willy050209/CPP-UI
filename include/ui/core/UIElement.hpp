@@ -325,6 +325,12 @@ public:
     void OnPointerMoved(PointerEventHandler handler);
 
     /// <summary>
+    /// 註冊指標滾輪 (PointerWheel) 事件處理常式。
+    /// </summary>
+    /// <param name="handler">事件處理常式。</param>
+    void OnPointerWheel(PointerEventHandler handler);
+
+    /// <summary>
     /// 註冊指標進入 (PointerEntered) 事件處理常式。
     /// </summary>
     /// <param name="handler">事件處理常式。</param>
@@ -379,6 +385,10 @@ public:
     /// <summary>指標移動虛擬處理點。</summary>
     /// <param name="e">事件參數。</param>
     virtual void OnPointerMovedCore(input::PointerEventArgs& e) { (void)e; }
+
+    /// <summary>指標滾輪虛擬處理點。</summary>
+    /// <param name="e">事件參數。</param>
+    virtual void OnPointerWheelCore(input::PointerEventArgs& e) { (void)e; }
 
     /// <summary>指標進入虛擬處理點。</summary>
     /// <param name="e">事件參數。</param>

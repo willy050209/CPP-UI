@@ -169,6 +169,9 @@ void Visual::Render(rendering::DrawingContext& dc) {
         }
     }
 
+    // 呼叫後置繪製自訂點（如前景裝飾、浮動卷軸等）
+    OnPostRender(dc);
+
     if (m_clipToBounds) {
         dc.PopClip();
     }

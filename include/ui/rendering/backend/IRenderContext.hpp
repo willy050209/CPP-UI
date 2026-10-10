@@ -63,16 +63,18 @@ public:
     /// <param name="weight">字型粗細。</param>
     /// <param name="style">字型樣式。</param>
     /// <param name="color">文字色彩。</param>
-    virtual void DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color) {
-        (void)text; (void)origin; (void)family; (void)size; (void)weight; (void)style; (void)color;
+    /// <param name="clipRect">可選之局部剪裁矩形。</param>
+    virtual void DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color, const core::Rect& clipRect = core::Rect()) {
+        (void)text; (void)origin; (void)family; (void)size; (void)weight; (void)style; (void)color; (void)clipRect;
     }
 
     /// <summary>繪製排版後的文字佈局。</summary>
     /// <param name="nativeLayoutHandle">原生排版控制代碼。</param>
     /// <param name="origin">繪製起點。</param>
     /// <param name="color">文字色彩。</param>
-    virtual void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color) {
-        (void)nativeLayoutHandle; (void)origin; (void)color;
+    /// <param name="clipRect">可選之局部剪裁矩形。</param>
+    virtual void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color, const core::Rect& clipRect = core::Rect()) {
+        (void)nativeLayoutHandle; (void)origin; (void)color; (void)clipRect;
     }
 
     /// <summary>取得底層 SkCanvas 畫布指標 (若當前 RenderTarget 為 Skia 畫布)。</summary>

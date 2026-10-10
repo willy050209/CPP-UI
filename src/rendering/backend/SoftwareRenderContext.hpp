@@ -79,8 +79,8 @@ public:
         }
     }
 
-    void DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color) override;
-    void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color) override;
+    void DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color, const core::Rect& clipRect = core::Rect()) override;
+    void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color, const core::Rect& clipRect = core::Rect()) override;
 
 private:
     uint32_t m_width = 0;

@@ -59,11 +59,13 @@ void MessageBoxForm::BuildUI() {
     // 上層訊息與圖示區塊
     auto bodyStack = std::make_shared<layout::StackPanel>(layout::Orientation::Horizontal);
     bodyStack->SetSpacing(14.0f);
+    bodyStack->SetVerticalAlignment(layout::VerticalAlignment::Center);
 
     // 圖示文字塊
     if (m_icon != MessageBoxIcon::None) {
         auto iconBlock = std::make_shared<controls::TextBlock>();
         iconBlock->SetFontSize(24.0f);
+        iconBlock->SetVerticalAlignment(layout::VerticalAlignment::Center);
 
         switch (m_icon) {
         case MessageBoxIcon::Information:
@@ -92,6 +94,7 @@ void MessageBoxForm::BuildUI() {
     m_textBlock = std::make_shared<controls::TextBlock>(m_messageText);
     m_textBlock->SetForeground(colors.textPrimary);
     m_textBlock->SetFontSize(14.0f);
+    m_textBlock->SetVerticalAlignment(layout::VerticalAlignment::Center);
     bodyStack->AddChild(m_textBlock);
 
     mainStack->AddChild(bodyStack);
@@ -99,11 +102,14 @@ void MessageBoxForm::BuildUI() {
     // 底部按鈕排版區塊 (水平靠右)
     auto buttonRow = std::make_shared<layout::StackPanel>(layout::Orientation::Horizontal);
     buttonRow->SetSpacing(10.0f);
+    buttonRow->SetHorizontalAlignment(layout::HorizontalAlignment::Right);
 
     auto addButton = [this, &buttonRow, colors](compat::string_view label, app::DialogResult res, bool isPrimary) {
         auto btn = std::make_shared<controls::Button>(label);
         btn->SetWidth(80.0f);
-        btn->SetHeight(32.0f);
+        btn->SetHeight(34.0f);
+        btn->SetHorizontalContentAlignment(layout::HorizontalAlignment::Center);
+        btn->SetVerticalContentAlignment(layout::VerticalAlignment::Center);
         if (isPrimary) {
             btn->SetBackground(colors.accentPrimary);
             btn->SetHoverBackground(colors.accentHover);

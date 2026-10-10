@@ -16,9 +16,14 @@
 #include "ui/controls/Button.hpp"
 #include "ui/controls/CheckBox.hpp"
 #include "ui/controls/TextBox.hpp"
+#include "ui/controls/ScrollViewer.hpp"
 #include "ui/layout/Grid.hpp"
 #include "ui/layout/Border.hpp"
 #include "ui/layout/Panel.hpp"
+#include "ui/layout/StackPanel.hpp"
+#include "ui/rendering/DrawingContext.hpp"
+#include "ui/rendering/DisplayListRenderer.hpp"
+#include "../src/rendering/backend/SoftwareRenderContext.hpp"
 #include "ui/input/InputManager.hpp"
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/KeyEventArgs.hpp"
@@ -390,6 +395,178 @@ int main() {
         assert(contentElement->GetRenderBounds().height == 20.0f);
 
         compat::println("  [PASS] Button content centering and TextBlock NoWrap verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 9] Button Content Alignments (Left / Right / Stretch) & Height Protection
+    // -------------------------------------------------------------------------
+    compat::println("[Test 9] Button Content Alignments & Tight Height Protection...");
+    {
+        auto btn = std::make_shared<Button>("AlignTest");
+        btn->SetPadding(Thickness(10.0f));
+        btn->SetBorderThickness(Thickness(0.0f));
+        btn->SetWidth(100.0f);
+        btn->SetHeight(40.0f);
+
+        auto contentElement = std::make_shared<UIElement>();
+        contentElement->SetWidth(40.0f);
+        contentElement->SetHeight(20.0f);
+        btn->SetContent(contentElement);
+
+        // 1. Horizontal Left
+        btn->SetHorizontalContentAlignment(layout::HorizontalAlignment::Left);
+        btn->Measure(Size(100.0f, 40.0f));
+        btn->Arrange(Rect(0.0f, 0.0f, 100.0f, 40.0f));
+        assert(contentElement->GetRenderBounds().x == 10.0f); // Left padding = 10
+
+        // 2. Horizontal Right
+        btn->SetHorizontalContentAlignment(layout::HorizontalAlignment::Right);
+        btn->InvalidateArrange();
+        btn->Arrange(Rect(0.0f, 0.0f, 100.0f, 40.0f));
+        // availW = 80, contentW = 40. Right offset = 10 + 80 - 40 = 50.
+        assert(contentElement->GetRenderBounds().x == 50.0f);
+
+        // 3. Horizontal Stretch
+        contentElement->SetWidth(-1.0f);
+        btn->SetHorizontalContentAlignment(layout::HorizontalAlignment::Stretch);
+        btn->InvalidateMeasure();
+        btn->InvalidateArrange();
+        btn->Measure(Size(100.0f, 40.0f));
+        btn->Arrange(Rect(0.0f, 0.0f, 100.0f, 40.0f));
+        assert(contentElement->GetRenderBounds().x == 10.0f);
+        assert(contentElement->GetRenderBounds().width == 80.0f);
+        contentElement->SetWidth(40.0f);
+
+        // 4. Tight Height Protection
+        // Button height 24px, padding 10px each side (20px total), inner = 4px.
+        // But contentDesired is 16px! Height protection should allow 16px and center vertically.
+        btn->SetHeight(24.0f);
+        contentElement->SetHeight(16.0f);
+        btn->SetVerticalContentAlignment(layout::VerticalAlignment::Center);
+        btn->InvalidateMeasure();
+        btn->InvalidateArrange();
+        btn->Measure(Size(100.0f, 24.0f));
+        btn->Arrange(Rect(0.0f, 0.0f, 100.0f, 24.0f));
+        assert(contentElement->GetRenderBounds().height == 16.0f);
+        assert(contentElement->GetRenderBounds().y == 4.0f); // (24 - 16) / 2 = 4
+
+        compat::println("  [PASS] Button content alignment and height protection verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 10] ScrollViewer Layout, Wheel Event, Offsets, Clamping, Line/Page
+    // -------------------------------------------------------------------------
+    compat::println("[Test 10] ScrollViewer Layout & Scrolling Behavior...");
+    {
+        auto scrollViewer = std::make_shared<ScrollViewer>();
+        scrollViewer->SetWidth(200.0f);
+        scrollViewer->SetHeight(100.0f);
+
+        // Content is 300px tall
+        auto contentElement = std::make_shared<UIElement>();
+        contentElement->SetWidth(190.0f);
+        contentElement->SetHeight(300.0f);
+        scrollViewer->SetContent(contentElement);
+
+        scrollViewer->Measure(Size(200.0f, 100.0f));
+        scrollViewer->Arrange(Rect(0.0f, 0.0f, 200.0f, 100.0f));
+
+        assert(scrollViewer->GetExtentHeight() == 300.0f);
+        assert(scrollViewer->GetViewportHeight() == 100.0f);
+        assert(scrollViewer->GetVerticalOffset() == 0.0f);
+
+        // Content offset should start at 0
+        assert(contentElement->GetRenderBounds().y == 0.0f);
+
+        // 1. LineDown and LineUp
+        scrollViewer->SetScrollStep(30.0f);
+        scrollViewer->LineDown();
+        scrollViewer->Arrange(Rect(0.0f, 0.0f, 200.0f, 100.0f));
+        assert(scrollViewer->GetVerticalOffset() == 30.0f);
+        assert(contentElement->GetRenderBounds().y == -30.0f);
+
+        scrollViewer->LineUp();
+        scrollViewer->Arrange(Rect(0.0f, 0.0f, 200.0f, 100.0f));
+        assert(scrollViewer->GetVerticalOffset() == 0.0f);
+
+        // 2. PageDown and PageUp
+        scrollViewer->PageDown();
+        assert(scrollViewer->GetVerticalOffset() == 100.0f);
+
+        // 3. ScrollToEnd and Clamping
+        scrollViewer->ScrollToEnd();
+        // maxOffset = 300 - 100 = 200.
+        assert(scrollViewer->GetVerticalOffset() == 200.0f);
+
+        scrollViewer->SetVerticalOffset(9999.0f);
+        assert(scrollViewer->GetVerticalOffset() == 200.0f);
+
+        scrollViewer->SetVerticalOffset(-50.0f);
+        assert(scrollViewer->GetVerticalOffset() == 0.0f);
+
+        // 4. Mouse wheel event simulation
+        scrollViewer->ScrollToHome();
+        PointerEventArgs wheelArgs(
+            StandardEvents::PointerWheel,
+            scrollViewer.get(),
+            Point(50.0f, 50.0f),
+            pal::RawMouseButton::None,
+            pal::KeyModifiers::None,
+            0,
+            0,
+            -120 // Scroll down 1 notch
+        );
+        EventRoute route(scrollViewer.get());
+        route.DispatchBubble(StandardEvents::PointerWheel, wheelArgs);
+        assert(wheelArgs.IsHandled());
+        assert(scrollViewer->GetVerticalOffset() == 30.0f);
+
+        compat::println("  [PASS] ScrollViewer layout, wheel dispatch, and clamping verified.");
+
+        // 5. ScrollViewer Render Clipping Verification (未捲出的文字不應繪製至可視視區外部)
+        {
+            auto sv = std::make_shared<ScrollViewer>();
+            sv->SetWidth(200.0f);
+            sv->SetHeight(100.0f);
+
+            auto stack = std::make_shared<layout::StackPanel>(layout::Orientation::Vertical);
+            for (size_t i = 0; i < 10; ++i) {
+                auto tb = std::make_shared<TextBlock>("Long Item Text Line");
+                tb->SetHeight(30.0f);
+                stack->AddChild(tb);
+            }
+            sv->SetContent(stack);
+
+            sv->Measure(Size(200.0f, 100.0f));
+            sv->Arrange(Rect(0.0f, 0.0f, 200.0f, 100.0f));
+
+            rendering::DisplayList svDl;
+            rendering::DrawingContext svDc(svDl);
+            sv->Render(svDc);
+
+            rendering::SoftwareRenderTarget svTarget;
+            svTarget.Resize(200, 300);
+            svTarget.Clear(Colors::Black);
+
+            rendering::DisplayListRenderer svRenderer;
+            svRenderer.Render(svDl, &svTarget);
+
+            const uint32_t* svPixels = svTarget.GetPixelBuffer();
+            uint32_t blackVal = Colors::Black.ToArgb();
+
+            // 驗證 ScrollViewer 底部 (y >= 100) 絕對沒有未捲出之文字像素溢出
+            bool outsideZeroBleed = true;
+            for (int32_t y = 100; y < 300; ++y) {
+                for (int32_t x = 0; x < 200; ++x) {
+                    if (svPixels[static_cast<size_t>(y) * 200 + x] != blackVal) {
+                        outsideZeroBleed = false;
+                        break;
+                    }
+                }
+            }
+            assert(outsideZeroBleed && "Text outside ScrollViewer viewport must be clipped!");
+            compat::println("  [PASS] ScrollViewer text clipping verified (no un-scrolled text drawn outside viewport).");
+        }
     }
 
     compat::println("=================================================");

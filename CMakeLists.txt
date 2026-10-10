@@ -63,6 +63,7 @@ set(CPPUI_SOURCES
     src/controls/Button.cpp
     src/controls/CheckBox.cpp
     src/controls/TextBox.cpp
+    src/controls/ScrollViewer.cpp
     src/rendering/DisplayListRenderer.cpp
     src/rendering/backend/SoftwareRenderContext.cpp
     src/rendering/backend/SkiaRenderContext.cpp

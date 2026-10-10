@@ -206,6 +206,12 @@ public:
     /// <param name="dc">繪圖上下文。</param>
     virtual void OnRender(rendering::DrawingContext& dc) { (void)dc; }
 
+    /// <summary>
+    /// 虛擬後置繪製掛鉤，在所有子視覺節點繪製完成後呼叫（適用於前景裝飾、浮動卷軸等）。
+    /// </summary>
+    /// <param name="dc">繪圖上下文。</param>
+    virtual void OnPostRender(rendering::DrawingContext& dc) { (void)dc; }
+
 protected:
     /// <summary>
     /// 設定視覺父節點內部指標。

@@ -30,6 +30,10 @@ public:
     virtual void FillRect(const core::Rect& rect, core::Color color) = 0;
 
     virtual uint32_t* GetPixelBuffer() noexcept = 0;
+
+    virtual void DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color, const core::Rect& clipRect = core::Rect());
+    virtual void DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color, const core::Rect& clipRect = core::Rect());
+    virtual void* GetSkCanvas() noexcept { return nullptr; }
 };
 
 class IRenderContext {
@@ -73,6 +77,9 @@ CPPUI 的繪圖光柵化後端被抽象為兩組介面：
 * `Clear(color)`：以指定顏色填滿整張畫布。
 * `FillRect(rect, color)`：填充特定軸對齊矩形區域。
 * `GetPixelBuffer()`：取得連續的 32-bit ARGB/BGRA 像素記憶體位址。
+* `DrawText(text, origin, family, size, weight, style, color, clipRect)`：於指定座標光柵化單行純文字，支援指定局部剪裁矩形。
+* `DrawTextLayout(nativeLayoutHandle, origin, color, clipRect)`：光柵化原生排版文字佈局，支援指定局部剪裁矩形與 Fast Culling。
+* `GetSkCanvas()`：取得底層 `SkCanvas*`（若當前為 Skia 後端）。
 
 ### `IRenderContext` 生命週期
 * `Init(handle, width, height)`：初始化渲染環境並綁定原生視窗 Handle (`HWND` 等)。

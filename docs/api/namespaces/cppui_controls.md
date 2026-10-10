@@ -21,3 +21,4 @@
 | [`TextBox`](../classes/controls_textbox.md) | `TextBox.hpp` | 單行文字編輯輸入框，支援打字輸入、退格、游標移動與佔位符。 |
 | [`TextBlock`](../classes/controls_textblock.md) | `TextBlock.hpp` | 高效能唯讀純文字/多行文字展示元件。 |
 | [`PictureBox`](../classes/controls_picturebox.md) | `PictureBox.hpp` | 圖片展示控制項，支援 5 種尺寸縮放模式與 Bitmap 繫結。 |
+| [`ScrollViewer`](../classes/controls_scrollviewer.md) | `ScrollViewer.hpp` | 捲動視區容器，支援滾輪、拖曳滑塊、邊界剪裁與自動捲軸呈現。 |

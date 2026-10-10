@@ -8,7 +8,6 @@
 #include "compat/compat.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/dialogs/DialogCommon.hpp"
-#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,6 +17,7 @@ namespace controls {
 class Button;
 class TextBox;
 class TextBlock;
+class ScrollViewer;
 } // namespace controls
 
 namespace layout {
@@ -56,12 +56,12 @@ public:
     /// <param name="checkFileExists">是否檢查檔案必須存在。</param>
     /// <param name="checkPathExists">是否檢查目錄路徑必須存在。</param>
     FileDialogForm(FileDialogFormMode mode,
-                   compat::string_view title,
-                   compat::string_view initialDir,
-                   compat::string_view fileName,
-                   compat::string_view filter,
-                   uint32_t filterIndex,
-                   compat::string_view defaultExt,
+                   compat::string_view title = "",
+                   compat::string_view initialDir = "",
+                   compat::string_view fileName = "",
+                   compat::string_view filter = "",
+                   uint32_t filterIndex = 1,
+                   compat::string_view defaultExt = "",
                    bool multiselect = false,
                    bool overwritePrompt = true,
                    bool checkFileExists = false,
@@ -77,7 +77,7 @@ public:
     COMPAT_NODISCARD const std::vector<std::string>& GetSelectedFileNames() const noexcept { return m_selectedFileNames; }
 
     /// <summary>取得當前瀏覽之目錄路徑。</summary>
-    COMPAT_NODISCARD const std::filesystem::path& GetCurrentDirectory() const noexcept { return m_currentDir; }
+    COMPAT_NODISCARD const compat::filesystem::path& GetCurrentDirectory() const noexcept { return m_currentDir; }
 
     /// <summary>取得是否允許多選。</summary>
     COMPAT_NODISCARD bool GetMultiselect() const noexcept { return m_multiselect; }
@@ -89,7 +89,7 @@ public:
     /// 切換當前目錄並重新整理清單。
     /// </summary>
     /// <param name="path">欲切換之目錄路徑。</param>
-    void NavigateTo(const std::filesystem::path& path);
+    void NavigateTo(const compat::filesystem::path& path);
 
     /// <summary>
     /// 重新載入當前目錄之檔案清單。
@@ -121,7 +121,7 @@ private:
     void PopulateDirectoryItems();
 
     FileDialogFormMode m_mode;
-    std::filesystem::path m_currentDir;
+    compat::filesystem::path m_currentDir;
     std::string m_selectedFileName;
     std::vector<std::string> m_selectedFileNames;
     std::string m_defaultExt;
@@ -136,6 +136,7 @@ private:
     // UI 元件參照
     std::shared_ptr<controls::TextBox> m_pathBox;
     std::shared_ptr<controls::TextBox> m_fileNameBox;
+    std::shared_ptr<controls::ScrollViewer> m_scrollViewer;
     std::shared_ptr<layout::StackPanel> m_fileListPanel;
     std::shared_ptr<controls::Button> m_actionButton;
     std::shared_ptr<controls::Button> m_cancelButton;

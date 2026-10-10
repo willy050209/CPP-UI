@@ -59,16 +59,24 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
 #if defined(CPPUI_HAS_SKIA) && CPPUI_HAS_SKIA
     if (void* canvasPtr = target->GetSkCanvas()) {
         auto* skCanvas = static_cast<SkCanvas*>(canvasPtr);
+        std::vector<core::Rect> clipStack;
+        clipStack.push_back(core::Rect(0.0f, 0.0f, targetW, targetH));
+
         displayList.ForEach([&](const DrawOpHeader& header, const void* payload) {
             stats.totalOps++;
             switch (header.type) {
                 case DrawOpType::PushClipRect: {
                     const auto* op = static_cast<const PushClipRectOp*>(payload);
+                    core::Rect newClip = IntersectRect(clipStack.back(), op->rect);
+                    clipStack.push_back(newClip);
                     skCanvas->save();
                     skCanvas->clipRect(SkRect::MakeXYWH(op->rect.x, op->rect.y, op->rect.width, op->rect.height), SkClipOp::kIntersect, true);
                     break;
                 }
                 case DrawOpType::PopClip: {
+                    if (clipStack.size() > 1) {
+                        clipStack.pop_back();
+                    }
                     skCanvas->restore();
                     break;
                 }
@@ -117,13 +125,13 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                     const char* extraData = reinterpret_cast<const char*>(op) + sizeof(DrawTextOp);
                     compat::string_view family(extraData, op->familyLength);
                     compat::string_view text(extraData + op->familyLength, op->textLength);
-                    target->DrawText(text, op->origin, family, op->fontSize, op->fontWeight, op->fontStyle, op->color);
+                    target->DrawText(text, op->origin, family, op->fontSize, op->fontWeight, op->fontStyle, op->color, clipStack.back());
                     stats.renderedOps++;
                     break;
                 }
                 case DrawOpType::DrawTextLayout: {
                     const auto* op = static_cast<const DrawTextLayoutOp*>(payload);
-                    target->DrawTextLayout(op->nativeLayoutHandle, op->origin, op->color);
+                    target->DrawTextLayout(op->nativeLayoutHandle, op->origin, op->color, clipStack.back());
                     stats.renderedOps++;
                     break;
                 }
@@ -439,7 +447,7 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 compat::string_view text(extraData + op->familyLength, op->textLength);
 
                 core::Color finalColor = ApplyOpacity(op->color, currentOpacity);
-                target->DrawText(text, op->origin, family, op->fontSize, op->fontWeight, op->fontStyle, finalColor);
+                target->DrawText(text, op->origin, family, op->fontSize, op->fontWeight, op->fontStyle, finalColor, currentClip);
                 stats.renderedOps++;
                 break;
             }
@@ -451,7 +459,7 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 }
                 const auto* op = static_cast<const DrawTextLayoutOp*>(payload);
                 core::Color finalColor = ApplyOpacity(op->color, currentOpacity);
-                target->DrawTextLayout(op->nativeLayoutHandle, op->origin, finalColor);
+                target->DrawTextLayout(op->nativeLayoutHandle, op->origin, finalColor, currentClip);
                 stats.renderedOps++;
                 break;
             }

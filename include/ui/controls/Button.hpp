@@ -117,7 +117,6 @@ public:
     /// 綁定 MVVM 命令 (ICommand) 至按鈕。
     /// </summary>
     /// <param name="command">命令實例智慧指標，不可為 nullptr。</param>
-    /// <exception cref="std::invalid_argument">當 command 為 nullptr 時擲出。</exception>
     void SetCommand(std::shared_ptr<mvvm::ICommand> command);
 
     /// <summary>
@@ -127,7 +126,35 @@ public:
     COMPAT_NODISCARD std::shared_ptr<mvvm::ICommand> GetCommand() const noexcept { return m_command; }
 
     /// <summary>
-    /// 覆寫排版排列階段，將內容元件幾何置中排列於按鈕內部內距區域。
+    /// 取得按鈕內容之水平對齊方式。
+    /// </summary>
+    /// <returns>HorizontalAlignment 水平對齊列舉。</returns>
+    COMPAT_NODISCARD layout::HorizontalAlignment GetHorizontalContentAlignment() const noexcept {
+        return m_horizontalContentAlignment;
+    }
+
+    /// <summary>
+    /// 設定按鈕內容之水平對齊方式。
+    /// </summary>
+    /// <param name="alignment">HorizontalAlignment 水平對齊列舉。</param>
+    void SetHorizontalContentAlignment(layout::HorizontalAlignment alignment);
+
+    /// <summary>
+    /// 取得按鈕內容之垂直對齊方式。
+    /// </summary>
+    /// <returns>VerticalAlignment 垂直對齊列舉。</returns>
+    COMPAT_NODISCARD layout::VerticalAlignment GetVerticalContentAlignment() const noexcept {
+        return m_verticalContentAlignment;
+    }
+
+    /// <summary>
+    /// 設定按鈕內容之垂直對齊方式。
+    /// </summary>
+    /// <param name="alignment">VerticalAlignment 垂直對齊列舉。</param>
+    void SetVerticalContentAlignment(layout::VerticalAlignment alignment);
+
+    /// <summary>
+    /// 覆寫排版排列階段，將內容元件依對齊方式排列於按鈕內部內距區域。
     /// </summary>
     /// <param name="finalSize">配置給按鈕之最終尺寸。</param>
     void ArrangeOverride(core::Size finalSize) override;
@@ -157,6 +184,8 @@ protected:
 
     bool        m_isPressed = false;
     bool        m_isHovered = false;
+    layout::HorizontalAlignment m_horizontalContentAlignment = layout::HorizontalAlignment::Center;
+    layout::VerticalAlignment   m_verticalContentAlignment   = layout::VerticalAlignment::Center;
     std::shared_ptr<mvvm::ICommand> m_command;
 
     core::Color m_normalBackground{ 45, 52, 70, 255 };

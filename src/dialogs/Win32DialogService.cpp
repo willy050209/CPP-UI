@@ -26,7 +26,7 @@ static std::wstring Utf8ToWide(compat::string_view utf8) {
     int32_t len = MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int32_t>(utf8.size()), nullptr, 0);
     if (len <= 0) return std::wstring();
     std::wstring result(static_cast<size_t>(len), L'\0');
-    MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int32_t>(utf8.size()), result.data(), len);
+    MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int32_t>(utf8.size()), &result[0], len);
     return result;
 }
 
@@ -36,7 +36,7 @@ static std::string WideToUtf8(const wchar_t* wide) {
     int32_t len = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
     if (len <= 1) return std::string();
     std::string result(static_cast<size_t>(len - 1), '\0');
-    WideCharToMultiByte(CP_UTF8, 0, wide, -1, result.data(), len - 1, nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, wide, -1, &result[0], len - 1, nullptr, nullptr);
     return result;
 }
 

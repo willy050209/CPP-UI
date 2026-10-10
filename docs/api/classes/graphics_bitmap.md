@@ -58,6 +58,7 @@ public:
     void UnlockBits();
 
     // 裁剪深拷貝與幾何變換
+    COMPAT_NODISCARD std::shared_ptr<Bitmap> Clone() const;
     COMPAT_NODISCARD std::shared_ptr<Bitmap> Clone(const core::Rect& rect, PixelFormat format) const;
     void RotateFlip(RotateFlipType rotateFlipType);
 };

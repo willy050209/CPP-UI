@@ -30,4 +30,5 @@
 
 ### 繪製管線
 - `void Render(rendering::DrawingContext& dc)`: 遞迴渲染本節點及其子節點，處理局部透明度與剪裁壓棧。
-- `virtual void OnRender(rendering::DrawingContext& dc)`: 子類別自訂繪製掛鉤點。
+- `virtual void OnRender(rendering::DrawingContext& dc)`: 子類別自訂繪製掛鉤點（於子節點渲染前執行）。
+- `virtual void OnPostRender(rendering::DrawingContext& dc)`: 子類別後置自訂繪製掛鉤點（於所有子節點渲染完成後執行，適用於前景裝飾、浮動卷軸等）。

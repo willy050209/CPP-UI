@@ -66,6 +66,11 @@ Button::Button() {
     OnPointerReleased([this](input::PointerEventArgs& e) {
         if (!m_enabled) return;
         if (e.IsLeftButton() && m_isPressed) {
+            std::shared_ptr<Button> self;
+            try {
+                self = std::dynamic_pointer_cast<Button>(shared_from_this());
+            } catch (...) {}
+
             input::InputManager::Get().ReleasePointerCapture(this);
             m_isPressed = false;
 
@@ -74,12 +79,14 @@ Button::Button() {
             core::Size btnSize = GetRenderBounds().GetSize();
             if (btnSize.IsEmpty()) btnSize = GetVisualBounds().GetSize();
             core::Rect bounds(core::Point(0, 0), btnSize);
-            if (bounds.Contains(localPos)) {
-                RaiseClick();
-            }
+            bool isInside = bounds.Contains(localPos);
 
             InvalidateVisual();
             e.SetHandled(true);
+
+            if (isInside) {
+                RaiseClick();
+            }
         }
     });
 
@@ -87,8 +94,13 @@ Button::Button() {
         if (!m_enabled) return;
         // Space (0x20) 或 Return (0x0D) 觸發點擊
         if (e.GetVirtualKey() == 0x20 || e.GetVirtualKey() == 0x0D) {
-            RaiseClick();
+            std::shared_ptr<Button> self;
+            try {
+                self = std::dynamic_pointer_cast<Button>(shared_from_this());
+            } catch (...) {}
+
             e.SetHandled(true);
+            RaiseClick();
         }
     });
 
@@ -161,6 +173,20 @@ void Button::RaiseClick() {
     }
 }
 
+void Button::SetHorizontalContentAlignment(layout::HorizontalAlignment alignment) {
+    if (m_horizontalContentAlignment != alignment) {
+        m_horizontalContentAlignment = alignment;
+        InvalidateArrange();
+    }
+}
+
+void Button::SetVerticalContentAlignment(layout::VerticalAlignment alignment) {
+    if (m_verticalContentAlignment != alignment) {
+        m_verticalContentAlignment = alignment;
+        InvalidateArrange();
+    }
+}
+
 void Button::ArrangeOverride(core::Size finalSize) {
     if (!m_content) return;
 
@@ -170,11 +196,54 @@ void Button::ArrangeOverride(core::Size finalSize) {
     float availH = (std::max)(0.0f, finalSize.height - (m_padding.Vertical() + m_borderThickness.Vertical()));
 
     core::Size contentDesired = m_content->GetDesiredSize();
+
+    // 高度保護機制：若按鈕明確高度大於文字高度，但預設內距過大導致 availH < contentDesired.height，
+    // 動態擴展可用高度以容納文字，並於按鈕邊框內垂直置中，避免文字被壓縮截斷
+    float totalBorderV = m_borderThickness.Vertical();
+    if (finalSize.height > totalBorderV) {
+        float innerH = finalSize.height - totalBorderV;
+        if (contentDesired.height <= innerH && availH < contentDesired.height) {
+            availH = contentDesired.height;
+            top = m_borderThickness.top + (innerH - contentDesired.height) * 0.5f;
+        }
+    }
+
     float contentW = (std::min)(availW, contentDesired.width);
     float contentH = (std::min)(availH, contentDesired.height);
 
-    float targetX = left + (availW - contentW) * 0.5f;
-    float targetY = top + (availH - contentH) * 0.5f;
+    float targetX = left;
+    switch (m_horizontalContentAlignment) {
+        case layout::HorizontalAlignment::Left:
+            targetX = left;
+            break;
+        case layout::HorizontalAlignment::Center:
+            targetX = left + (std::max)(0.0f, availW - contentW) * 0.5f;
+            break;
+        case layout::HorizontalAlignment::Right:
+            targetX = left + (std::max)(0.0f, availW - contentW);
+            break;
+        case layout::HorizontalAlignment::Stretch:
+            targetX = left;
+            contentW = availW;
+            break;
+    }
+
+    float targetY = top;
+    switch (m_verticalContentAlignment) {
+        case layout::VerticalAlignment::Top:
+            targetY = top;
+            break;
+        case layout::VerticalAlignment::Center:
+            targetY = top + (std::max)(0.0f, availH - contentH) * 0.5f;
+            break;
+        case layout::VerticalAlignment::Bottom:
+            targetY = top + (std::max)(0.0f, availH - contentH);
+            break;
+        case layout::VerticalAlignment::Stretch:
+            targetY = top;
+            contentH = availH;
+            break;
+    }
 
     m_content->Arrange(core::Rect(targetX, targetY, contentW, contentH));
 }

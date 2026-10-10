@@ -467,8 +467,22 @@ static FreeTypeRasterResources& GetFreeTypeResources() {
 
 } // anonymous namespace
 
-void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color) {
+void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color, const core::Rect& clipRect) {
     if (text.empty() || m_width == 0 || m_height == 0 || color.a == 0) return;
+
+    int32_t clipLeft   = 0;
+    int32_t clipTop    = 0;
+    int32_t clipRight  = static_cast<int32_t>(m_width);
+    int32_t clipBottom = static_cast<int32_t>(m_height);
+
+    if (!clipRect.IsEmpty()) {
+        clipLeft   = (std::max)(clipLeft, static_cast<int32_t>(std::floor(clipRect.Left())));
+        clipTop    = (std::max)(clipTop, static_cast<int32_t>(std::floor(clipRect.Top())));
+        clipRight  = (std::min)(clipRight, static_cast<int32_t>(std::ceil(clipRect.Right())));
+        clipBottom = (std::min)(clipBottom, static_cast<int32_t>(std::ceil(clipRect.Bottom())));
+    }
+
+    if (clipLeft >= clipRight || clipTop >= clipBottom) return;
 
 #ifdef _WIN32
     int32_t wideLen = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int32_t>(text.size()), nullptr, 0);
@@ -499,6 +513,18 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
             int32_t textW = textSize.cx;
             int32_t textH = textSize.cy;
             if (textW > 0 && textH > 0) {
+                int32_t dstX0 = static_cast<int32_t>(origin.x);
+                int32_t dstY0 = static_cast<int32_t>(origin.y);
+
+                // 快速外包圍邊界剔除 (Fast culling)
+                if (dstX0 >= clipRight || dstX0 + textW <= clipLeft ||
+                    dstY0 >= clipBottom || dstY0 + textH <= clipTop) {
+                    SelectObject(memDC, oldFont);
+                    DeleteObject(hFont);
+                    DeleteDC(memDC);
+                    return;
+                }
+
                 BITMAPINFO bmi = {};
                 bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
                 bmi.bmiHeader.biWidth = textW;
@@ -519,17 +545,17 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
                     TextOutW(memDC, 0, 0, wideText.data(), wideLen);
 
                     const uint32_t* mask = static_cast<const uint32_t*>(bits);
-                    int32_t dstX0 = static_cast<int32_t>(origin.x);
-                    int32_t dstY0 = static_cast<int32_t>(origin.y);
                     float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
-                    for (int32_t y = 0; y < textH; ++y) {
-                        int32_t dstY = dstY0 + y;
-                        if (dstY < 0 || dstY >= static_cast<int32_t>(m_height)) continue;
+                    int32_t yStart = (std::max)(0, clipTop - dstY0);
+                    int32_t yEnd   = (std::min)(textH, clipBottom - dstY0);
+                    int32_t xStart = (std::max)(0, clipLeft - dstX0);
+                    int32_t xEnd   = (std::min)(textW, clipRight - dstX0);
 
-                        for (int32_t x = 0; x < textW; ++x) {
+                    for (int32_t y = yStart; y < yEnd; ++y) {
+                        int32_t dstY = dstY0 + y;
+                        for (int32_t x = xStart; x < xEnd; ++x) {
                             int32_t dstX = dstX0 + x;
-                            if (dstX < 0 || dstX >= static_cast<int32_t>(m_width)) continue;
 
                             uint32_t maskVal = mask[y * textW + x] & 0xFF;
                             if (maskVal == 0) continue;
@@ -642,11 +668,11 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
                         if (buf && rows > 0 && cols > 0) {
                             for (uint32_t r = 0; r < rows; ++r) {
                                 int32_t py = startY + static_cast<int32_t>(r);
-                                if (py < 0 || py >= static_cast<int32_t>(m_height)) continue;
+                                if (py < clipTop || py >= clipBottom) continue;
 
                                 for (uint32_t c = 0; c < cols; ++c) {
                                     int32_t px = startX + static_cast<int32_t>(c);
-                                    if (px < 0 || px >= static_cast<int32_t>(m_width)) continue;
+                                    if (px < clipLeft || px >= clipRight) continue;
 
                                     uint8_t maskVal = 0;
                                     if (mode == 2) {
@@ -697,10 +723,10 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
                         if (rowBits & (0x80 >> col)) {
                             for (int32_t dy = 0; dy < scale; ++dy) {
                                 int32_t py = curY + r * scale + dy;
-                                if (py < 0 || py >= static_cast<int32_t>(m_height)) continue;
+                                if (py < clipTop || py >= clipBottom) continue;
                                 for (int32_t dx = 0; dx < scale; ++dx) {
                                     int32_t px = curX + col * scale + dx;
-                                    if (px < 0 || px >= static_cast<int32_t>(m_width)) continue;
+                                    if (px < clipLeft || px >= clipRight) continue;
 
                                     size_t dstIdx = static_cast<size_t>(py) * m_width + px;
                                     uint32_t dstPixel = m_pixels[dstIdx];
@@ -725,11 +751,11 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
                 int32_t boxH = cellH - 2;
                 for (int32_t by = 0; by < boxH; ++by) {
                     int32_t py = curY + 1 + by;
-                    if (py < 0 || py >= static_cast<int32_t>(m_height)) continue;
+                    if (py < clipTop || py >= clipBottom) continue;
                     for (int32_t bx = 0; bx < boxW; ++bx) {
                         if (by == 0 || by == boxH - 1 || bx == 0 || bx == boxW - 1) {
                             int32_t px = curX + 1 + bx;
-                            if (px < 0 || px >= static_cast<int32_t>(m_width)) continue;
+                            if (px < clipLeft || px >= clipRight) continue;
 
                             size_t dstIdx = static_cast<size_t>(py) * m_width + px;
                             uint32_t dstPixel = m_pixels[dstIdx];
@@ -755,8 +781,22 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
     }
 }
 
-void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color) {
+void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point origin, core::Color color, const core::Rect& clipRect) {
     if (!nativeLayoutHandle || m_width == 0 || m_height == 0 || color.a == 0) return;
+
+    int32_t clipLeft   = 0;
+    int32_t clipTop    = 0;
+    int32_t clipRight  = static_cast<int32_t>(m_width);
+    int32_t clipBottom = static_cast<int32_t>(m_height);
+
+    if (!clipRect.IsEmpty()) {
+        clipLeft   = (std::max)(clipLeft, static_cast<int32_t>(std::floor(clipRect.Left())));
+        clipTop    = (std::max)(clipTop, static_cast<int32_t>(std::floor(clipRect.Top())));
+        clipRight  = (std::min)(clipRight, static_cast<int32_t>(std::ceil(clipRect.Right())));
+        clipBottom = (std::min)(clipBottom, static_cast<int32_t>(std::ceil(clipRect.Bottom())));
+    }
+
+    if (clipLeft >= clipRight || clipTop >= clipBottom) return;
 
 #ifdef _WIN32
     auto& dwriteRes = GetDWriteResources();
@@ -783,6 +823,15 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
             int32_t textW = static_cast<int32_t>(std::ceil(boundW));
             int32_t textH = static_cast<int32_t>(std::ceil(boundH));
             if (textW > 0 && textH > 0) {
+                int32_t dstX0 = static_cast<int32_t>(origin.x - leftPad);
+                int32_t dstY0 = static_cast<int32_t>(origin.y - topPad);
+
+                // 快速外包圍邊界剔除 (Fast culling)
+                if (dstX0 >= clipRight || dstX0 + textW <= clipLeft ||
+                    dstY0 >= clipBottom || dstY0 + textH <= clipTop) {
+                    return;
+                }
+
                 // 限制最大點陣尺寸防止記憶體溢出
                 textW = std::min(textW, 4096);
                 textH = std::min(textH, 4096);
@@ -805,17 +854,17 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
                         DIBSECTION ds = {};
                         if (GetObject(hbm, sizeof(ds), &ds) == sizeof(ds) && ds.dsBm.bmBits) {
                             const uint32_t* mask = static_cast<const uint32_t*>(ds.dsBm.bmBits);
-                            int32_t dstX0 = static_cast<int32_t>(origin.x - leftPad);
-                            int32_t dstY0 = static_cast<int32_t>(origin.y - topPad);
                             float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
-                            for (int32_t y = 0; y < textH; ++y) {
-                                int32_t dstY = dstY0 + y;
-                                if (dstY < 0 || dstY >= static_cast<int32_t>(m_height)) continue;
+                            int32_t yStart = (std::max)(0, clipTop - dstY0);
+                            int32_t yEnd   = (std::min)(textH, clipBottom - dstY0);
+                            int32_t xStart = (std::max)(0, clipLeft - dstX0);
+                            int32_t xEnd   = (std::min)(textW, clipRight - dstX0);
 
-                                for (int32_t x = 0; x < textW; ++x) {
+                            for (int32_t y = yStart; y < yEnd; ++y) {
+                                int32_t dstY = dstY0 + y;
+                                for (int32_t x = xStart; x < xEnd; ++x) {
                                     int32_t dstX = dstX0 + x;
-                                    if (dstX < 0 || dstX >= static_cast<int32_t>(m_width)) continue;
 
                                     uint32_t pixel = mask[y * textW + x];
                                     uint8_t r = static_cast<uint8_t>((pixel >> 16) & 0xFF);
@@ -872,7 +921,8 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
                     layoutImpl->font.GetSize(),
                     static_cast<uint16_t>(layoutImpl->font.GetWeight()),
                     static_cast<uint8_t>(layoutImpl->font.GetStyle()),
-                    color
+                    color,
+                    clipRect
                 );
             }
         }

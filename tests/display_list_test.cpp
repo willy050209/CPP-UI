@@ -13,6 +13,7 @@
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/rendering/DrawingContext.hpp"
 #include "ui/rendering/DisplayListRenderer.hpp"
+#include "ui/text/Font.hpp"
 #include "../src/rendering/backend/SoftwareRenderContext.hpp"
 
 int main() {
@@ -72,7 +73,50 @@ int main() {
     assert(dl.GetTotalBytes() == 0);
     compat::println("[PASS] DisplayList O(1) Clear / Reset verified");
 
-    // 5. 極限效能基準測試 (Benchmark): 單幀錄製 50,000 個幾何指令
+    // 5. 測試 DrawText 與 DrawTextLayout 於局部剪裁區域之嚴格限制 (邊界外無像素污染)
+    {
+        DisplayList textDl;
+        DrawingContext textDc(textDl);
+
+        SoftwareRenderTarget textTarget;
+        textTarget.Resize(200, 200);
+        textTarget.Clear(Colors::Black);
+
+        // 僅允許 (50, 50, 100, 100) 內部可繪製
+        textDc.PushClip(Rect(50.0f, 50.0f, 100.0f, 100.0f));
+        textDc.DrawText("ClippedTop", Point(10.0f, 10.0f), cppui::text::FontDescriptor("Arial", 14.0f), Colors::White);
+        textDc.DrawText("ClippedBottom", Point(10.0f, 170.0f), cppui::text::FontDescriptor("Arial", 14.0f), Colors::White);
+        textDc.DrawText("Inside", Point(60.0f, 60.0f), cppui::text::FontDescriptor("Arial", 14.0f), Colors::White);
+        textDc.PopClip();
+
+        DisplayListRenderer textRenderer;
+        textRenderer.Render(textDl, &textTarget);
+
+        const uint32_t* pixels = textTarget.GetPixelBuffer();
+        uint32_t blackVal = Colors::Black.ToArgb();
+
+        bool outsideUnmodified = true;
+        for (int32_t y = 0; y < 50; ++y) {
+            for (int32_t x = 0; x < 200; ++x) {
+                if (pixels[static_cast<size_t>(y) * 200 + x] != blackVal) {
+                    outsideUnmodified = false;
+                    break;
+                }
+            }
+        }
+        for (int32_t y = 150; y < 200; ++y) {
+            for (int32_t x = 0; x < 200; ++x) {
+                if (pixels[static_cast<size_t>(y) * 200 + x] != blackVal) {
+                    outsideUnmodified = false;
+                    break;
+                }
+            }
+        }
+        assert(outsideUnmodified && "Pixels outside clip rect should not be modified by DrawText!");
+        compat::println("[PASS] DrawText clip boundary clipping verified (no text bleed outside clip rect)");
+    }
+
+    // 6. 極限效能基準測試 (Benchmark): 單幀錄製 50,000 個幾何指令
     constexpr size_t BENCHMARK_OP_COUNT = 50000;
     compat::println("[BENCHMARK] Starting recording benchmark with {} operations...", BENCHMARK_OP_COUNT);
 

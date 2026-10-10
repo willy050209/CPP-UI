@@ -7,6 +7,7 @@
 #include "ui/controls/Button.hpp"
 #include "ui/controls/TextBox.hpp"
 #include "ui/controls/TextBlock.hpp"
+#include "ui/controls/ScrollViewer.hpp"
 #include "ui/layout/Border.hpp"
 #include "ui/layout/StackPanel.hpp"
 #include "ui/dialogs/MessageBox.hpp"
@@ -36,12 +37,12 @@ FileDialogForm::FileDialogForm(FileDialogFormMode mode,
     , m_checkPathExists(checkPathExists) {
     // 決定起始目錄
     std::error_code ec;
-    if (!initialDir.empty() && std::filesystem::exists(std::string(initialDir), ec)) {
-        m_currentDir = std::filesystem::path(std::string(initialDir));
+    if (!initialDir.empty() && compat::filesystem::exists(std::string(initialDir), ec)) {
+        m_currentDir = compat::filesystem::path(std::string(initialDir));
     } else {
-        m_currentDir = std::filesystem::current_path(ec);
+        m_currentDir = compat::filesystem::current_path(ec);
         if (ec) {
-            m_currentDir = std::filesystem::path(".");
+            m_currentDir = compat::filesystem::path(".");
         }
     }
 
@@ -74,15 +75,18 @@ void FileDialogForm::OnLoad() {
     RefreshDirectory();
 }
 
-void FileDialogForm::NavigateTo(const std::filesystem::path& path) {
+void FileDialogForm::NavigateTo(const compat::filesystem::path& path) {
     std::error_code ec;
-    if (std::filesystem::is_directory(path, ec)) {
-        m_currentDir = std::filesystem::canonical(path, ec);
+    if (compat::filesystem::is_directory(path, ec)) {
+        m_currentDir = compat::filesystem::canonical(path, ec);
         if (ec) {
             m_currentDir = path;
         }
         if (m_pathBox) {
             m_pathBox->SetText(m_currentDir.string());
+        }
+        if (m_scrollViewer) {
+            m_scrollViewer->SetVerticalOffset(0.0f);
         }
         RefreshDirectory();
     }
@@ -146,7 +150,7 @@ void FileDialogForm::BuildUI() {
     m_refreshButton->OnClick([this]() {
         std::string typedPath(m_pathBox->GetText());
         std::error_code ec;
-        if (std::filesystem::exists(typedPath, ec)) {
+        if (compat::filesystem::exists(typedPath, ec)) {
             NavigateTo(typedPath);
         } else {
             RefreshDirectory();
@@ -156,7 +160,7 @@ void FileDialogForm::BuildUI() {
 
     mainStack->AddChild(navRow);
 
-    // --- 中央檔案清單容器 ---
+    // --- 中央檔案清單容器 (含 ScrollViewer 滾動支援) ---
     auto listBorder = std::make_shared<layout::Border>();
     listBorder->SetBackground(colors.surfaceBackground);
     listBorder->SetBorderBrush(colors.surfaceBorder);
@@ -168,18 +172,24 @@ void FileDialogForm::BuildUI() {
 
     m_fileListPanel = std::make_shared<layout::StackPanel>(layout::Orientation::Vertical);
     m_fileListPanel->SetSpacing(4.0f);
-    listBorder->SetChild(m_fileListPanel);
+
+    m_scrollViewer = std::make_shared<controls::ScrollViewer>();
+    m_scrollViewer->SetContent(m_fileListPanel);
+    m_scrollViewer->SetWidth(680.0f);
+    m_scrollViewer->SetHeight(304.0f);
+    listBorder->SetChild(m_scrollViewer);
 
     mainStack->AddChild(listBorder);
 
     // --- 底部檔名與篩選條件列 ---
     auto bottomRow1 = std::make_shared<layout::StackPanel>(layout::Orientation::Horizontal);
     bottomRow1->SetSpacing(8.0f);
+    bottomRow1->SetVerticalAlignment(layout::VerticalAlignment::Center);
 
     auto nameLabel = std::make_shared<controls::TextBlock>("檔案名稱:");
     nameLabel->SetForeground(colors.textPrimary);
     nameLabel->SetWidth(80.0f);
-    nameLabel->SetHeight(30.0f);
+    nameLabel->SetVerticalAlignment(layout::VerticalAlignment::Center);
     bottomRow1->AddChild(nameLabel);
 
     m_fileNameBox = std::make_shared<controls::TextBox>("請輸入或選取檔案名稱");
@@ -203,9 +213,10 @@ void FileDialogForm::BuildUI() {
 
     mainStack->AddChild(bottomRow1);
 
-    // --- 底部動作按鈕列 ---
+    // --- 底部動作按鈕列 (水平靠右) ---
     auto bottomRow2 = std::make_shared<layout::StackPanel>(layout::Orientation::Horizontal);
     bottomRow2->SetSpacing(12.0f);
+    bottomRow2->SetHorizontalAlignment(layout::HorizontalAlignment::Right);
 
     std::string actionText = (m_mode == FileDialogFormMode::Open) ? "開啟" : "儲存";
     m_actionButton = std::make_shared<controls::Button>(actionText);
@@ -244,19 +255,27 @@ void FileDialogForm::PopulateDirectoryItems() {
     const auto& colors = theme.Colors();
 
     std::error_code ec;
-    std::vector<std::filesystem::directory_entry> dirs;
-    std::vector<std::filesystem::directory_entry> files;
+    std::vector<compat::filesystem::directory_entry> dirs;
+    std::vector<compat::filesystem::directory_entry> files;
 
-    if (std::filesystem::exists(m_currentDir, ec) && std::filesystem::is_directory(m_currentDir, ec)) {
-        for (const auto& entry : std::filesystem::directory_iterator(m_currentDir, std::filesystem::directory_options::skip_permission_denied, ec)) {
-            if (entry.is_directory(ec)) {
-                dirs.push_back(entry);
-            } else if (entry.is_regular_file(ec)) {
-                std::string fname = entry.path().filename().string();
-                if (m_filterItems.empty() || DialogUtilities::MatchesFilter(fname, m_filterItems[m_currentFilterIndex])) {
-                    files.push_back(entry);
+    if (compat::filesystem::exists(m_currentDir, ec) && compat::filesystem::is_directory(m_currentDir, ec)) {
+        try {
+            compat::filesystem::directory_iterator it(m_currentDir, compat::filesystem::directory_options::skip_permission_denied, ec);
+            compat::filesystem::directory_iterator endIt;
+            while (!ec && it != endIt) {
+                const auto& entry = *it;
+                if (entry.is_directory()) {
+                    dirs.push_back(entry);
+                } else if (entry.is_regular_file()) {
+                    std::string fname = entry.path().filename().string();
+                    if (m_filterItems.empty() || DialogUtilities::MatchesFilter(fname, m_filterItems[m_currentFilterIndex])) {
+                        files.push_back(entry);
+                    }
                 }
+                it.increment(ec);
             }
+        } catch (...) {
+            // 忽略權限不足或系統連接點等存取例外，保證介面不崩潰
         }
     }
 
@@ -264,8 +283,11 @@ void FileDialogForm::PopulateDirectoryItems() {
     for (const auto& d : dirs) {
         std::string dname = d.path().filename().string();
         auto btn = std::make_shared<controls::Button>("[目錄] " + dname);
-        btn->SetWidth(680.0f);
-        btn->SetHeight(26.0f);
+        btn->SetWidth(660.0f);
+        btn->SetHeight(28.0f);
+        btn->SetPadding(core::Thickness(8.0f, 4.0f, 8.0f, 4.0f));
+        btn->SetHorizontalContentAlignment(layout::HorizontalAlignment::Left);
+        btn->SetVerticalContentAlignment(layout::VerticalAlignment::Center);
         btn->SetBackground(colors.surfaceBackground);
         btn->SetHoverBackground(colors.controlHoverBackground);
         btn->OnClick([this, p = d.path()]() {
@@ -281,12 +303,17 @@ void FileDialogForm::PopulateDirectoryItems() {
         std::string sizeStr = ec ? "" : " (" + DialogUtilities::FormatFileSize(fsize) + ")";
 
         auto btn = std::make_shared<controls::Button>("[檔案] " + fname + sizeStr);
-        btn->SetWidth(680.0f);
-        btn->SetHeight(26.0f);
+        btn->SetWidth(660.0f);
+        btn->SetHeight(28.0f);
+        btn->SetPadding(core::Thickness(8.0f, 4.0f, 8.0f, 4.0f));
+        btn->SetHorizontalContentAlignment(layout::HorizontalAlignment::Left);
+        btn->SetVerticalContentAlignment(layout::VerticalAlignment::Center);
         btn->SetBackground(colors.surfaceBackground);
         btn->SetHoverBackground(colors.controlHoverBackground);
         btn->OnClick([this, fname, fullPath = f.path()]() {
-            m_fileNameBox->SetText(fname);
+            if (m_fileNameBox) {
+                m_fileNameBox->SetText(fname);
+            }
             m_selectedFileName = fullPath.string();
             m_selectedFileNames = { m_selectedFileName };
         });
@@ -300,7 +327,7 @@ void FileDialogForm::OnConfirmAction() {
         return;
     }
 
-    std::filesystem::path target(text);
+    compat::filesystem::path target(text);
     if (!target.is_absolute()) {
         target = m_currentDir / target;
     }
@@ -308,13 +335,13 @@ void FileDialogForm::OnConfirmAction() {
     std::error_code ec;
 
     // 若使用者輸入的是資料夾路徑，則切換目錄
-    if (std::filesystem::is_directory(target, ec)) {
+    if (compat::filesystem::is_directory(target, ec)) {
         NavigateTo(target);
         return;
     }
 
     if (m_mode == FileDialogFormMode::Open) {
-        if (m_checkFileExists && !std::filesystem::exists(target, ec)) {
+        if (m_checkFileExists && !compat::filesystem::exists(target, ec)) {
             MessageBox::ShowWithMode(DialogBackendMode::BuiltIn, nullptr,
                                     "指定的檔案不存在，請確認路徑與檔名。",
                                     "開啟失敗",
@@ -333,7 +360,7 @@ void FileDialogForm::OnConfirmAction() {
             target = DialogUtilities::EnsureExtension(target.string(), ext);
         }
 
-        if (m_overwritePrompt && std::filesystem::exists(target, ec)) {
+        if (m_overwritePrompt && compat::filesystem::exists(target, ec)) {
             auto res = MessageBox::ShowWithMode(DialogBackendMode::BuiltIn, nullptr,
                                                "目標檔案已存在，是否要覆寫？",
                                                "確認儲存",

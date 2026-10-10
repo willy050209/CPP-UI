@@ -316,6 +316,10 @@ void UIElement::RaiseEventInternal(const input::RoutedEvent& routedEvent, input:
         if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
             OnPointerMovedCore(*pe);
         }
+    } else if (id == input::StandardEvents::PointerWheel.GetId()) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            OnPointerWheelCore(*pe);
+        }
     } else if (id == input::StandardEvents::PointerEntered.GetId()) {
         if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
             OnPointerEnteredCore(*pe);
@@ -375,6 +379,14 @@ void UIElement::OnPointerReleased(PointerEventHandler handler) {
 
 void UIElement::OnPointerMoved(PointerEventHandler handler) {
     AddHandler(input::StandardEvents::PointerMoved, [handler](input::RoutedEventArgs& e) {
+        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+            handler(*pe);
+        }
+    });
+}
+
+void UIElement::OnPointerWheel(PointerEventHandler handler) {
+    AddHandler(input::StandardEvents::PointerWheel, [handler](input::RoutedEventArgs& e) {
         if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
             handler(*pe);
         }

@@ -11,9 +11,13 @@
 #include "ui/dialogs/OpenFileDialog.hpp"
 #include "ui/dialogs/SaveFileDialog.hpp"
 #include "ui/dialogs/FileDialogForm.hpp"
+#include "ui/controls/Button.hpp"
+#include "ui/layout/StackPanel.hpp"
+#include "ui/input/InputManager.hpp"
+#include "ui/input/EventRoute.hpp"
+#include "ui/pal/RawInputEvent.hpp"
 #include <cassert>
 #include <cstdint>
-#include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -266,12 +270,12 @@ static void TestFileDialogFormBuiltIn() {
     using namespace cppui::app;
 
     // 建立臨時測試環境
-    std::filesystem::path tempDir = std::filesystem::temp_directory_path() / "cppui_dialog_test";
+    compat::filesystem::path tempDir = compat::filesystem::temp_directory_path() / "cppui_dialog_test";
     std::error_code ec;
-    std::filesystem::create_directories(tempDir, ec);
+    compat::filesystem::create_directories(tempDir, ec);
 
-    std::filesystem::path file1 = tempDir / "doc1.txt";
-    std::filesystem::path file2 = tempDir / "photo.png";
+    compat::filesystem::path file1 = tempDir / "doc1.txt";
+    compat::filesystem::path file2 = tempDir / "photo.png";
 
     {
         std::ofstream ofs1(file1);
@@ -323,7 +327,7 @@ static void TestFileDialogFormBuiltIn() {
     auto saveRes = saveForm.SimulateConfirm("new_document");
     assert(saveRes == DialogResult::OK);
     (void)saveRes;
-    std::filesystem::path expectedSavePath = tempDir / "new_document.txt";
+    compat::filesystem::path expectedSavePath = tempDir / "new_document.txt";
     assert(saveForm.GetSelectedFileName() == expectedSavePath.string());
 
     // 3. 取消動作
@@ -340,9 +344,92 @@ static void TestFileDialogFormBuiltIn() {
     assert(cancelForm.GetDialogResult() == DialogResult::Cancel);
 
     // 清理臨時目錄
-    std::filesystem::remove_all(tempDir, ec);
+    compat::filesystem::remove_all(tempDir, ec);
 
     compat::println(" -> 通過: FileDialogForm 程式化走訪與選取完全正確。");
+}
+
+/// <summary>
+/// 測試資料夾瀏覽切換與按鈕點擊解構安全性 (防範 UAF)。
+/// </summary>
+static void TestFolderNavigationAndClickSafety() {
+    compat::println("[Test] 測試資料夾切換導航與 Click 回呼解構安全性 (防範 UAF)...");
+
+    using namespace cppui::dialogs;
+    using namespace cppui::controls;
+    using namespace cppui::layout;
+    using namespace cppui::input;
+    using namespace cppui::core;
+
+    compat::filesystem::path tempDir = compat::filesystem::temp_directory_path() / "cppui_folder_nav_test";
+    compat::filesystem::path subDir = tempDir / "child_folder";
+    std::error_code ec;
+    compat::filesystem::create_directories(subDir, ec);
+
+    std::ofstream(subDir / "nested.txt") << "Nested Content";
+
+    FileDialogForm form(
+        FileDialogFormMode::Open,
+        "導航測試",
+        tempDir.string(),
+        "",
+        "*.*"
+    );
+
+    assert(form.GetCurrentDirectory() == tempDir);
+
+    // 1. 切換至子目錄
+    form.NavigateTo(subDir);
+    assert(form.GetCurrentDirectory() == subDir);
+
+    // 2. 切換回父目錄
+    form.NavigateTo(tempDir);
+    assert(form.GetCurrentDirectory() == tempDir);
+
+    // 3. 測試按鈕於 OnClick 中清除自身所屬容器子元件 (模擬原先引發 UAF 的時序)
+    auto panel = std::make_shared<StackPanel>(Orientation::Vertical);
+    auto btn = std::make_shared<Button>("SelfDestruct");
+    btn->SetWidth(100.0f);
+    btn->SetHeight(30.0f);
+    panel->AddChild(btn);
+
+    panel->Measure(Size(200.0f, 200.0f));
+    panel->Arrange(Rect(0.0f, 0.0f, 200.0f, 200.0f));
+
+    bool clickInvoked = false;
+    btn->OnClick([&panel, &clickInvoked]() {
+        clickInvoked = true;
+        panel->ClearChildren(); // 清空按鈕！如果 Button 在 RaiseClick 後存取 this，將會引發 UAF 崩潰
+    });
+
+    // 模擬滑鼠按下
+    PointerEventArgs pressArgs(
+        StandardEvents::PointerPressed,
+        btn.get(),
+        Point(10.0f, 10.0f),
+        cppui::pal::RawMouseButton::Left,
+        cppui::pal::KeyModifiers::None
+    );
+    EventRoute pressRoute(btn.get());
+    pressRoute.Dispatch(StandardEvents::PreviewPointerPressed, StandardEvents::PointerPressed, pressArgs);
+
+    // 模擬滑鼠放開
+    PointerEventArgs releaseArgs(
+        StandardEvents::PointerReleased,
+        btn.get(),
+        Point(10.0f, 10.0f),
+        cppui::pal::RawMouseButton::Left,
+        cppui::pal::KeyModifiers::None
+    );
+    EventRoute releaseRoute(btn.get());
+    releaseRoute.Dispatch(StandardEvents::PreviewPointerReleased, StandardEvents::PointerReleased, releaseArgs);
+
+    assert(clickInvoked == true);
+    assert(panel->GetChildrenCount() == 0);
+
+    compat::filesystem::remove_all(tempDir, ec);
+
+    compat::println(" -> 通過: 資料夾切換與 Button 於 Click 中安全解構無 UAF。");
 }
 
 } // namespace
@@ -360,6 +447,7 @@ int main() {
     TestDialogBackendModeSwitching();
     TestMessageBoxFormBuiltIn();
     TestFileDialogFormBuiltIn();
+    TestFolderNavigationAndClickSafety();
 
     compat::println("=================================================");
     compat::println("所有對話框系統單元測試均成功通過 (100% Passed)！");
