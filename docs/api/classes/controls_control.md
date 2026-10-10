@@ -41,10 +41,14 @@
 
 ## 核心 API 群組
 
-### 1. 識別與資料附加 (Identity & Tag)
+### 1. 識別、雜湊與資料附加 (Identity, Hash & Tag)
 - `compat::string_view GetName() const noexcept` / `void SetName(compat::string_view name)`: 取得或設定控制項識別名稱。
 - `std::shared_ptr<void> GetTag() const noexcept` / `void SetTag(std::shared_ptr<void> tag)`: 取得或附加自訂資料指標。
 - `template<typename T> std::shared_ptr<T> GetTag() const`: 樣板方法，型別安全地轉型並取得自訂資料。
+- `virtual size_t GetHashCode() const noexcept`: 取得控制項實例之雜湊值（基於物件實例記憶體位址的穩定常數雜湊值，不隨屬性變更而改變）。
+- `friend bool operator==(const Control& lhs, const Control& rhs) noexcept`: 依實例記憶體位址比較兩控制項是否為同一實例。
+- `friend bool operator!=(const Control& lhs, const Control& rhs) noexcept`: 依實例記憶體位址比較兩控制項是否不為同一實例。
+- `std::hash<cppui::controls::Control>`: 標準庫特化樣板（包含 `std::reference_wrapper<Control>` 與 `std::reference_wrapper<const Control>` 特化），委派給 `GetHashCode()`，原生支援於 `std::unordered_set` 與 `std::unordered_map`。
 
 ### 2. 文字協定與多型同步 (Text Protocol)
 - `virtual compat::string_view GetText() const noexcept`: 取得控制項文字標題，可被 `ContentControl`、`TextBox` 等子類別多型覆寫。

@@ -8,6 +8,8 @@
 #include <string>
 #include <memory>
 #include <stdexcept>
+#include <unordered_set>
+#include <unordered_map>
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/core/UIElement.hpp"
@@ -567,6 +569,53 @@ int main() {
             assert(outsideZeroBleed && "Text outside ScrollViewer viewport must be clipped!");
             compat::println("  [PASS] ScrollViewer text clipping verified (no un-scrolled text drawn outside viewport).");
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 7] Control Identity, Hash Code and std::hash Specialization
+    // -------------------------------------------------------------------------
+    compat::println("[Test 7] Control Identity, Hash Code and std::hash...");
+    {
+        auto btn1 = std::make_shared<Button>("Button 1");
+        auto btn2 = std::make_shared<Button>("Button 2");
+        auto btn3 = std::make_shared<Button>("Button 1"); // 相同文字不同實例
+
+        // 1. GetHashCode 確定性驗證
+        size_t hash1 = btn1->GetHashCode();
+        assert(hash1 == btn1->GetHashCode());
+
+        // 2. 屬性變更不影響雜湊值 (避免破壞 hash table)
+        btn1->SetText("New Button Title");
+        btn1->SetSize(200.0f, 50.0f);
+        assert(btn1->GetHashCode() == hash1);
+
+        // 3. 實例等價性運算子
+        assert(*btn1 == *btn1);
+        assert(*btn1 != *btn2);
+        assert(*btn1 != *btn3); // 即使文字或屬性相同，不同實例即不相等
+        assert(!(*btn1 == *btn2));
+
+        // 4. std::hash<Control> 函式物件特化驗證
+        std::hash<Control> hasher;
+        assert(hasher(*btn1) == hash1);
+        assert(hasher(*btn2) == btn2->GetHashCode());
+
+        // 5. 標準容器整合測試: std::unordered_set<std::reference_wrapper<Control>>
+        std::unordered_set<std::reference_wrapper<Control>> ctrlSet;
+        ctrlSet.insert(std::ref(*btn1));
+        ctrlSet.insert(std::ref(*btn2));
+        assert(ctrlSet.size() == 2);
+        assert(ctrlSet.find(std::ref(*btn1)) != ctrlSet.end());
+        assert(ctrlSet.find(std::ref(*btn3)) == ctrlSet.end());
+
+        // 6. 標準容器整合測試: std::unordered_map<std::reference_wrapper<Control>, std::string>
+        std::unordered_map<std::reference_wrapper<Control>, std::string> ctrlMap;
+        ctrlMap.emplace(std::ref(*btn1), "Action1");
+        ctrlMap.emplace(std::ref(*btn2), "Action2");
+        assert(ctrlMap.at(std::ref(*btn1)) == "Action1");
+        assert(ctrlMap.at(std::ref(*btn2)) == "Action2");
+
+        compat::println("  [PASS] Control GetHashCode, equality operators, and std::hash verified.");
     }
 
     compat::println("=================================================");

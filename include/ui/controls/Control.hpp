@@ -109,7 +109,35 @@ public:
     /// </summary>
     ~Control() override;
 
-    // --- 1. 識別與自訂資料 (Identity & Tag) ---
+    // --- 1. 識別、雜湊與自訂資料 (Identity, Hash & Tag) ---
+
+    /// <summary>
+    /// 取得控制項實例之雜湊值 (基於實例記憶體位址的穩定常數雜湊值)。
+    /// </summary>
+    /// <returns>代表此控制項實例的雜湊碼 (size_t)。</returns>
+    COMPAT_NODISCARD virtual size_t GetHashCode() const noexcept {
+        return std::hash<const void*>{}(static_cast<const void*>(this));
+    }
+
+    /// <summary>
+    /// 依實例記憶體位址比較兩個控制項是否為同一實例。
+    /// </summary>
+    /// <param name="lhs">左側控制項實例參照。</param>
+    /// <param name="rhs">右側控制項實例參照。</param>
+    /// <returns>若為同一物件實例回傳 true，否則回傳 false。</returns>
+    COMPAT_NODISCARD friend bool operator==(const Control& lhs, const Control& rhs) noexcept {
+        return &lhs == &rhs;
+    }
+
+    /// <summary>
+    /// 依實例記憶體位址比較兩個控制項是否不為同一實例。
+    /// </summary>
+    /// <param name="lhs">左側控制項實例參照。</param>
+    /// <param name="rhs">右側控制項實例參照。</param>
+    /// <returns>若不為同一物件實例回傳 true，否則回傳 false。</returns>
+    COMPAT_NODISCARD friend bool operator!=(const Control& lhs, const Control& rhs) noexcept {
+        return &lhs != &rhs;
+    }
 
     /// <summary>
     /// 取得控制項名稱識別字串視圖。
@@ -810,3 +838,53 @@ protected:
 
 } // namespace controls
 } // namespace cppui
+
+namespace std {
+
+/// <summary>
+/// std::hash specialization for cppui::controls::Control.
+/// 委派給 Control::GetHashCode() 計算實例雜湊值。
+/// </summary>
+template <>
+struct hash<cppui::controls::Control> {
+    /// <summary>
+    /// 計算給定控制項實例的雜湊值。
+    /// </summary>
+    /// <param name="ctrl">欲計算雜湊值的控制項實例參照。</param>
+    /// <returns>控制項實例之雜湊碼 (std::size_t)。</returns>
+    std::size_t operator()(const cppui::controls::Control& ctrl) const noexcept {
+        return ctrl.GetHashCode();
+    }
+};
+
+/// <summary>
+/// std::hash specialization for std::reference_wrapper&lt;cppui::controls::Control&gt;.
+/// </summary>
+template <>
+struct hash<std::reference_wrapper<cppui::controls::Control>> {
+    /// <summary>
+    /// 計算給定控制項包裝參照的雜湊值。
+    /// </summary>
+    /// <param name="ref">欲計算雜湊值的控制項包裝參照。</param>
+    /// <returns>控制項實例之雜湊碼 (std::size_t)。</returns>
+    std::size_t operator()(std::reference_wrapper<cppui::controls::Control> ref) const noexcept {
+        return ref.get().GetHashCode();
+    }
+};
+
+/// <summary>
+/// std::hash specialization for std::reference_wrapper&lt;const cppui::controls::Control&gt;.
+/// </summary>
+template <>
+struct hash<std::reference_wrapper<const cppui::controls::Control>> {
+    /// <summary>
+    /// 計算給定常數控制項包裝參照的雜湊值。
+    /// </summary>
+    /// <param name="ref">欲計算雜湊值的常數控制項包裝參照。</param>
+    /// <returns>控制項實例之雜湊碼 (std::size_t)。</returns>
+    std::size_t operator()(std::reference_wrapper<const cppui::controls::Control> ref) const noexcept {
+        return ref.get().GetHashCode();
+    }
+};
+
+} // namespace std
