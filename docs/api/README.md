@@ -124,6 +124,7 @@ graph TD
 | [`cppui::rendering`](namespaces/cppui_rendering.md) | **繪圖與渲染管線** | 實作高效命令錄製架構，透過自研二進位 DisplayList 與連續平坦 LinearArena 徹底隔離 UI 與光柵化後端，支援 Google Skia (m151) 向量核心與純 C++ 軟體回退。 | [`DrawingContext`](classes/rendering_drawingcontext.md), [`DisplayList`](classes/rendering_displaylist.md), [`DisplayListRenderer`](classes/rendering_displaylistrenderer.md), [`LinearArena`](classes/rendering_lineararena.md), [`DrawOp`](classes/rendering_drawop.md), [`SkiaRenderContext`](classes/rendering_skiarendercontext.md) |
 | [`cppui::text`](namespaces/cppui_text.md) | **文字排版與塑形管線** | 雙軌架構文字引擎，支援系統字型匹配、OpenType 字形塑形、BiDi 雙向分析、UAX #14 斷行、多行折行、省略號與雙向命中測試。 | [`FontDescriptor`](classes/text_font.md), [`FontManager`](classes/text_fontmanager.md), [`TextShaper`](classes/text_textshaper.md), [`BiDiAnalyzer`](classes/text_bidianalyzer.md), [`LineBreaker`](classes/text_linebreaker.md), [`TextLayout`](classes/text_textlayout.md), [`TextLayoutEngine`](classes/text_textlayoutengine.md) |
 | [`cppui::theme`](namespaces/cppui_theme.md) | **集中式主題與設計規格** | 提供設計代幣 (`ColorTokens`, `TypographyTokens`, `MetricTokens`)、語意主題 (`Theme`)、單例管理與動態切換廣播器 (`ThemeManager`)，支援深淺色與高對比模式。 | [`Theme`](classes/theme_theme.md), [`ThemeManager`](classes/theme_thememanager.md), [`ColorTokens`](classes/theme_tokens.md#1-colortokens-色彩代幣), [`TypographyTokens`](classes/theme_tokens.md#2-typographytokens-排版代幣), [`MetricTokens`](classes/theme_tokens.md#3-metricstokens-度量代幣) |
+| [`cppui::dialogs`](namespaces/cppui_dialogs.md) | **桌面對話方塊系統** | 封裝模態訊息方塊 (`MessageBox`)、開檔 (`OpenFileDialog`)、存檔 (`SaveFileDialog`)、純 CPPUI 主題視窗與雙後端派送架構。 | [`MessageBox`](classes/dialogs_messagebox.md), [`OpenFileDialog`](classes/dialogs_openfiledialog.md), [`SaveFileDialog`](classes/dialogs_savefiledialog.md), [`FileDialogForm`](classes/dialogs_filedialogform.md), [`DialogManager`](classes/dialogs_dialogcommon.md) |
 | [`compat`](namespaces/compat.md) | **向下相容與微架構層** | 提供零依賴現代 C++ Polyfill（C++14/17/20/23/26 雙軌切換）與 12 大功能模組。<br>- [視圖與管道 (`compat::views`)](namespaces/compat_views.md)<br>- [範圍與演算法 (`compat::ranges`)](namespaces/compat_ranges.md)<br>- [錯誤處理 (`compat::expected`)](namespaces/compat_expected.md)<br>- [格式化與終端 (`compat::format/print`)](namespaces/compat_format_print.md) | `compat::string_view`, `compat::span`, `compat::views::*`, `compat::optional`, `compat::expected`, `compat::format`, `compat::print`, `COMPAT_CONSTEXPR_14` |
 
 ---
@@ -139,6 +140,14 @@ graph TD
 * [`ServiceCollection`](classes/ioc_servicecollection.md) 與 [`IServiceProvider`](classes/ioc_iserviceprovider.md)：依賴反轉 (IoC) 容器，支援 Transient 與 Singleton 生命週期之服務工廠與實例註冊。
 * [`ViewModelBase`](classes/mvvm_viewmodelbase.md)：MVVM 視圖模型基底，提供 `SetProperty` 差異偵測與屬性變更通知，並具備背景執行緒自動封送 (Thread Marshalling) 至主執行緒能力。
 * [`ICommand`](classes/mvvm_icommand.md) 與 [`RelayCommand`](classes/mvvm_relaycommand.md)：命令模式純虛擬介面與 Lambda 委派實作，提供 `MakeCommand` 與 `RelayCommand::Create` 簡潔工廠，與 `Button` 之 `IsEnabled` 狀態機自動連動。
+
+### 桌面對話方塊系統 (Dialogs & File Pickers)
+* [`MessageBox`](classes/dialogs_messagebox.md)：靜態模態訊息方塊外觀 API，支援 6 種按鈕組合、5 種圖示、焦點預設按鈕、雙後端切換與純 CPPUI 主題視窗 `MessageBoxForm`。
+* [`CommonDialog`](classes/dialogs_filedialog.md#1-commondialog-抽象基底類別) 與 [`FileDialog`](classes/dialogs_filedialog.md#2-filedialog-通用檔案對話框基底)：通用檔案對話框抽象基底，封裝標題、起始路徑、篩選器、預設副檔名、檢查旗標與 `ShowDialog(owner)`。
+* [`OpenFileDialog`](classes/dialogs_openfiledialog.md)：開啟檔案對話方塊，支援單選/多選 (`Multiselect`)、唯讀選項與檔案存在性檢查，底層透明銜接 COM `IFileOpenDialog` 與純 CPPUI 主題瀏覽視窗。
+* [`SaveFileDialog`](classes/dialogs_savefiledialog.md)：儲存檔案對話方塊，支援副檔名自動補齊 (`DefaultExt`)、檔案存在時覆寫提示 (`OverwritePrompt`) 與雙後端派送。
+* [`FileDialogForm`](classes/dialogs_filedialogform.md)：純 CPPUI Form 佈景主題檔案瀏覽總管，支援目錄導航、即時篩選器切換、格式化大小顯示、深淺主題自適應與單元測試程式化模擬 (`SimulateConfirm`)。
+* [`DialogUtilities`](classes/dialogs_dialogcommon.md#1-dialogutilities-靜態純函數工具) 與 [`DialogManager`](classes/dialogs_dialogcommon.md#2-dialogmanager-全域服務管理)：提供篩選器解析 (`ParseFilterString`)、萬用字元比對 (`MatchesPattern`)、副檔名補齊、大小格式化純函數與全域後端模式管理器。
 
 ### 核心控制項與排版網格 (Milestone 6 & 8 Controls & Grid)
 * [`Control`](classes/controls_control.md)：控制項抽象基底，提供 Location 幾何坐標、Padding、Background、Foreground、BorderBrush、BorderThickness、CornerRadius 與 Deflate/Inflate 邊界度量。
@@ -227,6 +236,7 @@ graph TD
 
 ## 4. 實戰與概念指南 (Guides & Tutorials)
 
+* [**對話方塊與檔案選取器實戰指南 (Dialogs and File Pickers Guide)**](guides/dialogs_and_file_picker_guide.md)：詳解 MessageBox、OpenFileDialog、SaveFileDialog 在 Auto/Native/BuiltIn 模式下的最佳實踐、深淺主題自適應、覆寫確認與 CI 無阻塞單元測試策略。
 * [**主題與樣式系統指南 (Theme and Styling System Guide)**](guides/theme_and_styling_system.md)：詳解集中式設計代幣、深色/淺色/高對比模式切換、品牌主題客製化、控制項顯式覆寫機制與自訂控制項主題套用實踐。
 * [**GDI+ 風格圖形 API 與 PictureBox 控制項實戰指南**](guides/gdi_plus_graphics_guide.md)：詳解解耦圖形管線架構、Skia 向量加速與 CPU 軟體光柵雙引擎、多執行緒讀寫鎖並發防護、PictureBox 5 種縮放模式與 Skia BSD 授權聲明。
 * [**現代 MVVM 與依賴反轉 (IoC) 架構指南**](guides/mvvm_and_ioc_architecture.md)：深入探討 `Application::Run`、`Form` 生命週期狀態機、取消關閉機制、`ServiceCollection` 依賴注入與 `ViewModelBase` / `RelayCommand` 雙向綁定。

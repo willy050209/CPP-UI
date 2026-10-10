@@ -66,3 +66,8 @@ add_executable(drawing_cardioid_example
 )
 target_link_libraries(drawing_cardioid_example PRIVATE cppui_core)
 
+# 7. 對話框展示庫範例 (MessageBox, OpenFileDialog, SaveFileDialog)
+add_executable(dialog_gallery
+    dialog_gallery/main.cpp
+)
+target_link_libraries(dialog_gallery PRIVATE cppui_core)

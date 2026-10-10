@@ -100,6 +100,7 @@ add_executable(image_processing_test image_processing_test.cpp)
 target_link_libraries(image_processing_test PRIVATE cppui_core)
 add_test(NAME ImageProcessingTest COMMAND image_processing_test)
 
-
-
-
+# 對話框系統 (MessageBox, OpenFileDialog, SaveFileDialog) 單元測試
+add_executable(dialogs_test dialogs_test.cpp)
+target_link_libraries(dialogs_test PRIVATE cppui_core)
+add_test(NAME DialogsTest COMMAND dialogs_test)

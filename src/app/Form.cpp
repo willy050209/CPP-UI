@@ -145,8 +145,23 @@ void Form::Close() {
     Application::UnregisterForm(this);
 }
 
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
+
 DialogResult Form::ShowDialog(std::shared_ptr<Form> owner) {
-    (void)owner;
+    if (owner) {
+        owner->SetEnabled(false);
+#if defined(_WIN32)
+        if (owner->GetPlatformWindow() && owner->GetPlatformWindow()->GetNativeHandle()) {
+            ::EnableWindow(static_cast<HWND>(owner->GetPlatformWindow()->GetNativeHandle()), FALSE);
+        }
+#endif
+    }
+
     Show();
     m_inModalLoop = true;
 
@@ -159,6 +174,18 @@ DialogResult Form::ShowDialog(std::shared_ptr<Form> owner) {
     }
 
     m_inModalLoop = false;
+
+    if (owner) {
+        owner->SetEnabled(true);
+#if defined(_WIN32)
+        if (owner->GetPlatformWindow() && owner->GetPlatformWindow()->GetNativeHandle()) {
+            HWND ownerHwnd = static_cast<HWND>(owner->GetPlatformWindow()->GetNativeHandle());
+            ::EnableWindow(ownerHwnd, TRUE);
+            ::SetForegroundWindow(ownerHwnd);
+        }
+#endif
+    }
+
     return m_dialogResult;
 }
 

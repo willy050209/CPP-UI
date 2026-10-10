@@ -84,6 +84,14 @@ set(CPPUI_SOURCES
     src/graphics/SkiaImageBridge.cpp
     src/theme/Theme.cpp
     src/theme/ThemeManager.cpp
+    src/dialogs/DialogCommon.cpp
+    src/dialogs/MessageBox.cpp
+    src/dialogs/MessageBoxForm.cpp
+    src/dialogs/FileDialog.cpp
+    src/dialogs/OpenFileDialog.cpp
+    src/dialogs/SaveFileDialog.cpp
+    src/dialogs/FileDialogForm.cpp
+    src/dialogs/Win32DialogService.cpp
 )
 
 if(WIN32)
@@ -141,6 +149,8 @@ if(WIN32)
         shcore
         dwrite
         ole32
+        shell32
+        comdlg32
     )
 else()
     find_package(Threads REQUIRED)
