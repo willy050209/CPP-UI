@@ -9,6 +9,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # -----------------------------------------------------------------------------
+# 輸出目錄統一設定 (確保測試與相依 DLL 位於同一目錄，避免 0xc0000135 錯誤)
+# -----------------------------------------------------------------------------
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+# -----------------------------------------------------------------------------
 # 編譯器與平台旗標
 # -----------------------------------------------------------------------------
 if(WIN32)
@@ -21,14 +26,49 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# 針對 MinGW (Windows GCC/Clang) 啟用靜態運行庫鏈結，避免測試執行時缺失 MinGW DLL (0xc0000135)
+if(MINGW)
+    add_link_options(-static -static-libgcc -static-libstdc++)
+endif()
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 記憶體安全檢查
 # -----------------------------------------------------------------------------
 option(CPPUI_ENABLE_ASAN "Enable AddressSanitizer (ASan)" ON)
+set(ASAN_DLL "" CACHE INTERNAL "AddressSanitizer runtime DLL")
+set(ASAN_DLL_DIR "" CACHE INTERNAL "AddressSanitizer runtime DLL directory")
+
 if(CPPUI_ENABLE_ASAN)
     if(MSVC)
-        add_compile_options(/fsanitize=address)
-        add_link_options(/INCREMENTAL:NO)
+        add_compile_options(/fsanitize=address /Zi)
+        add_link_options(/INCREMENTAL:NO /DEBUG)
+        get_filename_component(_MSVC_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+        find_file(_MSVC_ASAN_DLL
+            NAMES clang_rt.asan_dynamic-x86_64.dll
+            PATHS "${_MSVC_BIN_DIR}"
+            NO_DEFAULT_PATH
+        )
+        if(_MSVC_ASAN_DLL)
+            set(ASAN_DLL "${_MSVC_ASAN_DLL}" CACHE INTERNAL "AddressSanitizer runtime DLL" FORCE)
+            set(ASAN_DLL_DIR "${_MSVC_BIN_DIR}" CACHE INTERNAL "AddressSanitizer runtime DLL directory" FORCE)
+            message(STATUS "AddressSanitizer runtime DLL detected: ${ASAN_DLL}")
+        endif()
+    elseif(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+        execute_process(
+            COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=clang_rt.asan_dynamic-x86_64.dll
+            OUTPUT_VARIABLE _CLANG_ASAN_DLL
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        if(EXISTS "${_CLANG_ASAN_DLL}")
+            set(ASAN_DLL "${_CLANG_ASAN_DLL}" CACHE INTERNAL "AddressSanitizer runtime DLL" FORCE)
+            get_filename_component(_CLANG_ASAN_DIR "${_CLANG_ASAN_DLL}" DIRECTORY)
+            set(ASAN_DLL_DIR "${_CLANG_ASAN_DIR}" CACHE INTERNAL "AddressSanitizer runtime DLL directory" FORCE)
+            message(STATUS "AddressSanitizer runtime DLL detected: ${ASAN_DLL}")
+        endif()
+    elseif(MINGW)
+        message(STATUS "MinGW GCC does not support AddressSanitizer on Windows; skipping ASan for MinGW.")
     else()
         add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
         add_link_options(-fsanitize=address)

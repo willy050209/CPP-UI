@@ -86,6 +86,7 @@ int main() {
             caughtEmptyFamily = true;
         }
         assert(caughtEmptyFamily);
+        (void)caughtEmptyFamily;
         compat::println("[PASS] Fluent customization and empty family fail-fast verified.");
     }
 
@@ -106,6 +107,7 @@ int main() {
             caughtNullHandler = true;
         }
         assert(caughtNullHandler);
+        (void)caughtNullHandler;
 
         bool eventFired = false;
         ThemeMode notifiedMode = ThemeMode::Dark;

@@ -184,6 +184,7 @@ static void TestAsyncEventsAndDispatcher() {
         caughtNullPost = true;
     }
     assert(caughtNullPost);
+    (void)caughtNullPost;
 
     compat::println("  ✔ 非同步事件調度、Signal 綁定與並發高壓測試 ({} 任務) 驗證通過！",
                     THREAD_COUNT * TASKS_PER_THREAD);
@@ -219,6 +220,7 @@ static void TestCardioidGeometryAndMath() {
     Rect cBounds = cardioid.GetBounds();
     assert(!cBounds.IsEmpty());
     assert(cBounds.width > 100.0f && cBounds.height > 100.0f);
+    (void)cBounds;
 
     // 射線點命中測試：內部點應命中，遠處外部點應不命中
     assert(cardioid.IsVisible(center.x, center.y) == true);
@@ -243,6 +245,7 @@ static void TestCardioidGeometryAndMath() {
     assert(heart.GetPointCount() >= samples);
     Rect hBounds = heart.GetBounds();
     assert(!hBounds.IsEmpty());
+    (void)hBounds;
     assert(heart.IsVisible(center.x, center.y) == true);
     assert(heart.IsVisible(0.0f, 0.0f) == false);
 
@@ -272,19 +275,24 @@ static void TestLinearGradientAndRasterization() {
     compat::println("    [Debug] Checking GetColorAt...");
     Color atStart = brush.GetColorAt(Point(0.0f, 0.0f));
     assert(atStart.r == 255 && atStart.g == 0 && atStart.b == 0);
+    (void)atStart;
 
     Color atEnd = brush.GetColorAt(Point(100.0f, 0.0f));
     assert(atEnd.r == 0 && atEnd.g == 0 && atEnd.b == 255);
+    (void)atEnd;
 
     Color atMid = brush.GetColorAt(Point(50.0f, 0.0f));
     assert(std::abs(static_cast<int32_t>(atMid.r) - 127) <= 2);
     assert(atMid.g == 0);
     assert(std::abs(static_cast<int32_t>(atMid.b) - 127) <= 2);
+    (void)atMid;
 
     Color atBefore = brush.GetColorAt(Point(-50.0f, 0.0f));
     assert(atBefore.r == 255 && atBefore.b == 0);
+    (void)atBefore;
     Color atAfter = brush.GetColorAt(Point(150.0f, 0.0f));
     assert(atAfter.r == 0 && atAfter.b == 255);
+    (void)atAfter;
 
     compat::println("    [Debug] Rendering rasterization...");
     auto bmp = std::make_shared<Bitmap>(200, 200);

@@ -110,3 +110,32 @@ add_executable(timer_test timer_test.cpp)
 target_link_libraries(timer_test PRIVATE cppui_core)
 add_test(NAME TimerTest COMMAND timer_test)
 
+# -----------------------------------------------------------------------------
+# AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
+# -----------------------------------------------------------------------------
+if(ASAN_DLL)
+    add_custom_target(copy_asan_runtime ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${ASAN_DLL}"
+            "$<TARGET_FILE_DIR:smoke_test>"
+        DEPENDS smoke_test
+        COMMENT "Deploying AddressSanitizer runtime DLL to test directory"
+    )
+endif()
+
+if(ASAN_DLL_DIR)
+    set(CPPUI_ALL_TESTS
+        SmokeTest PalTest DisplayListTest TextPipelineTest LayoutEngineTest
+        InputEventsTest CoordinateTransformTest ControlsTest FluentDslTest
+        PalCrossPlatformTest SkiaBackendTest IoCContainerTest MvvmTest
+        AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
+        ThemeTest ImageProcessingTest DialogsTest TimerTest
+    )
+    if(CPPUI_HAS_X11)
+        list(APPEND CPPUI_ALL_TESTS PalX11Test)
+    endif()
+    set_tests_properties(${CPPUI_ALL_TESTS} PROPERTIES
+        ENVIRONMENT "PATH=${ASAN_DLL_DIR};$ENV{PATH}"
+    )
+endif()
+

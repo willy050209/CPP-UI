@@ -11,24 +11,24 @@
 
 namespace {
 
-static bool ApproxEqual(float a, float b, float eps = 1e-4f) noexcept {
+inline bool ApproxEqual(float a, float b, float eps = 1e-4f) noexcept {
     return std::fabs(a - b) <= eps;
 }
 
-static bool ApproxEqual(cppui::core::Point a, cppui::core::Point b, float eps = 1e-4f) noexcept {
+inline bool ApproxEqual(cppui::core::Point a, cppui::core::Point b, float eps = 1e-4f) noexcept {
     return ApproxEqual(a.x, b.x, eps) && ApproxEqual(a.y, b.y, eps);
 }
 
-static bool ApproxEqual(cppui::core::Size a, cppui::core::Size b, float eps = 1e-4f) noexcept {
+inline bool ApproxEqual(cppui::core::Size a, cppui::core::Size b, float eps = 1e-4f) noexcept {
     return ApproxEqual(a.width, b.width, eps) && ApproxEqual(a.height, b.height, eps);
 }
 
-static bool ApproxEqual(cppui::core::Rect a, cppui::core::Rect b, float eps = 1e-4f) noexcept {
+inline bool ApproxEqual(cppui::core::Rect a, cppui::core::Rect b, float eps = 1e-4f) noexcept {
     return ApproxEqual(a.x, b.x, eps) && ApproxEqual(a.y, b.y, eps) &&
            ApproxEqual(a.width, b.width, eps) && ApproxEqual(a.height, b.height, eps);
 }
 
-static bool ApproxEqual(cppui::core::Thickness a, cppui::core::Thickness b, float eps = 1e-4f) noexcept {
+inline bool ApproxEqual(cppui::core::Thickness a, cppui::core::Thickness b, float eps = 1e-4f) noexcept {
     return ApproxEqual(a.left, b.left, eps) && ApproxEqual(a.top, b.top, eps) &&
            ApproxEqual(a.right, b.right, eps) && ApproxEqual(a.bottom, b.bottom, eps);
 }
@@ -85,6 +85,7 @@ int main() {
         float val = 42.0f;
         assert(ApproxEqual(ct.ToLogical(val), val));
         assert(ApproxEqual(ct.ToPhysical(val), val));
+        (void)val;
 
         compat::println("  [PASS] 1.0x identity conversion preserved 1:1.");
     }
@@ -152,9 +153,11 @@ int main() {
 
         float fLog = CoordinateTransform::PhysicalToLogical(150.0f, 1.5f);
         assert(ApproxEqual(fLog, 100.0f));
+        (void)fLog;
 
         float fPhys = CoordinateTransform::LogicalToPhysical(100.0f, 1.5f);
         assert(ApproxEqual(fPhys, 150.0f));
+        (void)fPhys;
 
         compat::println("  [PASS] Stateless static helper functions verified.");
     }

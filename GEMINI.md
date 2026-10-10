@@ -57,3 +57,8 @@
 ## 7. 測試與除錯策略 (Testing Strategy)
 1. 單元測試輕量且全面，涵蓋 Happy Path 與 Edge Cases。
 2. **必須包含對 API 傳入 Null 或非法參數是否正確擲出例外的測試**。
+
+## 8. 零警告與零錯誤品質標準 (Zero Warnings & Errors Policy) [Strict]
+1. **全編譯器零警告**：程式碼在 MSVC (`/W4`)、GCC (`-Wall -Wextra -Wpedantic`) 以及 Clang 嚴格編譯選項下，必須維持 **0 Errors / 0 Warnings**。
+2. **Release / NDEBUG 模式相容**：僅在 `assert` 中使用的變數必須加上 `(void)` 轉型，避免在 Release 模式下觸發未使用的變數警告。
+3. **即時消除**：任何新加入或修改的程式碼若引發編譯警告，必須立即修復並消除，嚴禁提交任何帶有編譯警告的程式碼。

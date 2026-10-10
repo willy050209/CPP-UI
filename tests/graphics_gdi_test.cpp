@@ -45,9 +45,12 @@ static void TestColorAndColors() {
 
     core::Color c3 = core::Color::FromArgb(0x80FF0064);
     assert(c3.a == 0x80 && c3.r == 0xFF && c3.g == 0x00 && c3.b == 0x64);
+    (void)c3;
 
     core::Color c4 = core::Color::FromArgb(200, c2);
     assert(c4.a == 200 && c4.r == 10 && c4.g == 20 && c4.b == 30);
+    (void)c2;
+    (void)c4;
 
     // ToArgb 與 IsEmpty 測試
     uint32_t argbVal = c1.ToArgb();
@@ -308,6 +311,7 @@ static void TestBitmap() {
     auto span = bmp.GetPixelSpan();
     assert(span.size() == 64 * 32);
     assert(span[0] == Colors::Blue.ToArgb());
+    (void)span;
 
     // LockBits / UnlockBits
     void* bits = bmp.LockBits(core::Rect(0, 0, 64, 32), 0);
@@ -340,6 +344,7 @@ static void TestBitmap() {
         threwInvalid = true;
     }
     assert(threwInvalid);
+    (void)threwInvalid;
 
     // Clone 裁切
     auto cropped = bmp.Clone(core::Rect(0, 0, 16, 16), PixelFormat::Format32bppArgb);
@@ -433,6 +438,7 @@ static void TestGraphicsModes() {
     gUi.DrawString("Hello CPPUI Graphics", font, Brushes::Black(), core::Rect(10, 10, 200, 30));
     auto strSize = gUi.MeasureString("Hello", font);
     assert(strSize.width > 0.0f);
+    (void)strSize;
 
     assert(dl.GetOpCount() > 10);
 
@@ -649,6 +655,7 @@ static void TestFailFastValidation() {
         caught = true;
     }
     assert(caught);
+    (void)caught;
 
     compat::println(" -> PASS: Fail-Fast validation");
 }

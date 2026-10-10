@@ -146,6 +146,7 @@ int main() {
         int32_t clickCount = 0;
         btn->OnClick([&](Button& b) {
             assert(&b == btn.get());
+            (void)b;
             clickCount++;
         });
 
@@ -607,6 +608,8 @@ int main() {
         std::hash<Control> hasher;
         assert(hasher(*btn1) == hash1);
         assert(hasher(*btn2) == btn2->GetHashCode());
+        (void)hash1;
+        (void)hasher;
 
         // 5. 標準容器整合測試: std::unordered_set<std::reference_wrapper<Control>>
         std::unordered_set<std::reference_wrapper<Control>> ctrlSet;

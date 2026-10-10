@@ -119,3 +119,15 @@ PowerShell 5.1 內建將多個 Linux 風格指令名稱綁定至內部 Cmdlet，
     - `position`：視窗客戶區排版坐標（與視覺樹佈局對齊）。
     - `physicalPosition`：物理像素坐標。
     - `logicalPosition`：邏輯 DIP 坐標。
+
+---
+
+## 5. 零編譯警告與零錯誤契約 (Zero Compiler Warnings & Errors) [Strict]
+
+1. **零警告容忍 (Zero Warnings Policy)**：所有建置與編譯（MSVC `/W4`、GCC `-Wall -Wextra -Wpedantic`、Clang `-Wall -Wextra -Wpedantic`）必須達成 **0 Errors / 0 Warnings**。
+2. **預防非預期警告**：
+   - **Release / NDEBUG 未使用變數防護**：若變數僅在 `assert(...)` 斷言中使用，在 Release / NDEBUG 模式下斷言被移除時會觸發 `-Wunused-variable` 或 `-Wunused-but-set-variable`，必須在斷言後顯式加上 `(void)variable;`。
+   - **基底類別初值列**：繼承 `std::enable_shared_from_this<T>` 或其他基底類別之自訂拷貝/移動建構子，初值列必須顯式初始化基底類別。
+   - **未使用參數標註**：公開介面或回呼實作中因簽章限制而未使用的參數，應註解參數名稱（例如 `Size /*availableSize*/`）或加上 `(void)param;`。
+   - **型別轉換精度截斷**：避免平台無關型別與整數/浮點數間的隱式截斷警告，一律顯式進行靜態轉型（`static_cast<T>`）。
+3. **編譯驗證強制令**：任何程式碼修改後，必須於本地或 WSL 環境重新編譯，徹底確認輸出為 **0 warnings, 0 errors**。

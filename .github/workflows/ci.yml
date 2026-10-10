@@ -14,6 +14,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup MSVC Developer Environment
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Configure CMake (MSVC x64)
         run: cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_STANDARD=20
 
@@ -29,6 +32,9 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Setup MSVC Developer Environment
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure CMake (Clang++ with Ninja)
         run: cmake -B build -G "Ninja" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
@@ -51,6 +57,7 @@ jobs:
         with:
           msystem: UCRT64
           update: true
+          path-type: inherit
           install: >-
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-ninja

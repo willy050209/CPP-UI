@@ -90,9 +90,11 @@ static void TestBoundsAndCoordinates() {
 
     cppui::core::Size sz = ctrl.GetSize();
     assert(sz.width == 300.0f && sz.height == 150.0f);
+    (void)sz;
 
     cppui::core::Rect bounds = ctrl.GetBounds();
     assert(bounds.x == 15.0f && bounds.y == 25.0f && bounds.width == 300.0f && bounds.height == 150.0f);
+    (void)bounds;
 
     // 測試內距與邊框對客戶區之扣除
     ctrl.SetPadding(10.0f);
@@ -102,10 +104,12 @@ static void TestBoundsAndCoordinates() {
     cppui::core::Size clientSz = ctrl.GetClientSize();
     assert(clientSz.width == 276.0f);
     assert(clientSz.height == 126.0f);
+    (void)clientSz;
 
     cppui::core::Rect clientRect = ctrl.GetClientRectangle();
     assert(clientRect.x == 0.0f && clientRect.y == 0.0f);
     assert(clientRect.width == 276.0f && clientRect.height == 126.0f);
+    (void)clientRect;
 
     // 測試矩形轉換
     cppui::core::Rect scrRect = ctrl.RectangleToScreen(clientRect);
@@ -113,6 +117,7 @@ static void TestBoundsAndCoordinates() {
 
     cppui::core::Rect backToClient = ctrl.RectangleToClient(scrRect);
     assert(backToClient.x == clientRect.x && backToClient.y == clientRect.y);
+    (void)backToClient;
 
     // 測試 Anchor 與 Dock
     ctrl.SetAnchor(cppui::controls::AnchorStyles::Bottom | cppui::controls::AnchorStyles::Right);
@@ -224,6 +229,7 @@ static void TestHierarchyAndZOrder() {
         threwNull = true;
     }
     assert(threwNull);
+    (void)threwNull;
 
     compat::println("  ✔ FindForm, GetParent, Contains 與 Z-Order 調整驗證通過！");
 }

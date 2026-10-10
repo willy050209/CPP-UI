@@ -12,6 +12,7 @@
   - **C++ 相容性巨集契約 (`compat.hpp`)**（`COMPAT_CONSTEXPR_*`, `COMPAT_NODISCARD`, 拆分命名空間, `compat::clamp`）。
   - **控制台輸出契約**（**優先使用 `compat::print` / `compat::println` 家族**，專案程式碼與測試嚴禁裸寫 `std::cout` / `printf`）。
   - **架構分層契約**（UI 與平台解耦，坐標空間隔離與 `CoordinateTransform`）。
+  - **零警告零錯誤編譯契約 (0 Error / 0 Warning)**（MSVC `/W4`、GCC/Clang `-Wall -Wextra -Wpedantic` 強制 0 warnings / 0 errors，Release / NDEBUG 模式未使用變數加 `(void)`）。
 - [**common_issues.md**](file:///D:/P/CPP/CPPUI/.gemini/common_issues.md)：
   - 專案歷次 5 大核心問題根因與防範：
     1. High-DPI 坐標系偏離與點擊失準 (High-DPI Hit-Test Mismatch)
