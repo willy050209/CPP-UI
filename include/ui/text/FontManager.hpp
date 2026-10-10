@@ -127,6 +127,13 @@ public:
     /// <returns>字型家族名稱字串向量。</returns>
     COMPAT_NODISCARD std::vector<std::string> GetRegisteredFontFamilies() const;
 
+    /// <summary>
+    /// 解析指定字型家族名稱所對應之實體字型檔案路徑 (供跨平台光柵化後端使用)。
+    /// </summary>
+    /// <param name="familyName">字型家族名稱視圖，若為空傳回預設中文字型檔案路徑。</param>
+    /// <returns>實體字型檔案路徑字串，若找不到則傳回空字串。</returns>
+    COMPAT_NODISCARD std::string ResolveFontFilePath(compat::string_view familyName = "") const;
+
 private:
     struct Impl;
     std::unique_ptr<Impl> m_impl;

@@ -127,6 +127,12 @@ public:
     COMPAT_NODISCARD std::shared_ptr<mvvm::ICommand> GetCommand() const noexcept { return m_command; }
 
     /// <summary>
+    /// 覆寫排版排列階段，將內容元件幾何置中排列於按鈕內部內距區域。
+    /// </summary>
+    /// <param name="finalSize">配置給按鈕之最終尺寸。</param>
+    void ArrangeOverride(core::Size finalSize) override;
+
+    /// <summary>
     /// 繪製按鈕視覺外觀與當前互動狀態效果。
     /// </summary>
     /// <param name="dc">繪圖上下文。</param>

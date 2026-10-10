@@ -4,6 +4,7 @@
  */
 
 #include "ui/text/TextShaper.hpp"
+#include "FallbackFontMetrics.hpp"
 #ifdef _WIN32
 #include "DirectWriteTextEngine.hpp"
 #endif
@@ -141,17 +142,24 @@ struct TextShaper::Impl {
             pLayout->Release();
         }
 #else
-        // 備援簡單 Shaping (每個字元分配基本等寬 advance)
+        // 備援簡單 Shaping (每個字元分配基本等寬 advance，與 FallbackFontHelper 絕對對齊)
+        auto metrics = FallbackFontHelper::ComputeMetrics(font.GetSize());
         std::vector<ShapedGlyph> glyphs;
-        float adv = font.GetSize() * 0.6f;
-        for (size_t i = 0; i < text.size(); ++i) {
+        float totalAdvance = 0.0f;
+        size_t p = 0;
+        while (p < text.size()) {
+            size_t bytes = 0;
+            uint32_t cp = FallbackFontHelper::DecodeUtf8(text.data() + p, text.size() - p, bytes);
+            float adv = FallbackFontHelper::IsFullwidth(cp) ? (metrics.charWidth * 2.0f) : metrics.charWidth;
             ShapedGlyph g;
-            g.glyphId = static_cast<uint16_t>(text[i]);
+            g.glyphId = static_cast<uint16_t>(cp < 0xFFFF ? cp : '?');
             g.xAdvance = adv;
-            g.clusterIndex = static_cast<uint32_t>(i);
+            g.clusterIndex = static_cast<uint32_t>(p);
             glyphs.push_back(g);
+            totalAdvance += adv;
+            p += bytes;
         }
-        runs.emplace_back(font, false, adv * text.size(), std::move(glyphs));
+        runs.emplace_back(font, false, totalAdvance, std::move(glyphs));
 #endif
         return runs;
     }

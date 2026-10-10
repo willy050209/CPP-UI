@@ -72,6 +72,7 @@ int main() {
         caughtEmptyFont = true;
     }
     assert(caughtEmptyFont);
+    (void)caughtEmptyFont;
 
     bool caughtNonExistentFile = false;
     try {
@@ -80,6 +81,7 @@ int main() {
         caughtNonExistentFile = true;
     }
     assert(caughtNonExistentFile);
+    (void)caughtNonExistentFile;
 
     // 1.3 測試記憶體字型註冊
     const uint8_t mockFontData[] = { 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -106,6 +108,7 @@ int main() {
         shapedWidth += run.GetTotalWidth();
         compat::span<const ShapedGlyph> glyphSpan = run.GetGlyphs();
         assert(glyphSpan.size() == run.GetGlyphCount());
+        (void)glyphSpan;
     }
     assert(totalGlyphs > 0);
     assert(shapedWidth > 0.0f);
@@ -154,6 +157,7 @@ int main() {
         }
     }
     assert(foundMustBreak);
+    (void)foundMustBreak;
     compat::println("  [PASS] LineBreaker identified {} breakpoints (hard break confirmed)", breaks.size());
 
     // -------------------------------------------------------------------------
@@ -243,6 +247,31 @@ int main() {
     assert(yellowTextPixels > 0);
     compat::println("  [PASS] DisplayList rendered {} ops successfully to target ({} text pixels rasterized)",
                     stats.renderedOps, yellowTextPixels);
+
+    // -------------------------------------------------------------------------
+    // 9. 中文字型光柵化渲染驗證 (新細明體 PMingLiU / CJK 備援)
+    // -------------------------------------------------------------------------
+    compat::println("[Test 9] Chinese Font Glyphs Rasterization (PMingLiU / CJK Fallback)...");
+    {
+        rendering::SoftwareRenderTarget zhTarget;
+        zhTarget.Resize(300, 100);
+        zhTarget.Clear(core::Colors::Black);
+
+        FontDescriptor zhDesc = fm.GetDefaultChineseFont(16.0f);
+        zhTarget.DrawText("繁體中文顯示測試", core::Point(10.0f, 20.0f), zhDesc.GetFamily(), 16.0f, 400, 0, core::Colors::White);
+
+        compat::span<const uint32_t> zhPixels = zhTarget.GetPixelSpan();
+        size_t whiteTextPixels = 0;
+        for (uint32_t px : zhPixels) {
+            uint8_t r = static_cast<uint8_t>((px >> 16) & 0xFF);
+            if (r > 100) {
+                whiteTextPixels++;
+            }
+        }
+        assert(whiteTextPixels > 0);
+        compat::println("  [PASS] Chinese glyphs rasterized successfully ({} white pixels rendered with font '{}').",
+                        whiteTextPixels, zhDesc.GetFamily());
+    }
 
     compat::println("=================================================");
     compat::println(" [CPPUI M3] All Text Pipeline Tests PASSED!     ");

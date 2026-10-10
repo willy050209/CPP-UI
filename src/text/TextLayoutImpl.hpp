@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ui/text/TextLayout.hpp"
+#include "FallbackFontMetrics.hpp"
 #ifdef _WIN32
 #include "DirectWriteTextEngine.hpp"
 #endif
@@ -50,10 +51,9 @@ struct TextLayout::Impl {
             }
         }
 #endif
-        // 純 C++ 跨平台等寬模型備援命中測試
-        float fontSize = font.GetSize();
-        float charW = fontSize * 0.6f;
-        float lineH = fontSize * 1.3f;
+        // 純 C++ 跨平台等寬模型備援命中測試 (與 FallbackFontHelper 絕對對齊)
+        auto metrics = FallbackFontHelper::ComputeMetrics(font.GetSize());
+        float lineH = metrics.lineHeight;
 
         if (lines.empty() || text.empty()) {
             res.textPosition = 0;
@@ -84,15 +84,29 @@ struct TextLayout::Impl {
             return res;
         }
 
-        size_t col = static_cast<size_t>(std::round(relX / charW));
-        if (col >= targetLine->length) {
-            col = targetLine->length;
+        size_t curByte = targetLine->startIndex;
+        size_t lineEndByte = targetLine->startIndex + targetLine->length;
+        float currentX = 0.0f;
+        size_t hitPos = curByte;
+        bool isInside = (relX <= targetLine->bounds.width && pt.y >= targetLine->bounds.Top() && pt.y <= targetLine->bounds.Bottom());
+
+        while (curByte < lineEndByte) {
+            size_t bytes = 0;
+            uint32_t cp = FallbackFontHelper::DecodeUtf8(text.data() + curByte, lineEndByte - curByte, bytes);
+            float charAdvance = FallbackFontHelper::IsFullwidth(cp) ? (metrics.charWidth * 2.0f) : metrics.charWidth;
+            if (relX < currentX + charAdvance * 0.5f) {
+                hitPos = curByte;
+                break;
+            }
+            currentX += charAdvance;
+            curByte += bytes;
+            hitPos = curByte;
         }
 
-        res.textPosition = targetLine->startIndex + col;
-        res.isInside = (relX <= targetLine->bounds.width && pt.y >= targetLine->bounds.Top() && pt.y <= targetLine->bounds.Bottom());
+        res.textPosition = hitPos;
+        res.isInside = isInside;
         res.isTrailingHit = false;
-        float cursorX = targetLine->bounds.Left() + static_cast<float>(col) * charW;
+        float cursorX = targetLine->bounds.Left() + currentX;
         res.cursorRect = core::Rect(cursorX, targetLine->bounds.Top(), 2.0f, targetLine->bounds.height);
         return res;
     }
@@ -109,9 +123,8 @@ struct TextLayout::Impl {
             }
         }
 #endif
-        float fontSize = font.GetSize();
-        float charW = fontSize * 0.6f;
-        float lineH = fontSize * 1.3f;
+        auto metrics = FallbackFontHelper::ComputeMetrics(font.GetSize());
+        float lineH = metrics.lineHeight;
 
         if (lines.empty() || text.empty()) {
             return core::Rect(0.0f, 0.0f, 2.0f, lineH);
@@ -119,14 +132,29 @@ struct TextLayout::Impl {
 
         for (const auto& l : lines) {
             if (pos >= l.startIndex && pos <= l.startIndex + l.length) {
-                float col = static_cast<float>(pos - l.startIndex);
-                return core::Rect(l.bounds.Left() + col * charW, l.bounds.Top(), 2.0f, l.bounds.height);
+                float currentX = 0.0f;
+                size_t p = l.startIndex;
+                while (p < pos && p < l.startIndex + l.length) {
+                    size_t bytes = 0;
+                    uint32_t cp = FallbackFontHelper::DecodeUtf8(text.data() + p, text.size() - p, bytes);
+                    currentX += FallbackFontHelper::IsFullwidth(cp) ? (metrics.charWidth * 2.0f) : metrics.charWidth;
+                    p += bytes;
+                }
+                return core::Rect(l.bounds.Left() + currentX, l.bounds.Top(), 2.0f, l.bounds.height);
             }
         }
 
         const auto& lastLine = lines.back();
-        float col = static_cast<float>(lastLine.length);
-        return core::Rect(lastLine.bounds.Left() + col * charW, lastLine.bounds.Top(), 2.0f, lastLine.bounds.height);
+        float currentX = 0.0f;
+        size_t p = lastLine.startIndex;
+        size_t endP = lastLine.startIndex + lastLine.length;
+        while (p < endP && p < text.size()) {
+            size_t bytes = 0;
+            uint32_t cp = FallbackFontHelper::DecodeUtf8(text.data() + p, text.size() - p, bytes);
+            currentX += FallbackFontHelper::IsFullwidth(cp) ? (metrics.charWidth * 2.0f) : metrics.charWidth;
+            p += bytes;
+        }
+        return core::Rect(lastLine.bounds.Left() + currentX, lastLine.bounds.Top(), 2.0f, lastLine.bounds.height);
     }
 };
 

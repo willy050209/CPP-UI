@@ -358,6 +358,40 @@ int main() {
         compat::println("  [PASS] Fail-Fast contracts verified for Control, Border, Panel, and Button.");
     }
 
+    // -------------------------------------------------------------------------
+    // [Test 8] Button Content Centering & TextBlock Default Wrapping
+    // -------------------------------------------------------------------------
+    compat::println("[Test 8] Button Content Centering & TextBlock Default Wrapping...");
+    {
+        TextBlock tb;
+        assert(tb.GetTextWrapping() == text::TextWrapping::NoWrap);
+
+        auto btn = std::make_shared<Button>("OK");
+        btn->SetPadding(Thickness(10.0f));
+        btn->SetBorderThickness(Thickness(0.0f));
+        btn->SetWidth(100.0f);
+        btn->SetHeight(40.0f);
+
+        auto contentElement = std::make_shared<UIElement>();
+        contentElement->SetWidth(40.0f);
+        contentElement->SetHeight(20.0f);
+        btn->SetContent(contentElement);
+
+        btn->Measure(Size(100.0f, 40.0f));
+        btn->Arrange(Rect(0.0f, 0.0f, 100.0f, 40.0f));
+
+        // Inner width = 100 - 20 = 80; content = 40. Centering offset = (80 - 40) / 2 = 20.
+        // Left offset = 10 (padding) + 20 = 30.
+        // Inner height = 40 - 20 = 20; content = 20. Centering offset = (20 - 20) / 2 = 0.
+        // Top offset = 10 (padding) + 0 = 10.
+        assert(contentElement->GetRenderBounds().x == 30.0f);
+        assert(contentElement->GetRenderBounds().y == 10.0f);
+        assert(contentElement->GetRenderBounds().width == 40.0f);
+        assert(contentElement->GetRenderBounds().height == 20.0f);
+
+        compat::println("  [PASS] Button content centering and TextBlock NoWrap verified.");
+    }
+
     compat::println("=================================================");
     compat::println(" ALL M6 CONTROLS & GRID TESTS PASSED!            ");
     compat::println("=================================================");

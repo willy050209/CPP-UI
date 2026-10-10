@@ -186,7 +186,7 @@ private:
     std::string           m_text;
     text::FontDescriptor  m_font;
     core::Color           m_foreground{ 255, 255, 255, 255 };
-    text::TextWrapping    m_wrapping = text::TextWrapping::WordWrap;
+    text::TextWrapping    m_wrapping = text::TextWrapping::NoWrap;
     text::TextAlignment   m_alignment = text::TextAlignment::Left;
     text::TextTrimming    m_trimming = text::TextTrimming::None;
 

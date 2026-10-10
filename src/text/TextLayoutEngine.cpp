@@ -5,6 +5,7 @@
 
 #include "ui/text/TextLayoutEngine.hpp"
 #include "TextLayoutImpl.hpp"
+#include "FallbackFontMetrics.hpp"
 #include <algorithm>
 
 namespace cppui {
@@ -64,10 +65,11 @@ struct TextLayoutEngine::Impl {
         }
 #endif
 
-        // 跨平台純 C++ 文字排版與多行換行備援實作
-        float fontSize = font.GetSize();
-        float charW = fontSize * 0.6f;
-        float lineH = fontSize * 1.3f;
+        // 跨平台純 C++ 文字排版與多行換行備援實作 (與 FallbackFontHelper 絕對對齊)
+        (void)maxHeight;
+        (void)trimming;
+        auto metrics = FallbackFontHelper::ComputeMetrics(font.GetSize());
+        float lineH = metrics.lineHeight;
 
         if (text.empty()) {
             layoutImpl->size = core::Size(0.0f, lineH);
@@ -75,11 +77,24 @@ struct TextLayoutEngine::Impl {
             emptyLine.startIndex = 0;
             emptyLine.length = 0;
             emptyLine.bounds = core::Rect(0.0f, 0.0f, 0.0f, lineH);
-            emptyLine.baseline = fontSize;
+            emptyLine.baseline = metrics.baseline;
             emptyLine.isWrapped = false;
             layoutImpl->lines.push_back(emptyLine);
             return TextLayout(std::move(layoutImpl));
         }
+
+        // 計算 UTF-8 子字串寬度之輔助 lambda
+        auto CalcSubstrWidth = [&](size_t start, size_t end) noexcept -> float {
+            float w = 0.0f;
+            size_t p = start;
+            while (p < end) {
+                size_t bytes = 0;
+                uint32_t cp = FallbackFontHelper::DecodeUtf8(text.data() + p, end - p, bytes);
+                w += FallbackFontHelper::IsFullwidth(cp) ? (metrics.charWidth * 2.0f) : metrics.charWidth;
+                p += bytes;
+            }
+            return w;
+        };
 
         float maxObservedWidth = 0.0f;
         float currentY = 0.0f;
@@ -89,37 +104,66 @@ struct TextLayoutEngine::Impl {
         while (currentOffset < text.size()) {
             size_t nextNewline = text.find('\n', currentOffset);
             size_t segEnd = (nextNewline != compat::string_view::npos) ? nextNewline : text.size();
-            size_t segLen = segEnd - currentOffset;
+
+            float segWidth = CalcSubstrWidth(currentOffset, segEnd);
 
             // 判斷是否需要自動折行
-            float segWidth = segLen * charW;
             if (wrapping != TextWrapping::NoWrap && maxWidth > 0.0f && maxWidth < 1e8f && segWidth > maxWidth) {
-                size_t charsPerLine = std::max(size_t(1), static_cast<size_t>(maxWidth / charW));
                 size_t subOffset = currentOffset;
                 while (subOffset < segEnd) {
-                    size_t chunkLen = std::min(charsPerLine, segEnd - subOffset);
-                    float chunkW = chunkLen * charW;
-                    maxObservedWidth = std::max(maxObservedWidth, chunkW);
+                    size_t chunkEnd = subOffset;
+                    float currentChunkW = 0.0f;
+                    while (chunkEnd < segEnd) {
+                        size_t bytes = 0;
+                        uint32_t cp = FallbackFontHelper::DecodeUtf8(text.data() + chunkEnd, segEnd - chunkEnd, bytes);
+                        float charAdvance = FallbackFontHelper::IsFullwidth(cp) ? (metrics.charWidth * 2.0f) : metrics.charWidth;
+                        if (chunkEnd > subOffset && currentChunkW + charAdvance > maxWidth) {
+                            break;
+                        }
+                        currentChunkW += charAdvance;
+                        chunkEnd += bytes;
+                    }
+
+                    size_t chunkLen = chunkEnd - subOffset;
+                    float chunkW = currentChunkW;
+
+                    float availW = (maxWidth > 0.0f && maxWidth < 1e8f) ? maxWidth : chunkW;
+                    float lineX = 0.0f;
+                    if (alignment == TextAlignment::Center && availW > chunkW) {
+                        lineX = (availW - chunkW) * 0.5f;
+                    } else if (alignment == TextAlignment::Right && availW > chunkW) {
+                        lineX = (availW - chunkW);
+                    }
+
+                    maxObservedWidth = (std::max)(maxObservedWidth, lineX + chunkW);
 
                     TextLine line;
                     line.startIndex = subOffset;
                     line.length = chunkLen;
-                    line.bounds = core::Rect(0.0f, currentY, chunkW, lineH);
-                    line.baseline = fontSize;
-                    line.isWrapped = (subOffset + chunkLen < segEnd);
+                    line.bounds = core::Rect(lineX, currentY, chunkW, lineH);
+                    line.baseline = metrics.baseline;
+                    line.isWrapped = (chunkEnd < segEnd);
 
                     layoutImpl->lines.push_back(line);
                     currentY += lineH;
-                    subOffset += chunkLen;
+                    subOffset = chunkEnd;
                 }
             } else {
-                maxObservedWidth = std::max(maxObservedWidth, segWidth);
+                float availW = (maxWidth > 0.0f && maxWidth < 1e8f) ? maxWidth : segWidth;
+                float lineX = 0.0f;
+                if (alignment == TextAlignment::Center && availW > segWidth) {
+                    lineX = (availW - segWidth) * 0.5f;
+                } else if (alignment == TextAlignment::Right && availW > segWidth) {
+                    lineX = (availW - segWidth);
+                }
+
+                maxObservedWidth = (std::max)(maxObservedWidth, lineX + segWidth);
 
                 TextLine line;
                 line.startIndex = currentOffset;
-                line.length = segLen;
-                line.bounds = core::Rect(0.0f, currentY, segWidth, lineH);
-                line.baseline = fontSize;
+                line.length = segEnd - currentOffset;
+                line.bounds = core::Rect(lineX, currentY, segWidth, lineH);
+                line.baseline = metrics.baseline;
                 line.isWrapped = false;
 
                 layoutImpl->lines.push_back(line);

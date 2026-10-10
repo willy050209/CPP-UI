@@ -6,9 +6,17 @@
 #include "SoftwareRenderContext.hpp"
 #include "compat/compat.hpp"
 #include "../../text/TextLayoutImpl.hpp"
+#include "../../text/FallbackFontMetrics.hpp"
 #include <cstdint>
 #include <cmath>
 #include <algorithm>
+
+#ifndef _WIN32
+#include <dlfcn.h>
+#include <string>
+#include <unordered_map>
+#include "ui/text/FontManager.hpp"
+#endif
 
 #ifdef _WIN32
 #include <dwrite.h>
@@ -304,6 +312,159 @@ static const uint8_t s_font8x8[96][8] = {
     {0x76,0xDC,0x00,0x00,0x00,0x00,0x00,0x00}  // 126 '~'
 };
 
+#ifndef _WIN32
+typedef int (*FT_Init_FreeType_Fn)(void**);
+typedef int (*FT_Done_FreeType_Fn)(void*);
+typedef int (*FT_New_Face_Fn)(void*, const char*, long, void**);
+typedef int (*FT_Done_Face_Fn)(void*);
+typedef int (*FT_Set_Pixel_Sizes_Fn)(void*, unsigned int, unsigned int);
+typedef unsigned int (*FT_Get_Char_Index_Fn)(void*, unsigned long);
+typedef int (*FT_Load_Glyph_Fn)(void*, unsigned int, int);
+
+struct FT_Bitmap_Raw {
+    unsigned int rows;
+    unsigned int width;
+    int pitch;
+    unsigned char* buffer;
+    unsigned short num_grays;
+    unsigned char pixel_mode;
+    unsigned char palette_mode;
+    void* palette;
+};
+
+struct FT_GlyphSlot_Raw {
+    void* library;
+    void* face;
+    void* next;
+    unsigned int glyph_index;
+    void* generic[2];
+    long metrics[8];
+    long linearHoriAdvance;
+    long linearVertAdvance;
+    long advance_x, advance_y;
+    unsigned int format;
+    FT_Bitmap_Raw bitmap;
+    int bitmap_left;
+    int bitmap_top;
+};
+
+struct FT_Face_Raw {
+    long num_faces;
+    long face_index;
+    long face_flags;
+    long style_flags;
+    long num_glyphs;
+    char* family_name;
+    char* style_name;
+    int num_fixed_sizes;
+    void* available_sizes;
+    int num_charmaps;
+    void* charmaps;
+    void* generic[2];
+    long bbox[4];
+    unsigned short units_per_EM;
+    short ascender;
+    short descender;
+    short height;
+    short max_advance_width;
+    short max_advance_height;
+    short underline_position;
+    short underline_thickness;
+    FT_GlyphSlot_Raw* glyph;
+};
+
+struct FreeTypeRasterResources {
+    void* hFtLib = nullptr;
+    FT_Init_FreeType_Fn fnInit = nullptr;
+    FT_Done_FreeType_Fn fnDone = nullptr;
+    FT_New_Face_Fn fnNewFace = nullptr;
+    FT_Done_Face_Fn fnDoneFace = nullptr;
+    FT_Set_Pixel_Sizes_Fn fnSetPixelSizes = nullptr;
+    FT_Get_Char_Index_Fn fnGetCharIndex = nullptr;
+    FT_Load_Glyph_Fn fnLoadGlyph = nullptr;
+
+    void* ftLibrary = nullptr;
+    std::unordered_map<std::string, void*> loadedFaces;
+    void* defaultChineseFace = nullptr;
+    std::string defaultChinesePath;
+
+    bool EnsureInitialized() {
+        if (ftLibrary) return true;
+        if (!hFtLib) {
+            hFtLib = dlopen("libfreetype.so.6", RTLD_LAZY | RTLD_LOCAL);
+            if (!hFtLib) {
+                hFtLib = dlopen("libfreetype.so", RTLD_LAZY | RTLD_LOCAL);
+            }
+            if (!hFtLib) return false;
+
+            fnInit = reinterpret_cast<FT_Init_FreeType_Fn>(dlsym(hFtLib, "FT_Init_FreeType"));
+            fnDone = reinterpret_cast<FT_Done_FreeType_Fn>(dlsym(hFtLib, "FT_Done_FreeType"));
+            fnNewFace = reinterpret_cast<FT_New_Face_Fn>(dlsym(hFtLib, "FT_New_Face"));
+            fnDoneFace = reinterpret_cast<FT_Done_Face_Fn>(dlsym(hFtLib, "FT_Done_Face"));
+            fnSetPixelSizes = reinterpret_cast<FT_Set_Pixel_Sizes_Fn>(dlsym(hFtLib, "FT_Set_Pixel_Sizes"));
+            fnGetCharIndex = reinterpret_cast<FT_Get_Char_Index_Fn>(dlsym(hFtLib, "FT_Get_Char_Index"));
+            fnLoadGlyph = reinterpret_cast<FT_Load_Glyph_Fn>(dlsym(hFtLib, "FT_Load_Glyph"));
+
+            if (!fnInit || !fnNewFace || !fnSetPixelSizes || !fnGetCharIndex || !fnLoadGlyph) {
+                dlclose(hFtLib);
+                hFtLib = nullptr;
+                return false;
+            }
+        }
+
+        if (fnInit(&ftLibrary) != 0 || !ftLibrary) {
+            return false;
+        }
+
+        defaultChinesePath = text::FontManager::Get().ResolveFontFilePath();
+        if (!defaultChinesePath.empty()) {
+            void* face = nullptr;
+            if (fnNewFace(ftLibrary, defaultChinesePath.c_str(), 0, &face) == 0 && face) {
+                defaultChineseFace = face;
+                loadedFaces[defaultChinesePath] = face;
+            }
+        }
+
+        return true;
+    }
+
+    void* GetOrLoadFace(const std::string& fontPath) {
+        if (!EnsureInitialized() || fontPath.empty()) return defaultChineseFace;
+        auto it = loadedFaces.find(fontPath);
+        if (it != loadedFaces.end()) return it->second;
+
+        void* face = nullptr;
+        if (fnNewFace(ftLibrary, fontPath.c_str(), 0, &face) == 0 && face) {
+            loadedFaces[fontPath] = face;
+            return face;
+        }
+        return defaultChineseFace;
+    }
+
+    ~FreeTypeRasterResources() {
+        if (fnDoneFace) {
+            for (auto& pair : loadedFaces) {
+                if (pair.second) fnDoneFace(pair.second);
+            }
+            loadedFaces.clear();
+        }
+        if (fnDone && ftLibrary) {
+            fnDone(ftLibrary);
+            ftLibrary = nullptr;
+        }
+        if (hFtLib) {
+            dlclose(hFtLib);
+            hFtLib = nullptr;
+        }
+    }
+};
+
+static FreeTypeRasterResources& GetFreeTypeResources() {
+    static FreeTypeRasterResources instance;
+    return instance;
+}
+#endif
+
 } // anonymous namespace
 
 void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin, compat::string_view family, float size, uint16_t weight, uint8_t style, core::Color color) {
@@ -406,32 +567,166 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
     }
 #endif
 
-    // 純 C++ 跨平台 8x8 點陣字型光柵化備援 (零作業系統依賴)
-    int32_t scale = std::max(1, static_cast<int32_t>(std::round(size / 8.0f)));
-    int32_t glyphW = 8 * scale;
+    // 純 C++ 跨平台點陣字型光柵化備援 (零作業系統依賴)
+    const auto metrics = text::FallbackFontHelper::ComputeMetrics(size);
+    int32_t scale = metrics.scale;
+    int32_t cellW = static_cast<int32_t>(metrics.charWidth);
+    int32_t cellH = static_cast<int32_t>(metrics.charHeight);
     int32_t curX = static_cast<int32_t>(origin.x);
     int32_t curY = static_cast<int32_t>(origin.y);
     float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
-    for (char c : text) {
-        if (c == '\n') {
+#ifndef _WIN32
+    auto& ftRes = GetFreeTypeResources();
+    bool hasFt = ftRes.EnsureInitialized();
+    void* activeFace = nullptr;
+    if (hasFt) {
+        std::string fontPath = text::FontManager::Get().ResolveFontFilePath(family);
+        activeFace = ftRes.GetOrLoadFace(fontPath);
+        if (!activeFace) {
+            activeFace = ftRes.defaultChineseFace;
+        }
+    }
+#endif
+
+    const char* ptr = text.data();
+    size_t remaining = text.size();
+
+    while (remaining > 0) {
+        if (*ptr == '\n') {
             curX = static_cast<int32_t>(origin.x);
-            curY += 8 * scale + 2;
+            curY += static_cast<int32_t>(metrics.lineHeight);
+            ptr++;
+            remaining--;
             continue;
         }
-        uint8_t uc = static_cast<uint8_t>(c);
-        if (uc < 32 || uc > 126) uc = 32;
-        const uint8_t* glyphBits = s_font8x8[uc - 32];
 
-        for (int32_t r = 0; r < 8; ++r) {
-            uint8_t rowBits = glyphBits[r];
-            for (int32_t col = 0; col < 8; ++col) {
-                if (rowBits & (0x80 >> col)) {
-                    for (int32_t dy = 0; dy < scale; ++dy) {
-                        int32_t py = curY + r * scale + dy;
-                        if (py < 0 || py >= static_cast<int32_t>(m_height)) continue;
-                        for (int32_t dx = 0; dx < scale; ++dx) {
-                            int32_t px = curX + col * scale + dx;
+        size_t consumed = 0;
+        uint32_t cp = text::FallbackFontHelper::DecodeUtf8(ptr, remaining, consumed);
+        bool fullwidth = text::FallbackFontHelper::IsFullwidth(cp);
+        int32_t glyphAdvance = fullwidth ? (cellW * 2) : cellW;
+
+#ifndef _WIN32
+        bool glyphRendered = false;
+        if (hasFt && (activeFace || ftRes.defaultChineseFace)) {
+            void* targetFace = activeFace;
+            uint32_t glyphIdx = 0;
+            if (targetFace && ftRes.fnGetCharIndex) {
+                glyphIdx = ftRes.fnGetCharIndex(targetFace, cp);
+            }
+            if (glyphIdx == 0 && ftRes.defaultChineseFace && ftRes.defaultChineseFace != targetFace) {
+                targetFace = ftRes.defaultChineseFace;
+                glyphIdx = ftRes.fnGetCharIndex(targetFace, cp);
+            }
+
+            if (glyphIdx > 0) {
+                uint32_t pxSize = static_cast<uint32_t>(std::round(size));
+                if (pxSize == 0) pxSize = 14;
+                ftRes.fnSetPixelSizes(targetFace, 0, pxSize);
+
+                if (ftRes.fnLoadGlyph(targetFace, glyphIdx, 4) == 0) { // FT_LOAD_RENDER = 4
+                    auto* f = static_cast<FT_Face_Raw*>(targetFace);
+                    FT_GlyphSlot_Raw* slot = f->glyph;
+                    if (slot) {
+                        int32_t baselineY = curY + static_cast<int32_t>(metrics.baseline);
+                        int32_t startX = curX + slot->bitmap_left;
+                        int32_t startY = baselineY - slot->bitmap_top;
+                        const uint8_t* buf = slot->bitmap.buffer;
+                        uint32_t rows = slot->bitmap.rows;
+                        uint32_t cols = slot->bitmap.width;
+                        int32_t pitch = slot->bitmap.pitch;
+                        uint8_t mode = slot->bitmap.pixel_mode;
+
+                        if (buf && rows > 0 && cols > 0) {
+                            for (uint32_t r = 0; r < rows; ++r) {
+                                int32_t py = startY + static_cast<int32_t>(r);
+                                if (py < 0 || py >= static_cast<int32_t>(m_height)) continue;
+
+                                for (uint32_t c = 0; c < cols; ++c) {
+                                    int32_t px = startX + static_cast<int32_t>(c);
+                                    if (px < 0 || px >= static_cast<int32_t>(m_width)) continue;
+
+                                    uint8_t maskVal = 0;
+                                    if (mode == 2) {
+                                        maskVal = buf[r * pitch + c];
+                                    } else if (mode == 1) {
+                                        uint8_t byteVal = buf[r * pitch + (c / 8)];
+                                        maskVal = (byteVal & (0x80 >> (c % 8))) ? 255 : 0;
+                                    }
+
+                                    if (maskVal == 0) continue;
+                                    float alpha = (static_cast<float>(maskVal) / 255.0f) * srcAlphaNorm;
+                                    if (alpha <= 0.0f) continue;
+
+                                    size_t dstIdx = static_cast<size_t>(py) * m_width + px;
+                                    uint32_t dstPixel = m_pixels[dstIdx];
+
+                                    uint8_t dstB = static_cast<uint8_t>(dstPixel & 0xFF);
+                                    uint8_t dstG = static_cast<uint8_t>((dstPixel >> 8) & 0xFF);
+                                    uint8_t dstR = static_cast<uint8_t>((dstPixel >> 16) & 0xFF);
+
+                                    uint8_t outR = static_cast<uint8_t>(color.r * alpha + dstR * (1.0f - alpha));
+                                    uint8_t outG = static_cast<uint8_t>(color.g * alpha + dstG * (1.0f - alpha));
+                                    uint8_t outB = static_cast<uint8_t>(color.b * alpha + dstB * (1.0f - alpha));
+
+                                    m_pixels[dstIdx] = (0xFF << 24) | (outR << 16) | (outG << 8) | outB;
+                                }
+                            }
+                        }
+
+                        glyphRendered = true;
+                        int32_t adv = static_cast<int32_t>(slot->advance_x >> 6);
+                        curX += (adv > 0 ? adv : glyphAdvance);
+                    }
+                }
+            }
+        }
+
+        if (!glyphRendered)
+#endif
+        {
+            if (cp >= 32 && cp <= 126) {
+                uint8_t uc = static_cast<uint8_t>(cp);
+                const uint8_t* glyphBits = s_font8x8[uc - 32];
+
+                for (int32_t r = 0; r < 8; ++r) {
+                    uint8_t rowBits = glyphBits[r];
+                    for (int32_t col = 0; col < 8; ++col) {
+                        if (rowBits & (0x80 >> col)) {
+                            for (int32_t dy = 0; dy < scale; ++dy) {
+                                int32_t py = curY + r * scale + dy;
+                                if (py < 0 || py >= static_cast<int32_t>(m_height)) continue;
+                                for (int32_t dx = 0; dx < scale; ++dx) {
+                                    int32_t px = curX + col * scale + dx;
+                                    if (px < 0 || px >= static_cast<int32_t>(m_width)) continue;
+
+                                    size_t dstIdx = static_cast<size_t>(py) * m_width + px;
+                                    uint32_t dstPixel = m_pixels[dstIdx];
+
+                                    uint8_t dstB = static_cast<uint8_t>(dstPixel & 0xFF);
+                                    uint8_t dstG = static_cast<uint8_t>((dstPixel >> 8) & 0xFF);
+                                    uint8_t dstR = static_cast<uint8_t>((dstPixel >> 16) & 0xFF);
+
+                                    uint8_t outR = static_cast<uint8_t>(color.r * srcAlphaNorm + dstR * (1.0f - srcAlphaNorm));
+                                    uint8_t outG = static_cast<uint8_t>(color.g * srcAlphaNorm + dstG * (1.0f - srcAlphaNorm));
+                                    uint8_t outB = static_cast<uint8_t>(color.b * srcAlphaNorm + dstB * (1.0f - srcAlphaNorm));
+
+                                    m_pixels[dstIdx] = (0xFF << 24) | (outR << 16) | (outG << 8) | outB;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (fullwidth) {
+                // CJK 或全形字元備援框 (glyphAdvance x cellH)
+                int32_t boxW = glyphAdvance - 2;
+                int32_t boxH = cellH - 2;
+                for (int32_t by = 0; by < boxH; ++by) {
+                    int32_t py = curY + 1 + by;
+                    if (py < 0 || py >= static_cast<int32_t>(m_height)) continue;
+                    for (int32_t bx = 0; bx < boxW; ++bx) {
+                        if (by == 0 || by == boxH - 1 || bx == 0 || bx == boxW - 1) {
+                            int32_t px = curX + 1 + bx;
                             if (px < 0 || px >= static_cast<int32_t>(m_width)) continue;
 
                             size_t dstIdx = static_cast<size_t>(py) * m_width + px;
@@ -450,8 +745,11 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
                     }
                 }
             }
+            curX += glyphAdvance;
         }
-        curX += glyphW;
+
+        ptr += consumed;
+        remaining -= consumed;
     }
 }
 
@@ -460,110 +758,111 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
 
 #ifdef _WIN32
     auto& dwriteRes = GetDWriteResources();
-    if (!dwriteRes.EnsureInitialized()) return;
+    if (dwriteRes.EnsureInitialized()) {
+        IDWriteTextLayout* pLayout = static_cast<IDWriteTextLayout*>(nativeLayoutHandle);
 
-    IDWriteTextLayout* pLayout = static_cast<IDWriteTextLayout*>(nativeLayoutHandle);
+        DWRITE_TEXT_METRICS tm = {};
+        HRESULT hr = pLayout->GetMetrics(&tm);
+        if (SUCCEEDED(hr)) {
+            DWRITE_OVERHANG_METRICS om = {};
+            pLayout->GetOverhangMetrics(&om);
 
-    DWRITE_TEXT_METRICS tm = {};
-    HRESULT hr = pLayout->GetMetrics(&tm);
-    if (FAILED(hr)) return;
+            // 補償負向 Overhang，確保頂端（如漢字頂部筆畫）、左端（如括號【）與底端（下伸部 g, p, y, q）零像素截斷
+            float leftPad   = (std::max)(0.0f, -om.left) + 2.0f;
+            float topPad    = (std::max)(0.0f, -om.top) + 2.0f;
+            float rightPad  = (std::max)(0.0f, om.right) + 2.0f;
+            float bottomPad = (std::max)(0.0f, om.bottom) + 2.0f;
 
-    DWRITE_OVERHANG_METRICS om = {};
-    pLayout->GetOverhangMetrics(&om);
+            float layoutW = (std::max)(tm.layoutWidth > 8000.0f ? 0.0f : tm.layoutWidth, tm.width + (std::max)(0.0f, tm.left));
+            float layoutH = (std::max)(tm.layoutHeight > 8000.0f ? 0.0f : tm.layoutHeight, tm.height + (std::max)(0.0f, tm.top));
 
-    // 補償負向 Overhang，確保頂端（如漢字頂部筆畫）、左端（如括號【）與底端（下伸部 g, p, y, q）零像素截斷
-    float leftPad   = (std::max)(0.0f, -om.left) + 2.0f;
-    float topPad    = (std::max)(0.0f, -om.top) + 2.0f;
-    float rightPad  = (std::max)(0.0f, om.right) + 2.0f;
-    float bottomPad = (std::max)(0.0f, om.bottom) + 2.0f;
+            float boundW = layoutW + leftPad + rightPad;
+            float boundH = layoutH + topPad + bottomPad;
+            int32_t textW = static_cast<int32_t>(std::ceil(boundW));
+            int32_t textH = static_cast<int32_t>(std::ceil(boundH));
+            if (textW > 0 && textH > 0) {
+                // 限制最大點陣尺寸防止記憶體溢出
+                textW = std::min(textW, 4096);
+                textH = std::min(textH, 4096);
 
-    float layoutW = (std::max)(tm.layoutWidth > 8000.0f ? 0.0f : tm.layoutWidth, tm.width + (std::max)(0.0f, tm.left));
-    float layoutH = (std::max)(tm.layoutHeight > 8000.0f ? 0.0f : tm.layoutHeight, tm.height + (std::max)(0.0f, tm.top));
+                IDWriteBitmapRenderTarget* pBitmapTarget = nullptr;
+                hr = dwriteRes.pGdiInterop->CreateBitmapRenderTarget(nullptr, textW, textH, &pBitmapTarget);
+                if (SUCCEEDED(hr) && pBitmapTarget) {
+                    // 強制將點陣渲染目標的 PixelsPerDip 鎖定為 1.0f。
+                    pBitmapTarget->SetPixelsPerDip(1.0f);
 
-    float boundW = layoutW + leftPad + rightPad;
-    float boundH = layoutH + topPad + bottomPad;
-    int32_t textW = static_cast<int32_t>(std::ceil(boundW));
-    int32_t textH = static_cast<int32_t>(std::ceil(boundH));
-    if (textW <= 0 || textH <= 0) return;
+                    HDC memDC = pBitmapTarget->GetMemoryDC();
+                    RECT rc = { 0, 0, textW, textH };
+                    ::FillRect(memDC, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
 
-    // 限制最大點陣尺寸防止記憶體溢出
-    textW = std::min(textW, 4096);
-    textH = std::min(textH, 4096);
+                    DWriteLayoutRenderer renderer(pBitmapTarget, dwriteRes.pRenderingParams, RGB(255, 255, 255));
+                    hr = pLayout->Draw(nullptr, &renderer, leftPad, topPad);
 
-    IDWriteBitmapRenderTarget* pBitmapTarget = nullptr;
-    hr = dwriteRes.pGdiInterop->CreateBitmapRenderTarget(nullptr, textW, textH, &pBitmapTarget);
-    if (FAILED(hr) || !pBitmapTarget) return;
+                    if (SUCCEEDED(hr)) {
+                        HGDIOBJ hbm = GetCurrentObject(memDC, OBJ_BITMAP);
+                        DIBSECTION ds = {};
+                        if (GetObject(hbm, sizeof(ds), &ds) == sizeof(ds) && ds.dsBm.bmBits) {
+                            const uint32_t* mask = static_cast<const uint32_t*>(ds.dsBm.bmBits);
+                            int32_t dstX0 = static_cast<int32_t>(origin.x - leftPad);
+                            int32_t dstY0 = static_cast<int32_t>(origin.y - topPad);
+                            float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
-    // 強制將點陣渲染目標的 PixelsPerDip 鎖定為 1.0f。
-    // 若未設定，DirectWrite 在高 DPI（如 125%、150%、200%）螢幕下會自動繼承螢幕 DC 之 DPI 縮放比率，
-    // 導致光柵化字形片面膨脹 1.25x~2.0x，不僅右側筆畫超出 textW 被裁切，亦會造成文字嚴重超出 UI 排版容器。
-    pBitmapTarget->SetPixelsPerDip(1.0f);
+                            for (int32_t y = 0; y < textH; ++y) {
+                                int32_t dstY = dstY0 + y;
+                                if (dstY < 0 || dstY >= static_cast<int32_t>(m_height)) continue;
 
-    HDC memDC = pBitmapTarget->GetMemoryDC();
-    RECT rc = { 0, 0, textW, textH };
-    ::FillRect(memDC, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+                                for (int32_t x = 0; x < textW; ++x) {
+                                    int32_t dstX = dstX0 + x;
+                                    if (dstX < 0 || dstX >= static_cast<int32_t>(m_width)) continue;
 
-    DWriteLayoutRenderer renderer(pBitmapTarget, dwriteRes.pRenderingParams, RGB(255, 255, 255));
-    // 於點陣圖內部以 (leftPad, topPad) 為原點偏移繪製，使負向字形溢出安全保留於點陣圖內
-    hr = pLayout->Draw(nullptr, &renderer, leftPad, topPad);
+                                    uint32_t pixel = mask[y * textW + x];
+                                    uint8_t r = static_cast<uint8_t>((pixel >> 16) & 0xFF);
+                                    uint8_t g = static_cast<uint8_t>((pixel >> 8) & 0xFF);
+                                    uint8_t b = static_cast<uint8_t>(pixel & 0xFF);
+                                    uint8_t maskVal = static_cast<uint8_t>((static_cast<uint32_t>(r) + static_cast<uint32_t>(g) * 2 + static_cast<uint32_t>(b)) / 4);
+                                    if (maskVal == 0) continue;
 
-    if (SUCCEEDED(hr)) {
-        HGDIOBJ hbm = GetCurrentObject(memDC, OBJ_BITMAP);
-        DIBSECTION ds = {};
-        if (GetObject(hbm, sizeof(ds), &ds) == sizeof(ds) && ds.dsBm.bmBits) {
-            const uint32_t* mask = static_cast<const uint32_t*>(ds.dsBm.bmBits);
-            // 貼圖時校正減去 leftPad 與 topPad，使字形基準線（Baseline）精準還原至排版原點
-            int32_t dstX0 = static_cast<int32_t>(origin.x - leftPad);
-            int32_t dstY0 = static_cast<int32_t>(origin.y - topPad);
-            float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
+                                    float alpha = (static_cast<float>(maskVal) / 255.0f) * srcAlphaNorm;
+                                    if (alpha <= 0.0f) continue;
 
-            for (int32_t y = 0; y < textH; ++y) {
-                int32_t dstY = dstY0 + y;
-                if (dstY < 0 || dstY >= static_cast<int32_t>(m_height)) continue;
+                                    size_t dstIdx = static_cast<size_t>(dstY) * m_width + dstX;
+                                    uint32_t dstPixel = m_pixels[dstIdx];
 
-                for (int32_t x = 0; x < textW; ++x) {
-                    int32_t dstX = dstX0 + x;
-                    if (dstX < 0 || dstX >= static_cast<int32_t>(m_width)) continue;
+                                    uint8_t dstB = static_cast<uint8_t>(dstPixel & 0xFF);
+                                    uint8_t dstG = static_cast<uint8_t>((dstPixel >> 8) & 0xFF);
+                                    uint8_t dstR = static_cast<uint8_t>((dstPixel >> 16) & 0xFF);
 
-                    uint32_t pixel = mask[y * textW + x];
-                    uint8_t r = static_cast<uint8_t>((pixel >> 16) & 0xFF);
-                    uint8_t g = static_cast<uint8_t>((pixel >> 8) & 0xFF);
-                    uint8_t b = static_cast<uint8_t>(pixel & 0xFF);
-                    uint8_t maskVal = static_cast<uint8_t>((static_cast<uint32_t>(r) + static_cast<uint32_t>(g) * 2 + static_cast<uint32_t>(b)) / 4);
-                    if (maskVal == 0) continue;
+                                    uint8_t outR = static_cast<uint8_t>(color.r * alpha + dstR * (1.0f - alpha));
+                                    uint8_t outG = static_cast<uint8_t>(color.g * alpha + dstG * (1.0f - alpha));
+                                    uint8_t outB = static_cast<uint8_t>(color.b * alpha + dstB * (1.0f - alpha));
 
-                    float alpha = (static_cast<float>(maskVal) / 255.0f) * srcAlphaNorm;
-                    if (alpha <= 0.0f) continue;
+                                    m_pixels[dstIdx] = (0xFF << 24) | (outR << 16) | (outG << 8) | outB;
+                                }
+                            }
+                        }
+                    }
 
-                    size_t dstIdx = static_cast<size_t>(dstY) * m_width + dstX;
-                    uint32_t dstPixel = m_pixels[dstIdx];
-
-                    uint8_t dstB = static_cast<uint8_t>(dstPixel & 0xFF);
-                    uint8_t dstG = static_cast<uint8_t>((dstPixel >> 8) & 0xFF);
-                    uint8_t dstR = static_cast<uint8_t>((dstPixel >> 16) & 0xFF);
-
-                    uint8_t outR = static_cast<uint8_t>(color.r * alpha + dstR * (1.0f - alpha));
-                    uint8_t outG = static_cast<uint8_t>(color.g * alpha + dstG * (1.0f - alpha));
-                    uint8_t outB = static_cast<uint8_t>(color.b * alpha + dstB * (1.0f - alpha));
-
-                    m_pixels[dstIdx] = (0xFF << 24) | (outR << 16) | (outG << 8) | outB;
+                    pBitmapTarget->Release();
+                    return;
                 }
             }
         }
     }
-
-    pBitmapTarget->Release();
-    return;
 #endif
 
     // 跨平台文字排版備援渲染：走純 C++ TextLayout::Impl 行列表
     const auto* layoutImpl = static_cast<const text::TextLayout::Impl*>(nativeLayoutHandle);
     if (layoutImpl) {
+        const auto metrics = text::FallbackFontHelper::ComputeMetrics(layoutImpl->font.GetSize());
         for (const auto& line : layoutImpl->lines) {
             if (line.startIndex < layoutImpl->text.size()) {
                 size_t len = std::min(line.length, layoutImpl->text.size() - line.startIndex);
                 compat::string_view lineStr(layoutImpl->text.data() + line.startIndex, len);
-                core::Point linePt(origin.x + line.bounds.x, origin.y + line.bounds.y);
+                float yOffset = 0.0f;
+                if (line.bounds.height > metrics.charHeight) {
+                    yOffset = (line.bounds.height - metrics.charHeight) * 0.5f;
+                }
+                core::Point linePt(origin.x + line.bounds.x, origin.y + line.bounds.y + yOffset);
                 DrawText(
                     lineStr,
                     linePt,

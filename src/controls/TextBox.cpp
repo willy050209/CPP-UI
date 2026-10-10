@@ -44,6 +44,9 @@ TextBox::TextBox() {
         m_caretIndex = hit.textPosition;
         if (hit.isTrailingHit && m_caretIndex < m_text.size()) {
             m_caretIndex++;
+            while (m_caretIndex < m_text.size() && (static_cast<uint8_t>(m_text[m_caretIndex]) & 0xC0) == 0x80) {
+                m_caretIndex++;
+            }
         }
 
         InvalidateVisual();

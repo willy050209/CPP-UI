@@ -161,6 +161,24 @@ void Button::RaiseClick() {
     }
 }
 
+void Button::ArrangeOverride(core::Size finalSize) {
+    if (!m_content) return;
+
+    float left = m_padding.left + m_borderThickness.left;
+    float top = m_padding.top + m_borderThickness.top;
+    float availW = (std::max)(0.0f, finalSize.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+    float availH = (std::max)(0.0f, finalSize.height - (m_padding.Vertical() + m_borderThickness.Vertical()));
+
+    core::Size contentDesired = m_content->GetDesiredSize();
+    float contentW = (std::min)(availW, contentDesired.width);
+    float contentH = (std::min)(availH, contentDesired.height);
+
+    float targetX = left + (availW - contentW) * 0.5f;
+    float targetY = top + (availH - contentH) * 0.5f;
+
+    m_content->Arrange(core::Rect(targetX, targetY, contentW, contentH));
+}
+
 void Button::OnRender(rendering::DrawingContext& dc) {
     core::Size sz = GetRenderBounds().GetSize();
     if (sz.IsEmpty()) sz = GetVisualBounds().GetSize();
