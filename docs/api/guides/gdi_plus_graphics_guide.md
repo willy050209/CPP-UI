@@ -77,7 +77,66 @@ CPPUI 原生支援雙渲染後端：
 
 ---
 
-## 4. 相關第三方函式庫授權宣告 (Licenses & Acknowledgments)
+## 4. 影像處理、卷積運算與視窗分塊平行化實戰 (Image Processing & Convolution)
+
+除了向量繪圖之外，`cppui::graphics` 提供了全套高效能點陣影像演算法：
+
+### 4.1 像素遍歷與自訂視窗切分 (`PixelOps` & `ParallelOptions`)
+呼叫端擁有對多執行緒與視窗分塊（Window Slicing）的絕對控制權：
+
+```cpp
+#include "ui/graphics/PixelOps.hpp"
+#include "ui/graphics/ParallelOptions.hpp"
+
+using namespace cppui::graphics;
+
+Bitmap bmp(1920, 1080);
+
+// 以 8 執行緒，每 32 列為一個視窗區塊進行動態負載平衡並行遍歷
+ParallelOptions opts = ParallelOptions::Parallel(8, 32);
+
+PixelOps::ForEachIf(bmp, 
+    [](uint32_t x, uint32_t, const uint32_t&) { return x < 960; }, // 左半部
+    [](uint32_t& p) { p ^= 0x00FFFFFF; },                           // 反相 RGB
+    opts
+);
+```
+
+### 4.2 高效定點數可分離卷積 (`ConvolutionEngine`)
+將 2D 卷積分解為兩次 1D 卷積，全程採用 32 位元整數定點數累加，並在每行掃描線自動區分為「左邊界區」、「中央無分支區」、「右邊界區」，大幅消除 CPU 分支預測錯誤：
+
+```cpp
+#include "ui/graphics/Convolution.hpp"
+
+// 建立 1D 高斯定點數可分離核
+SeparableKernel gaussian = ConvolutionEngine::CreateGaussianKernel(2.0f);
+
+Bitmap blurred(1920, 1080);
+ConvolutionEngine::ConvolveSeparable(bmp, blurred, gaussian, BorderMode::Replicate, opts);
+```
+
+### 4.3 完整高階影像濾鏡 (`ImageFilters`)
+包含色彩空間轉換、自動二值化、六大模糊濾鏡與邊緣偵測：
+
+```cpp
+#include "ui/graphics/ImageFilters.hpp"
+
+// 1. ITU-R BT.601 標準灰階轉換
+ImageFilters::Grayscale(bmp, GrayscaleMethod::BT601, opts);
+
+// 2. 大津法 (Otsu's Method) 自動最佳閥值二值化
+ImageFilters::OtsuThreshold(bmp, ThresholdType::Binary, opts);
+
+// 3. 雙邊濾波 (Bilateral Filter: 平滑紋理但絕對保留強邊界)
+ImageFilters::BilateralFilter(bmp, 3, 25.0f, 3.0f, opts);
+
+// 4. Canny 多階段邊緣偵測 (含高斯平滑、NMS 細化、雙門檻遲滯追蹤)
+ImageFilters::Canny(bmp, 40, 100, 1.0f, opts);
+```
+
+---
+
+## 5. 相關第三方函式庫授權宣告 (Licenses & Acknowledgments)
 
 CPPUI 圖形子系統整合與參考了以下開源專案之設計與實作：
 
@@ -96,19 +155,25 @@ CPPUI 圖形子系統整合與參考了以下開源專案之設計與實作：
 
 ---
 
-## 5. API 參考與專屬技術文件 (API References)
+## 6. API 參考與專屬技術文件 (API References)
 
 深入了解個別圖形物件的 API 簽名、參數驗證、異常規格與進階使用範例：
 
 * [**Graphics 核心繪圖排程器**](../classes/graphics_graphics.md)
+* [**Bitmap 32-bit 點陣影像與緩衝區鎖定**](../classes/graphics_bitmap.md)
+* [**ParallelOptions 執行緒模式與視窗分塊配置**](../classes/graphics_paralleloptions.md)
+* [**PixelOps 高效像素遍歷運算器**](../classes/graphics_pixelops.md)
+* [**ConvolutionEngine 定點數卷積運算核心**](../classes/graphics_convolution.md)
+* [**ImageFilters 完整影像濾鏡套裝**](../classes/graphics_imagefilters.md)
+* [**SkiaImageBridge Skia 零拷貝橋接與向量加速**](../classes/graphics_skiaimagebridge.md)
 * [**Color 32-bit 色彩結構**](../classes/graphics_color.md)
 * [**Colors 預定義常數調色盤 (140+ 種標準色)**](../classes/graphics_colors.md)
 * [**Brush 畫刷家族 (Solid, LinearGradient, Texture)**](../classes/graphics_brush.md)
 * [**Brushes 常用 28 種標準純色畫刷集合**](../classes/graphics_brushes.md)
-* [**Bitmap 32-bit 點陣影像與緩衝區鎖定**](../classes/graphics_bitmap.md)
 * [**Pen 描邊畫筆類別**](../classes/graphics_pen.md)
 * [**Pens 常用 28 種標準畫筆集合**](../classes/graphics_pens.md)
 * [**GraphicsPath 複合幾何路徑與射線命中測試**](../classes/graphics_path.md)
 * [**Graphics 列舉型別完整字典 (DashStyle, LineCap, PixelFormat 等)**](../classes/graphics_enums.md)
 * [**PictureBox 圖片控制項規格與呈現模式**](../classes/controls_picturebox.md)
+
 

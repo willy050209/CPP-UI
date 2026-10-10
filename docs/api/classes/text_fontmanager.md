@@ -39,12 +39,13 @@ class FontManager;
 | `HasFontFamily(compat::string_view familyName)` | `bool` | 查詢系統字型庫或動態註冊庫中是否存在特定字型家族名稱。 |
 | `GetFontMetrics(const FontDescriptor& font)` | `FontMetrics` | 查詢特定字型描述之度量數據（基線、行高、升部、降部）。 |
 
-### 2. 動態字型註冊 (Dynamic Font Loading)
+### 2. 動態字型註冊與實體路徑解析 (Dynamic Font Loading & Path Resolution)
 | 方法名稱 | 傳回值 | 說明與例外 |
 | :--- | :--- | :--- |
-| `RegisterFontFile(compat::string_view path)` | `bool` | 載入本機字型檔（支援 `.ttf`, `.otf`）。Windows 底層調用 `AddFontResourceExW`；跨平臺維護已註冊字族快取。若路徑為空擲出 `std::invalid_argument`。 |
+| `RegisterFontFile(compat::string_view path)` | `bool` | 載入本機字型檔（支援 `.ttf`, `.otf`, `.ttc`）。Windows 底層調用 `AddFontResourceExW`；跨平臺維護已註冊字族快取與檔案映射。若路徑為空擲出 `std::invalid_argument`。 |
 | `RegisterFontFromMemory(compat::span<const uint8_t> data)` | `bool` | 從記憶體二進位緩衝區載入字型。Windows 底層調用 `AddFontMemResourceEx`。若傳入空緩衝區擲出 `std::invalid_argument`。 |
 | `GetRegisteredFontFamilies()` | `std::vector<std::string>` | 取得透過本類別成功註冊的所有動態字型家族名稱清單。 |
+| `ResolveFontFilePath(compat::string_view familyName = "")` | `std::string` | 解析指定字型家族之實體檔案路徑（以供 FreeType 等原生光柵引擎載入）。在非 Windows (WSL / Linux) 平台依序探測：WSL 掛載之新細明體 (`mingliu.ttc`) $\rightarrow$ 微軟正黑體 (`msjh.ttc`) $\rightarrow$ 思源黑體 (`NotoSansCJK-Regular.ttc`) $\rightarrow$ 文泉驛微米黑 (`wqy-microhei.ttc`)。 |
 
 ### 3. 全域預設字型管理 (Default Font Family Override)
 | 方法名稱 | 傳回值 | 說明與例外 |

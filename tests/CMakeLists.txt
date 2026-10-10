@@ -95,6 +95,11 @@ add_executable(theme_test theme_test.cpp)
 target_link_libraries(theme_test PRIVATE cppui_core)
 add_test(NAME ThemeTest COMMAND theme_test)
 
+# 影像處理演算法、可分離定點數卷積與濾鏡套件單元測試
+add_executable(image_processing_test image_processing_test.cpp)
+target_link_libraries(image_processing_test PRIVATE cppui_core)
+add_test(NAME ImageProcessingTest COMMAND image_processing_test)
+
 
 
 

@@ -150,13 +150,18 @@ graph TD
 * [`Grid`](classes/layout_grid.md)：多儲存格網格排版容器，支援 Pixel、Auto、Star (*) 行列比例求解與 `SetRow` / `SetColumn` / `SetRowSpan` / `SetColumnSpan` 附加屬性。
 * [`Signal<T>`](classes/reactive_signal.md)：輕量響應式屬性信號樣板，支援值變更推播與弱引用安全的控制項屬性自動綁定。
 
-### GDI+ 風格圖形與排程架構 (Milestone 8 Advanced Graphics & Objects)
+### GDI+ 風格圖形、卷積與影像處理 (Advanced Graphics, Convolution & Image Processing)
 * [`Graphics`](classes/graphics_graphics.md)：核心圖形排程器，支援雙模式建構（`FromDrawingContext` UI 模式與 `FromImage` 離線記憶體位圖模式）、幾何圖元/路徑/影像/文字繪製、變換矩陣、剪裁區域與 `StateScope` RAII 狀態守衛。
-* [`Pen`](classes/graphics_objects.md#1-pen-類別) 與 [`Pens`](classes/graphics_objects.md#5-pens-常數集合)：一級畫筆物件，封裝描邊顏色、寬度、`DashStyle`、`LineCap`、`LineJoin`，內建 `std::shared_mutex` 執行緒同步與常用標準畫筆靜態集合。
-* [`Brush`](classes/graphics_objects.md#2-brush-類別族) 與 [`Brushes`](classes/graphics_objects.md#6-brushes-常數集合)：抽象畫刷基底與具體衍生類別（`SolidBrush`、`LinearGradientBrush`、`TextureBrush`），支援多型複製、執行緒同步與常用純色畫刷靜態集合。
-* [`GraphicsPath`](classes/graphics_objects.md#3-graphicspath-類別)：複合幾何路徑，支援線段、矩形、圓角矩形、橢圓、圓弧、三次貝茲曲線、Catmull-Rom 曲線、平整化 (`Flatten`) 與射線命中測試。
-* [`Bitmap`](classes/graphics_objects.md#4-bitmap-類別)：32-bit ARGB/BGRA 點陣影像緩衝區，支援像素讀寫、記憶體鎖定 (`LockBits`)、區域裁切、90° 步進旋轉翻轉 (`RotateFlip`) 與執行緒同步。
-* [`Colors`](classes/graphics_objects.md)：對標 GDI+ 完整 140+ 種標準現代色彩常數。
+* [`Pen`](classes/graphics_pen.md) 與 [`Pens`](classes/graphics_pens.md)：一級畫筆物件，封裝描邊顏色、寬度、`DashStyle`、`LineCap`、`LineJoin`，內建 `std::shared_mutex` 執行緒同步與常用標準畫筆靜態集合。
+* [`Brush`](classes/graphics_brush.md) 與 [`Brushes`](classes/graphics_brushes.md)：抽象畫刷基底與具體衍生類別（`SolidBrush`、`LinearGradientBrush`、`TextureBrush`），支援多型複製、執行緒同步與常用純色畫刷靜態集合。
+* [`GraphicsPath`](classes/graphics_path.md)：複合幾何路徑，支援線段、矩形、圓角矩形、橢圓、圓弧、三次貝茲曲線、Catmull-Rom 曲線、平整化 (`Flatten`) 與射線命中測試。
+* [`Bitmap`](classes/graphics_bitmap.md)：32-bit ARGB/BGRA 點陣影像緩衝區，支援像素讀寫、記憶體鎖定 (`LockBits`)、區域裁切、90° 步進旋轉翻轉 (`RotateFlip`) 與執行緒同步。
+* [`ParallelOptions`](classes/graphics_paralleloptions.md)：影像處理與卷積運算之並行控制結構，提供單執行緒 (`Sequential`)、多執行緒 (`Parallel`) 以及視窗分塊列切分 (`sliceHeight` / Window Slicing)。
+* [`PixelOps`](classes/graphics_pixelops.md)：零抽象開銷之高效像素遍歷演算法，提供 `ForEach`、`ForEachIf` 並支援多型 Lambda 參數形式與自訂視窗分塊排程。
+* [`ConvolutionEngine`](classes/graphics_convolution.md)：高效能定點數卷積運算引擎，支援 1D 可分離卷積 ($K = v \cdot h^T$)、2D 通用卷積、定點整數算術、三區無分支邊界分塊與 Row-major 快取優化。
+* [`ImageFilters`](classes/graphics_imagefilters.md)：全方位影像濾鏡套裝（灰階轉換、全域/大津/自適應二值化、6種模糊平滑濾鏡、邊緣偵測與 Canny 多階段邊緣偵測）。
+* [`SkiaImageBridge`](classes/graphics_skiaimagebridge.md)：Google Skia 零拷貝點陣圖包裝與向量著色/硬體平滑濾鏡加速橋接器。
+* [`Colors`](classes/graphics_colors.md)：對標 GDI+ 完整 140+ 種標準現代色彩常數。
 
 
 ### 輸入事件與焦點 (Input & Routed Events System)

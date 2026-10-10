@@ -79,6 +79,9 @@ set(CPPUI_SOURCES
     src/graphics/GraphicsPath.cpp
     src/graphics/Bitmap.cpp
     src/graphics/Graphics.cpp
+    src/graphics/Convolution.cpp
+    src/graphics/ImageFilters.cpp
+    src/graphics/SkiaImageBridge.cpp
     src/theme/Theme.cpp
     src/theme/ThemeManager.cpp
 )

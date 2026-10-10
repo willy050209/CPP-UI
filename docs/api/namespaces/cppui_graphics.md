@@ -26,6 +26,11 @@
 | [`Brushes`](../classes/graphics_brushes.md) | `Brushes.hpp` | [**Brushes 標準集合**](../classes/graphics_brushes.md) | 對標 GDI+ 的常用 28 種標準靜態純色畫刷集合（零重複配置開銷）。 |
 | [`GraphicsPath`](../classes/graphics_path.md) | `GraphicsPath.hpp` | [**GraphicsPath 類別**](../classes/graphics_path.md) | 複合幾何路徑，支援線段、矩形、圓角矩形、橢圓、貝茲曲線、平整化 (`Flatten`)、仿射變換與射線命中測試。 |
 | [`Bitmap`](../classes/graphics_bitmap.md) | `Bitmap.hpp` | [**Bitmap 類別**](../classes/graphics_bitmap.md) | 32-bit 點陣圖像緩衝區，支援像素讀寫、記憶體鎖定 (`LockBits`)、裁切複製與 90° 步進旋轉翻轉 (`RotateFlip`)。 |
+| [`ParallelOptions`](../classes/graphics_paralleloptions.md) | `ParallelOptions.hpp` | [**ParallelOptions 結構**](../classes/graphics_paralleloptions.md) | 影像處理並行化配置，提供單執行緒、多執行緒與視窗分塊列切分 (Window Slicing) 之完整控制。 |
+| [`PixelOps`](../classes/graphics_pixelops.md) | `PixelOps.hpp` | [**PixelOps 類別**](../classes/graphics_pixelops.md) | 高效能像素遍歷運算器，支援 `ForEach`、`ForEachIf` 與多型 Lambda 簽名，全面受控於 `ParallelOptions`。 |
+| [`ConvolutionEngine`](../classes/graphics_convolution.md) | `Convolution.hpp` | [**ConvolutionEngine 卷積引擎**](../classes/graphics_convolution.md) | 定點數卷積運算核心，包含 1D 可分離卷積、2D 通用卷積、三區無分支邊界分塊與 Row-major 快取優化。 |
+| [`ImageFilters`](../classes/graphics_imagefilters.md) | `ImageFilters.hpp` | [**ImageFilters 濾鏡套件**](../classes/graphics_imagefilters.md) | 完整影像濾鏡集合（灰階轉換、大津/自適應二值化、6種模糊濾鏡、邊緣偵測與 Canny 演算法）。 |
+| [`SkiaImageBridge`](../classes/graphics_skiaimagebridge.md) | `SkiaImageBridge.hpp` | [**SkiaImageBridge 橋接器**](../classes/graphics_skiaimagebridge.md) | Google Skia 向量加速與影像濾鏡橋接器，支援零拷貝記憶體共享與硬體濾鏡平滑加速。 |
 | [`Color`](../classes/graphics_color.md) | `Geometry.hpp` | [**Color 結構**](../classes/graphics_color.md) | 32-bit RGBA 色彩結構，支援 FromArgb、ToArgb、HSL 分析與 `constexpr`。 |
 | [`Colors`](../classes/graphics_colors.md) | `Colors.hpp` | [**Colors 調色盤常數**](../classes/graphics_colors.md) | 對標 GDI+ 完整 140+ 種標準現代色彩常數（十六進位 ARGB 與 RGB 對照）。 |
 | [`GraphicsTypes`](../classes/graphics_enums.md) | `GraphicsTypes.hpp` | [**Graphics 列舉字典**](../classes/graphics_enums.md) | 核心繪圖列舉型別（`DashStyle`, `LineCap`, `FillMode`, `SmoothingMode`, `InterpolationMode`, `PixelFormat`, `PictureBoxSizeMode` 等）。 |
