@@ -37,7 +37,13 @@ void SetImage(std::shared_ptr<graphics::Bitmap> image);
 
 graphics::PictureBoxSizeMode GetSizeMode() const;
 void SetSizeMode(graphics::PictureBoxSizeMode mode);
+
+// 影像路徑與檔案載入 (對標 WinForms PictureBox.ImageLocation / Load)
+COMPAT_NODISCARD compat::string_view GetImageLocation() const noexcept;
+void SetImageLocation(compat::string_view path);
+bool Load(compat::string_view path);
 ```
+
 
 ---
 

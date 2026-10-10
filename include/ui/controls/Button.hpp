@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include "compat/compat.hpp"
 #include "ui/controls/ContentControl.hpp"
+#include "ui/app/FormEventArgs.hpp"
 #include "ui/input/RoutedEvent.hpp"
 #include "ui/input/RoutedEventArgs.hpp"
 #include "ui/input/PointerEventArgs.hpp"
@@ -102,6 +103,47 @@ public:
     void SetFocusBorderBrush(core::Color color);
 
     /// <summary>
+    /// 程式化觸發按鈕點擊事件 (對標 WinForms / WPF PerformClick)。
+    /// </summary>
+    void PerformClick() { RaiseClick(); }
+
+    /// <summary>
+    /// 檢查此按鈕是否為預設確認按鈕 (按 Enter 自動觸發)。
+    /// </summary>
+    /// <returns>若為預設按鈕傳回 true，否則傳回 false。</returns>
+    COMPAT_NODISCARD bool IsDefault() const noexcept { return m_isDefault; }
+
+    /// <summary>
+    /// 設定此按鈕是否為預設確認按鈕。
+    /// </summary>
+    /// <param name="isDefault">true 表示為預設確認按鈕。</param>
+    void SetIsDefault(bool isDefault) noexcept { m_isDefault = isDefault; }
+
+    /// <summary>
+    /// 檢查此按鈕是否為預設取消按鈕 (按 Esc 自動觸發)。
+    /// </summary>
+    /// <returns>若為取消按鈕傳回 true，否則傳回 false。</returns>
+    COMPAT_NODISCARD bool IsCancel() const noexcept { return m_isCancel; }
+
+    /// <summary>
+    /// 設定此按鈕是否為預設取消按鈕。
+    /// </summary>
+    /// <param name="isCancel">true 表示為取消按鈕。</param>
+    void SetIsCancel(bool isCancel) noexcept { m_isCancel = isCancel; }
+
+    /// <summary>
+    /// 取得點擊此按鈕時所設定之對話框結果代碼 (DialogResult)。
+    /// </summary>
+    /// <returns>對話框結果列舉值。</returns>
+    COMPAT_NODISCARD app::DialogResult GetDialogResult() const noexcept { return m_dialogResult; }
+
+    /// <summary>
+    /// 設定點擊此按鈕時所關聯之對話框結果代碼。
+    /// </summary>
+    /// <param name="result">對話框結果列舉值。</param>
+    void SetDialogResult(app::DialogResult result) noexcept { m_dialogResult = result; }
+
+    /// <summary>
     /// 註冊按鈕點擊事件處理常式 (攜帶按鈕引用)。
     /// </summary>
     /// <param name="handler">事件回呼常式。</param>
@@ -184,6 +226,9 @@ protected:
 
     bool        m_isPressed = false;
     bool        m_isHovered = false;
+    bool        m_isDefault = false;
+    bool        m_isCancel  = false;
+    app::DialogResult m_dialogResult = app::DialogResult::None;
     layout::HorizontalAlignment m_horizontalContentAlignment = layout::HorizontalAlignment::Center;
     layout::VerticalAlignment   m_verticalContentAlignment   = layout::VerticalAlignment::Center;
     std::shared_ptr<mvvm::ICommand> m_command;

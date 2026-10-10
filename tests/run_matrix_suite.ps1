@@ -184,7 +184,14 @@ $frameworkSources = @(
     "src\app\Application.cpp",
     "src\app\AppBuilder.cpp",
     "src\app\Dispatcher.cpp",
+    "src\app\Timer.cpp",
     "src\controls\PictureBox.cpp",
+    "src\controls\RadioButton.cpp",
+    "src\controls\ProgressBar.cpp",
+    "src\controls\Slider.cpp",
+    "src\controls\ListBox.cpp",
+    "src\controls\Separator.cpp",
+    "src\controls\Label.cpp",
     "src\graphics\Pen.cpp",
     "src\graphics\Pens.cpp",
     "src\graphics\Brush.cpp",
@@ -298,6 +305,7 @@ $testTargets = @(
         NeedObjs       = @(
             "Visual", "UIElement", "Panel", "StackPanel", "Border", "Canvas", "Grid",
             "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox", "ScrollViewer",
+            "PictureBox", "RadioButton", "ProgressBar", "Slider", "ListBox", "Separator", "Label",
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
@@ -316,6 +324,7 @@ $testTargets = @(
         NeedObjs       = @(
             "Visual", "UIElement", "Panel", "StackPanel", "Border", "Canvas", "Grid",
             "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox",
+            "PictureBox", "RadioButton", "ProgressBar", "Slider", "ListBox", "Separator", "Label",
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
@@ -492,6 +501,26 @@ $testTargets = @(
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "comdlg32.lib", "shell32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lcomdlg32", "-lshell32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Timer"
+        Source         = "tests\timer_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Timer", "Form", "Application", "AppBuilder", "Dispatcher", "SkiaRenderContext",
+            "ServiceCollection", "PlatformWindowFactory",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl",
+            "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
+            "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
+            "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
         HasBench       = $false
         BenchRegex     = ""
     }

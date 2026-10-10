@@ -104,3 +104,9 @@ add_test(NAME ImageProcessingTest COMMAND image_processing_test)
 add_executable(dialogs_test dialogs_test.cpp)
 target_link_libraries(dialogs_test PRIVATE cppui_core)
 add_test(NAME DialogsTest COMMAND dialogs_test)
+
+# Timer 計時器 (對標 System.Windows.Forms.Timer) 單元測試
+add_executable(timer_test timer_test.cpp)
+target_link_libraries(timer_test PRIVATE cppui_core)
+add_test(NAME TimerTest COMMAND timer_test)
+

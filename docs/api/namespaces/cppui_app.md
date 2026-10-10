@@ -17,6 +17,7 @@
 | [`Application`](../classes/app_application.md) | `Application.hpp` | 密封型靜態應用程式中樞，負責主訊息循環調度、全域狀態管理與 IoC 依賴反轉容器對接。 |
 | [`Dispatcher`](../classes/app_dispatcher.md) | `Dispatcher.hpp` | UI 執行緒非同步事件調度器，支援執行緒安全任務派發與執行緒親和性判定。 |
 | [`Form`](../classes/app_form.md) | `Form.hpp` | 現代桌面頂層視窗控制器，封裝底層平台視窗、雙階段排版與完整生命週期事件。 |
+| [`Timer`](../classes/app_timer.md) | `Timer.hpp` | 在使用者自訂間隔內週期性觸發事件之 UI 執行緒親和性計時器 (對標 WinForms Timer)。 |
 | [`AppBuilder`](../classes/app_appbuilder.md) | `AppBuilder.hpp` | 應用程式 Host 構建器，提供鏈式服務配置、渲染平台選擇與依賴注入容器註冊。 |
 | [`AppHost`](../classes/app_appbuilder.md) | `AppBuilder.hpp` | 構建完成之應用程式宿主，負責解析目標 Form 並啟動主循環。 |
 | [`FormClosingEventArgs`](../classes/app_formeventargs.md) | `FormEventArgs.hpp` | 表單即將關閉事件參數，支援藉由 `Cancel = true` 攔截取消關閉行為。 |
@@ -74,3 +75,19 @@ void FetchDataInBackground() {
     }).detach();
 }
 ```
+
+### 4. UI 執行緒週期性計時器 (Timer)
+```cpp
+#include "ui/app/Timer.hpp"
+
+// 建立 1000ms 間隔的計時器
+auto timer = std::make_shared<cppui::app::Timer>(1000);
+
+timer->OnTick([](cppui::app::Timer& sender) {
+    // 此回呼保證運行於 UI 主執行緒，可直接安全更新 UI
+    UpdateLiveStatus();
+});
+
+timer->Start();
+```
+

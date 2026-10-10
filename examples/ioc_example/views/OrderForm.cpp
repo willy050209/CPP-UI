@@ -14,11 +14,11 @@ OrderForm::OrderForm(std::shared_ptr<OrderViewModel> viewModel)
     SetFormSize(620, 380);
     SetDataContext(m_viewModel);
 
-    m_summaryLabel = Label(m_viewModel ? m_viewModel->GetSummaryText() : "")
+    m_summaryLabel = TextBlock(m_viewModel ? m_viewModel->GetSummaryText() : "")
         .FontSize(18.0f)
         .Foreground(cppui::core::Color(100, 220, 255, 255));
 
-    m_actionLabel = Label(m_viewModel ? m_viewModel->GetLastActionText() : "")
+    m_actionLabel = TextBlock(m_viewModel ? m_viewModel->GetLastActionText() : "")
         .FontSize(14.0f)
         .Foreground(cppui::core::Color(200, 200, 200, 255));
 

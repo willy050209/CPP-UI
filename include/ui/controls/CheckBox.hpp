@@ -13,13 +13,25 @@ namespace cppui {
 namespace controls {
 
 /// <summary>
+/// 核取方塊勾選狀態列舉 (CheckState，對標 .NET CheckState)。
+/// </summary>
+enum class CheckState : uint32_t {
+    Unchecked     = 0,
+    Checked       = 1,
+    Indeterminate = 2
+};
+
+/// <summary>
 /// 核取方塊控制項 (CheckBox)
-/// 具備打勾狀態切換、勾選標記向量繪製、自訂標籤與 Checked / Unchecked 路由事件。
+/// 具備打勾狀態切換、三態未定模式、勾選標記向量繪製、自訂標籤與 Checked / Unchecked / Indeterminate 路由事件。
 /// </summary>
 class CheckBox : public Button {
 public:
+    using CheckState = cppui::controls::CheckState;
+
     static const input::RoutedEvent CheckedEvent;
     static const input::RoutedEvent UncheckedEvent;
+    static const input::RoutedEvent IndeterminateEvent;
 
     /// <summary>
     /// 建構空白核取方塊控制項。
@@ -41,7 +53,7 @@ public:
     /// 檢查當前是否處於勾選狀態。
     /// </summary>
     /// <returns>若已勾選回傳 true，否則回傳 false。</returns>
-    COMPAT_NODISCARD bool IsChecked() const noexcept { return m_isChecked; }
+    COMPAT_NODISCARD bool IsChecked() const noexcept { return m_checkState == CheckState::Checked; }
 
     /// <summary>
     /// 設定核取方塊之勾選狀態，並視情況觸發 Checked 或 Unchecked 事件。
@@ -50,7 +62,31 @@ public:
     void SetChecked(bool checked);
 
     /// <summary>
-    /// 反轉目前勾選狀態。
+    /// 檢查是否支援未定 (三態) 勾選模式。
+    /// </summary>
+    /// <returns>若支援三態傳回 true，否則傳回 false。</returns>
+    COMPAT_NODISCARD bool IsThreeState() const noexcept { return m_isThreeState; }
+
+    /// <summary>
+    /// 設定是否啟用三態勾選模式。
+    /// </summary>
+    /// <param name="threeState">true 為啟用三態，false 為標準雙態。</param>
+    void SetIsThreeState(bool threeState) noexcept { m_isThreeState = threeState; }
+
+    /// <summary>
+    /// 取得目前三態勾選狀態 (CheckState)。
+    /// </summary>
+    /// <returns>CheckState 列舉值。</returns>
+    COMPAT_NODISCARD CheckState GetCheckState() const noexcept { return m_checkState; }
+
+    /// <summary>
+    /// 設定目前三態勾選狀態。
+    /// </summary>
+    /// <param name="state">CheckState 列舉值。</param>
+    void SetCheckState(CheckState state);
+
+    /// <summary>
+    /// 反轉目前勾選狀態 (雙態時切換，三態時循環 Unchecked -> Checked -> Indeterminate)。
     /// </summary>
     void Toggle();
 
@@ -59,6 +95,12 @@ public:
     /// </summary>
     /// <param name="handler">狀態變更回呼函式，接受目前勾選狀態。</param>
     void OnCheckedChanged(std::function<void(bool)> handler);
+
+    /// <summary>
+    /// 註冊未定狀態事件回呼函式。
+    /// </summary>
+    /// <param name="handler">事件回呼常式。</param>
+    void OnIndeterminate(std::function<void()> handler);
 
     /// <summary>
     /// 覆寫尺寸度量，計算方塊與文字之綜合期望尺寸。
@@ -86,9 +128,10 @@ public:
     void ApplyTheme(const theme::Theme& theme) override;
 
 private:
-    bool m_isChecked = false;
-    float m_boxSize = 18.0f;
-    float m_boxSpacing = 8.0f;
+    CheckState  m_checkState = CheckState::Unchecked;
+    bool        m_isThreeState = false;
+    float       m_boxSize = 18.0f;
+    float       m_boxSpacing = 8.0f;
 
     core::Color m_checkColor{ 0, 160, 255, 255 }; // 勾選時藍色填色
 };

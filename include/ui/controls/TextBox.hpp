@@ -119,6 +119,89 @@ public:
     void SetPlaceholderColor(core::Color color);
 
     /// <summary>
+    /// 檢查文字輸入框是否處於唯讀狀態 (ReadOnly)。
+    /// </summary>
+    /// <returns>若為唯讀傳回 true，否則傳回 false。</returns>
+    COMPAT_NODISCARD bool IsReadOnly() const noexcept { return m_isReadOnly; }
+
+    /// <summary>
+    /// 設定文字輸入框是否為唯讀模式。
+    /// </summary>
+    /// <param name="readOnly">true 啟用唯讀，false 允許編輯。</param>
+    void SetReadOnly(bool readOnly) noexcept;
+
+    /// <summary>
+    /// 取得最大輸入字元長度限制 (0 表示無限制)。
+    /// </summary>
+    /// <returns>字元數上限。</returns>
+    COMPAT_NODISCARD size_t GetMaxLength() const noexcept { return m_maxLength; }
+
+    /// <summary>
+    /// 設定最大輸入字元長度限制 (0 表示無限制)。
+    /// </summary>
+    /// <param name="maxLen">字元數上限。</param>
+    void SetMaxLength(size_t maxLen);
+
+    /// <summary>
+    /// 清空文字框之所有內容，並將游標重置至開頭。
+    /// </summary>
+    void Clear();
+
+    /// <summary>
+    /// 全選文字內容 (SelectAll)。
+    /// </summary>
+    void SelectAll();
+
+    /// <summary>
+    /// 設定選取文字之起點與長度。
+    /// </summary>
+    /// <param name="start">選取起始索引。</param>
+    /// <param name="length">選取字元長度。</param>
+    void Select(size_t start, size_t length);
+
+    /// <summary>
+    /// 取得目前選取區段之起始索引。
+    /// </summary>
+    /// <returns>選取起始索引。</returns>
+    COMPAT_NODISCARD size_t GetSelectionStart() const noexcept { return m_selectionStart; }
+
+    /// <summary>
+    /// 取得目前選取區段之長度。
+    /// </summary>
+    /// <returns>選取長度。</returns>
+    COMPAT_NODISCARD size_t GetSelectionLength() const noexcept { return m_selectionLength; }
+
+    /// <summary>
+    /// 取得目前反白選取之字串內容。
+    /// </summary>
+    /// <returns>選取文字副本。</returns>
+    COMPAT_NODISCARD std::string GetSelectedText() const;
+
+    /// <summary>
+    /// 檢查是否啟用密碼隱藏遮罩模式。
+    /// </summary>
+    /// <returns>若啟用密碼遮罩傳回 true，否則傳回 false。</returns>
+    COMPAT_NODISCARD bool IsPassword() const noexcept { return m_isPassword; }
+
+    /// <summary>
+    /// 設定是否啟用密碼隱藏遮罩模式。
+    /// </summary>
+    /// <param name="isPassword">true 啟用密碼遮罩，false 顯示明文。</param>
+    void SetIsPassword(bool isPassword);
+
+    /// <summary>
+    /// 取得密碼掩碼字元。
+    /// </summary>
+    /// <returns>遮罩字元 (例如 '*')。</returns>
+    COMPAT_NODISCARD char GetPasswordChar() const noexcept { return m_passwordChar; }
+
+    /// <summary>
+    /// 設定密碼掩碼字元。
+    /// </summary>
+    /// <param name="ch">遮罩字元 (例如 '*')。</param>
+    void SetPasswordChar(char ch);
+
+    /// <summary>
     /// 註冊文字變更回呼函式。
     /// </summary>
     /// <param name="handler">文字變更處理常式。</param>
@@ -152,6 +235,12 @@ private:
     std::string          m_text;
     std::string          m_placeholder;
     size_t               m_caretIndex = 0;
+    bool                 m_isReadOnly = false;
+    size_t               m_maxLength = 0;
+    size_t               m_selectionStart = 0;
+    size_t               m_selectionLength = 0;
+    bool                 m_isPassword = false;
+    char                 m_passwordChar = '*';
 
     text::FontDescriptor m_font;
     core::Color          m_placeholderColor{ 130, 145, 165, 255 };

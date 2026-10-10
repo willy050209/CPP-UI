@@ -221,7 +221,14 @@ void ScrollViewer::OnRender(rendering::DrawingContext& dc) {
 }
 
 void ScrollViewer::OnPostRender(rendering::DrawingContext& dc) {
-    if (m_extentHeight > m_viewportHeight && m_viewportHeight > 0.0f) {
+    bool showV = false;
+    if (m_verticalScrollBarVisibility == ScrollBarVisibility::Visible) {
+        showV = true;
+    } else if (m_verticalScrollBarVisibility == ScrollBarVisibility::Auto) {
+        showV = (m_extentHeight > m_viewportHeight && m_viewportHeight > 0.0f);
+    }
+
+    if (showV && m_viewportHeight > 0.0f) {
         // 繪製卷軸軌道
         dc.DrawRectangle(GetTrackRect(), m_trackColor);
 

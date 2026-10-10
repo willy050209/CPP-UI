@@ -18,10 +18,22 @@ namespace cppui {
 namespace controls {
 
 /// <summary>
+/// 卷軸可見性策略列舉 (ScrollBarVisibility，對標 WPF ScrollBarVisibility)。
+/// </summary>
+enum class ScrollBarVisibility : uint32_t {
+    Disabled = 0,
+    Auto     = 1,
+    Hidden   = 2,
+    Visible  = 3
+};
+
+/// <summary>
 /// 具備可視區域滾動、滑鼠滾輪支援與自繪卷軸軌道滑塊的滾動容器控制項 (ScrollViewer)。
 /// </summary>
 class ScrollViewer : public ContentControl {
 public:
+    using ScrollBarVisibility = cppui::controls::ScrollBarVisibility;
+
     /// <summary>
     /// 建構空白滾動容器控制項。
     /// </summary>
@@ -108,17 +120,69 @@ public:
     /// <param name="width">卷軸寬度像素值。</param>
     void SetScrollBarWidth(float width) noexcept;
 
+    /// <summary>
+    /// 取得水平卷軸可見性策略。
+    /// </summary>
+    /// <returns>ScrollBarVisibility 列舉值。</returns>
+    COMPAT_NODISCARD ScrollBarVisibility GetHorizontalScrollBarVisibility() const noexcept {
+        return m_horizontalScrollBarVisibility;
+    }
+
+    /// <summary>
+    /// 設定水平卷軸可見性策略。
+    /// </summary>
+    /// <param name="visibility">ScrollBarVisibility 列舉值。</param>
+    void SetHorizontalScrollBarVisibility(ScrollBarVisibility visibility) noexcept {
+        m_horizontalScrollBarVisibility = visibility;
+        InvalidateVisual();
+    }
+
+    /// <summary>
+    /// 取得垂直卷軸可見性策略。
+    /// </summary>
+    /// <returns>ScrollBarVisibility 列舉值。</returns>
+    COMPAT_NODISCARD ScrollBarVisibility GetVerticalScrollBarVisibility() const noexcept {
+        return m_verticalScrollBarVisibility;
+    }
+
+    /// <summary>
+    /// 設定垂直卷軸可見性策略。
+    /// </summary>
+    /// <param name="visibility">ScrollBarVisibility 列舉值。</param>
+    void SetVerticalScrollBarVisibility(ScrollBarVisibility visibility) noexcept {
+        m_verticalScrollBarVisibility = visibility;
+        InvalidateVisual();
+    }
+
     /// <summary>滾動至最頂端。</summary>
     void ScrollToHome();
 
     /// <summary>滾動至最底端。</summary>
     void ScrollToEnd();
 
+    /// <summary>滾動至最頂端 (對標 WPF ScrollToTop)。</summary>
+    void ScrollToTop() { ScrollToHome(); }
+
+    /// <summary>滾動至最底端 (對標 WPF ScrollToBottom)。</summary>
+    void ScrollToBottom() { ScrollToEnd(); }
+
+    /// <summary>滾動至最左端 (對標 WPF ScrollToLeftEnd)。</summary>
+    void ScrollToLeftEnd() { SetHorizontalOffset(0.0f); }
+
+    /// <summary>滾動至最右端 (對標 WPF ScrollToRightEnd)。</summary>
+    void ScrollToRightEnd() { SetHorizontalOffset(m_extentWidth - m_viewportWidth); }
+
     /// <summary>向上滾動一行步進量。</summary>
     void LineUp();
 
     /// <summary>向下滾動一行步進量。</summary>
     void LineDown();
+
+    /// <summary>向左滾動一行步進量。</summary>
+    void LineLeft() { SetHorizontalOffset(m_horizontalOffset - m_scrollStep); }
+
+    /// <summary>向右滾動一行步進量。</summary>
+    void LineRight() { SetHorizontalOffset(m_horizontalOffset + m_scrollStep); }
 
     /// <summary>向上滾動一整頁視區高度。</summary>
     void PageUp();
@@ -181,6 +245,9 @@ private:
     float m_viewportWidth    = 0.0f;
     float m_scrollStep       = 32.0f;
     float m_scrollBarWidth   = 10.0f;
+
+    ScrollBarVisibility m_horizontalScrollBarVisibility = ScrollBarVisibility::Disabled;
+    ScrollBarVisibility m_verticalScrollBarVisibility   = ScrollBarVisibility::Auto;
 
     bool  m_isDraggingThumb  = false;
     bool  m_isThumbHovered   = false;

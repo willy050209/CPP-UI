@@ -19,6 +19,13 @@
 #include "ui/controls/CheckBox.hpp"
 #include "ui/controls/TextBox.hpp"
 #include "ui/controls/ScrollViewer.hpp"
+#include "ui/controls/PictureBox.hpp"
+#include "ui/controls/RadioButton.hpp"
+#include "ui/controls/ProgressBar.hpp"
+#include "ui/controls/Slider.hpp"
+#include "ui/controls/ListBox.hpp"
+#include "ui/controls/Separator.hpp"
+#include "ui/controls/Label.hpp"
 #include "ui/layout/Grid.hpp"
 #include "ui/layout/Border.hpp"
 #include "ui/layout/Panel.hpp"
@@ -38,6 +45,7 @@ int main() {
     using namespace cppui::controls;
     using namespace cppui::layout;
     using namespace cppui::input;
+    using namespace cppui::app;
 
     compat::println("=================================================");
     compat::println(" [CPPUI M6] Controls & Grid Layout Tests        ");
@@ -616,6 +624,412 @@ int main() {
         assert(ctrlMap.at(std::ref(*btn2)) == "Action2");
 
         compat::println("  [PASS] Control GetHashCode, equality operators, and std::hash verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 8] Button Expanded Methods & DialogResult
+    // -------------------------------------------------------------------------
+    compat::println("[Test 8] Button Expanded Methods & DialogResult...");
+    {
+        Button btn("OK");
+        assert(!btn.IsDefault());
+        assert(!btn.IsCancel());
+        assert(btn.GetDialogResult() == DialogResult::None);
+
+        btn.SetIsDefault(true);
+        assert(btn.IsDefault());
+        btn.SetIsCancel(true);
+        assert(btn.IsCancel());
+        btn.SetDialogResult(DialogResult::OK);
+        assert(btn.GetDialogResult() == DialogResult::OK);
+
+        bool clicked = false;
+        btn.OnClick([&clicked]() { clicked = true; });
+        btn.PerformClick();
+        assert(clicked);
+
+        compat::println("  [PASS] Button PerformClick, IsDefault, IsCancel, DialogResult verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 9] CheckBox ThreeState & Indeterminate Mode
+    // -------------------------------------------------------------------------
+    compat::println("[Test 9] CheckBox ThreeState & Indeterminate Mode...");
+    {
+        CheckBox cb("Option");
+        assert(!cb.IsThreeState());
+        assert(cb.GetCheckState() == CheckBox::CheckState::Unchecked);
+        assert(!cb.IsChecked());
+
+        cb.SetIsThreeState(true);
+        assert(cb.IsThreeState());
+
+        // Toggle cycle: Unchecked -> Checked -> Indeterminate -> Unchecked
+        cb.Toggle();
+        assert(cb.GetCheckState() == CheckBox::CheckState::Checked);
+        assert(cb.IsChecked());
+
+        cb.Toggle();
+        assert(cb.GetCheckState() == CheckBox::CheckState::Indeterminate);
+        assert(!cb.IsChecked());
+
+        cb.Toggle();
+        assert(cb.GetCheckState() == CheckBox::CheckState::Unchecked);
+        assert(!cb.IsChecked());
+
+        // Direct SetCheckState
+        cb.SetCheckState(CheckBox::CheckState::Indeterminate);
+        assert(cb.GetCheckState() == CheckBox::CheckState::Indeterminate);
+
+        bool indeterminateFired = false;
+        cb.OnIndeterminate([&indeterminateFired]() { indeterminateFired = true; });
+        cb.SetCheckState(CheckBox::CheckState::Checked);
+        cb.SetCheckState(CheckBox::CheckState::Indeterminate);
+        assert(indeterminateFired);
+
+        compat::println("  [PASS] CheckBox ThreeState cycle and Indeterminate event verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 10] TextBox ReadOnly, MaxLength, Selection & Password
+    // -------------------------------------------------------------------------
+    compat::println("[Test 10] TextBox ReadOnly, MaxLength, Selection & Password...");
+    {
+        TextBox tb;
+        tb.SetText("Hello");
+        assert(tb.GetText() == "Hello");
+
+        // ReadOnly
+        assert(!tb.IsReadOnly());
+        tb.SetReadOnly(true);
+        assert(tb.IsReadOnly());
+        tb.InsertText(" World");
+        assert(tb.GetText() == "Hello"); // insertion ignored when ReadOnly
+
+        tb.SetReadOnly(false);
+        tb.InsertText(" World");
+        assert(tb.GetText() == "Hello World");
+
+        // MaxLength
+        assert(tb.GetMaxLength() == 0);
+        tb.SetMaxLength(5);
+        assert(tb.GetMaxLength() == 5);
+        assert(tb.GetText() == "Hello"); // truncated to 5
+
+        tb.InsertText(" Extra");
+        assert(tb.GetText() == "Hello"); // cannot exceed 5
+
+        // Clear
+        tb.SetMaxLength(0);
+        tb.Clear();
+        assert(tb.GetText().empty());
+
+        // Selection
+        tb.SetText("Modern C++ GUI");
+        tb.Select(0, 6);
+        assert(tb.GetSelectionStart() == 0);
+        assert(tb.GetSelectionLength() == 6);
+        assert(tb.GetSelectedText() == "Modern");
+
+        tb.SelectAll();
+        assert(tb.GetSelectionStart() == 0);
+        assert(tb.GetSelectionLength() == tb.GetText().size());
+        assert(tb.GetSelectedText() == "Modern C++ GUI");
+
+        // Password mode
+        assert(!tb.IsPassword());
+        tb.SetIsPassword(true);
+        assert(tb.IsPassword());
+        assert(tb.GetPasswordChar() == '*');
+        tb.SetPasswordChar('#');
+        assert(tb.GetPasswordChar() == '#');
+
+        compat::println("  [PASS] TextBox ReadOnly, MaxLength, Selection, Password verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 11] ScrollViewer Navigation & ScrollBarVisibility
+    // -------------------------------------------------------------------------
+    compat::println("[Test 11] ScrollViewer Navigation & ScrollBarVisibility...");
+    {
+        ScrollViewer sv;
+        assert(sv.GetHorizontalScrollBarVisibility() == ScrollViewer::ScrollBarVisibility::Disabled);
+        assert(sv.GetVerticalScrollBarVisibility() == ScrollViewer::ScrollBarVisibility::Auto);
+
+        sv.SetHorizontalScrollBarVisibility(ScrollViewer::ScrollBarVisibility::Auto);
+        assert(sv.GetHorizontalScrollBarVisibility() == ScrollViewer::ScrollBarVisibility::Auto);
+
+        sv.SetVerticalScrollBarVisibility(ScrollViewer::ScrollBarVisibility::Visible);
+        assert(sv.GetVerticalScrollBarVisibility() == ScrollViewer::ScrollBarVisibility::Visible);
+
+        // Child larger than viewport
+        auto child = std::make_shared<Control>();
+        child->SetSize(800.0f, 600.0f);
+        sv.SetContent(child);
+        sv.Measure(Size(400.0f, 300.0f));
+        sv.Arrange(Rect(0, 0, 400.0f, 300.0f));
+
+        sv.ScrollToBottom();
+        assert(sv.GetVerticalOffset() == 300.0f);
+
+        sv.ScrollToTop();
+        assert(sv.GetVerticalOffset() == 0.0f);
+
+        sv.ScrollToRightEnd();
+        assert(sv.GetHorizontalOffset() == 400.0f);
+
+        sv.ScrollToLeftEnd();
+        assert(sv.GetHorizontalOffset() == 0.0f);
+
+        sv.LineRight();
+        assert(sv.GetHorizontalOffset() == 32.0f);
+
+        sv.LineLeft();
+        assert(sv.GetHorizontalOffset() == 0.0f);
+
+        compat::println("  [PASS] ScrollViewer ScrollBarVisibility & quick navigation verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 12] RadioButton Mutual Exclusion & Grouping
+    // -------------------------------------------------------------------------
+    compat::println("[Test 12] RadioButton Mutual Exclusion & Grouping...");
+    {
+        auto panel = std::make_shared<StackPanel>();
+        auto rb1 = std::make_shared<RadioButton>("Option 1");
+        auto rb2 = std::make_shared<RadioButton>("Option 2");
+        auto rb3 = std::make_shared<RadioButton>("Option 3");
+
+        panel->AddChild(rb1);
+        panel->AddChild(rb2);
+        panel->AddChild(rb3);
+
+        assert(!rb1->IsChecked());
+        assert(!rb2->IsChecked());
+        assert(!rb3->IsChecked());
+
+        rb1->SetChecked(true);
+        assert(rb1->IsChecked());
+        assert(!rb2->IsChecked());
+        assert(!rb3->IsChecked());
+
+        rb2->SetChecked(true);
+        assert(!rb1->IsChecked());
+        assert(rb2->IsChecked());
+        assert(!rb3->IsChecked());
+
+        // Named groups
+        auto rbA1 = std::make_shared<RadioButton>("Group A 1");
+        auto rbA2 = std::make_shared<RadioButton>("Group A 2");
+        auto rbB1 = std::make_shared<RadioButton>("Group B 1");
+
+        rbA1->SetGroupName("GroupA");
+        rbA2->SetGroupName("GroupA");
+        rbB1->SetGroupName("GroupB");
+
+        panel->AddChild(rbA1);
+        panel->AddChild(rbA2);
+        panel->AddChild(rbB1);
+
+        rbA1->SetChecked(true);
+        rbB1->SetChecked(true);
+        assert(rbA1->IsChecked());
+        assert(rbB1->IsChecked());
+
+        rbA2->SetChecked(true);
+        assert(!rbA1->IsChecked());
+        assert(rbA2->IsChecked());
+        assert(rbB1->IsChecked()); // Group B unaffected
+
+        compat::println("  [PASS] RadioButton mutual exclusion and group isolation verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 13] ProgressBar Value Clamping & Step Calculation
+    // -------------------------------------------------------------------------
+    compat::println("[Test 13] ProgressBar Value Clamping & Step Calculation...");
+    {
+        ProgressBar pb;
+        assert(pb.GetMinimum() == 0.0f);
+        assert(pb.GetMaximum() == 100.0f);
+        assert(pb.GetValue() == 0.0f);
+
+        pb.SetValue(50.0f);
+        assert(pb.GetValue() == 50.0f);
+
+        // Clamp upper and lower bounds
+        pb.SetValue(150.0f);
+        assert(pb.GetValue() == 100.0f);
+        pb.SetValue(-20.0f);
+        assert(pb.GetValue() == 0.0f);
+
+        // Step & Increment
+        pb.SetStep(25.0f);
+        assert(pb.GetStep() == 25.0f);
+        pb.PerformStep();
+        assert(pb.GetValue() == 25.0f);
+        pb.Increment(30.0f);
+        assert(pb.GetValue() == 55.0f);
+
+        // Orientation & Indeterminate
+        pb.SetOrientation(Orientation::Vertical);
+        assert(pb.GetOrientation() == Orientation::Vertical);
+        pb.SetIndeterminate(true);
+        assert(pb.IsIndeterminate());
+
+        compat::println("  [PASS] ProgressBar value clamping, stepping, and orientation verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 14] Slider Value Clamping, Changes & ValueChanged Event
+    // -------------------------------------------------------------------------
+    compat::println("[Test 14] Slider Value Clamping, Changes & ValueChanged Event...");
+    {
+        Slider sl(0.0f, 100.0f, 20.0f);
+        assert(sl.GetMinimum() == 0.0f);
+        assert(sl.GetMaximum() == 100.0f);
+        assert(sl.GetValue() == 20.0f);
+
+        float lastValue = 0.0f;
+        sl.OnValueChanged([&lastValue](float val) { lastValue = val; });
+
+        sl.SetValue(75.0f);
+        assert(sl.GetValue() == 75.0f);
+        assert(lastValue == 75.0f);
+
+        // Clamping
+        sl.SetValue(200.0f);
+        assert(sl.GetValue() == 100.0f);
+
+        // SmallChange / LargeChange
+        sl.SetSmallChange(2.0f);
+        sl.SetLargeChange(15.0f);
+        assert(sl.GetSmallChange() == 2.0f);
+        assert(sl.GetLargeChange() == 15.0f);
+
+        compat::println("  [PASS] Slider value clamping, changes, and ValueChanged event verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 15] ListBox Item Management & Selection
+    // -------------------------------------------------------------------------
+    compat::println("[Test 15] ListBox Item Management & Selection...");
+    {
+        ListBox lb;
+        assert(lb.GetItemCount() == 0);
+        assert(lb.GetSelectedIndex() == -1);
+        assert(lb.GetSelectedItem().empty());
+
+        lb.AddItem("Apple");
+        lb.AddItem("Banana");
+        lb.AddItem("Cherry");
+        assert(lb.GetItemCount() == 3);
+        assert(lb.GetItem(0) == "Apple");
+        assert(lb.GetItem(1) == "Banana");
+        assert(lb.GetItem(2) == "Cherry");
+
+        // Selection
+        int32_t changedIdx = -999;
+        lb.OnSelectedIndexChanged([&changedIdx](int32_t idx) { changedIdx = idx; });
+
+        lb.SetSelectedIndex(1);
+        assert(lb.GetSelectedIndex() == 1);
+        assert(lb.GetSelectedItem() == "Banana");
+        assert(changedIdx == 1);
+
+        lb.SetSelectedItem("Cherry");
+        assert(lb.GetSelectedIndex() == 2);
+        assert(lb.GetSelectedItem() == "Cherry");
+        assert(changedIdx == 2);
+
+        // InsertItem & index shift
+        lb.InsertItem(1, "Blueberry");
+        assert(lb.GetItemCount() == 4);
+        assert(lb.GetItem(1) == "Blueberry");
+        assert(lb.GetSelectedIndex() == 3); // shifted from 2 to 3
+
+        // RemoveItem
+        lb.RemoveItem(0); // removes Apple
+        assert(lb.GetItemCount() == 3);
+        assert(lb.GetSelectedIndex() == 2);
+
+        // ClearItems
+        lb.ClearItems();
+        assert(lb.GetItemCount() == 0);
+        assert(lb.GetSelectedIndex() == -1);
+
+        // Fail-fast exceptions
+        bool threwOutOfRange = false;
+        try {
+            (void)lb.GetItem(10);
+        } catch (const std::out_of_range&) {
+            threwOutOfRange = true;
+        }
+        assert(threwOutOfRange);
+
+        bool threwInvalidArg = false;
+        try {
+            lb.SetItemHeight(-5.0f);
+        } catch (const std::invalid_argument&) {
+            threwInvalidArg = true;
+        }
+        assert(threwInvalidArg);
+
+        compat::println("  [PASS] ListBox item operations, selection, and exception handling verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 16] Separator, Label & PictureBox Extended Properties
+    // -------------------------------------------------------------------------
+    compat::println("[Test 16] Separator, Label & PictureBox Extended Properties...");
+    {
+        // Separator
+        Separator sep(Orientation::Vertical);
+        assert(sep.GetOrientation() == Orientation::Vertical);
+        assert(sep.GetThickness() == 1.0f);
+        sep.SetThickness(3.0f);
+        assert(sep.GetThickness() == 3.0f);
+
+        bool sepThrew = false;
+        try {
+            sep.SetThickness(-1.0f);
+        } catch (const std::invalid_argument&) {
+            sepThrew = true;
+        }
+        assert(sepThrew);
+
+        // Label
+        auto targetBox = std::make_shared<TextBox>();
+        Label lbl("Username:");
+        assert(lbl.GetText() == "Username:");
+        assert(lbl.GetTarget() == nullptr);
+        lbl.SetTarget(targetBox.get());
+        assert(lbl.GetTarget() == targetBox.get());
+
+        bool labelNullThrew = false;
+        try {
+            std::shared_ptr<UIElement> nullElem = nullptr;
+            Label invalidLabel(nullElem);
+        } catch (const std::invalid_argument&) {
+            labelNullThrew = true;
+        }
+        assert(labelNullThrew);
+
+        // PictureBox
+        PictureBox pic;
+        assert(pic.GetImageLocation().empty());
+        pic.SetImageLocation("assets/test.png");
+        assert(pic.GetImageLocation() == "assets/test.png");
+
+        bool picNullThrew = false;
+        try {
+            pic.Load("");
+        } catch (const std::invalid_argument&) {
+            picNullThrew = true;
+        }
+        assert(picNullThrew);
+
+        compat::println("  [PASS] Separator, Label, PictureBox properties and fail-fast validation verified.");
     }
 
     compat::println("=================================================");

@@ -27,6 +27,12 @@
 #include "ui/controls/CheckBox.hpp"
 #include "ui/controls/TextBox.hpp"
 #include "ui/controls/PictureBox.hpp"
+#include "ui/controls/RadioButton.hpp"
+#include "ui/controls/ProgressBar.hpp"
+#include "ui/controls/Slider.hpp"
+#include "ui/controls/ListBox.hpp"
+#include "ui/controls/Separator.hpp"
+#include "ui/controls/Label.hpp"
 #include "ui/reactive/Signal.hpp"
 #include "ui/mvvm/ICommand.hpp"
 
@@ -462,13 +468,19 @@ public:
     }
 
     /// <summary>
-    /// 設定 StackPanel 排版方向。
+    /// 設定排版或控制項方向 (相容 StackPanel, ProgressBar, Slider, Separator)。
     /// </summary>
     /// <param name="o">Orientation 列舉值 (Horizontal 或 Vertical)。</param>
     /// <returns>UIBuilder 引用支援鏈式調用。</returns>
     UIBuilder& Orientation(layout::Orientation o) {
         if (auto* sp = dynamic_cast<layout::StackPanel*>(m_element.get())) {
             sp->SetOrientation(o);
+        } else if (auto* pb = dynamic_cast<controls::ProgressBar*>(m_element.get())) {
+            pb->SetOrientation(o);
+        } else if (auto* sl = dynamic_cast<controls::Slider*>(m_element.get())) {
+            sl->SetOrientation(o);
+        } else if (auto* sep = dynamic_cast<controls::Separator*>(m_element.get())) {
+            sep->SetOrientation(o);
         }
         return *this;
     }
@@ -489,22 +501,24 @@ public:
         return *this;
     }
 
-    // --- CheckBox 專屬屬性與事件 ---
+    // --- CheckBox / RadioButton 專屬屬性與事件 ---
 
     /// <summary>
-    /// 設定核取方塊勾選狀態 (相容 CheckBox)。
+    /// 設定核取/選取狀態 (相容 CheckBox 與 RadioButton)。
     /// </summary>
-    /// <param name="isChecked">true 表示已勾選。</param>
+    /// <param name="isChecked">true 表示已勾選/選取。</param>
     /// <returns>UIBuilder 引用支援鏈式調用。</returns>
     UIBuilder& Checked(bool isChecked) {
         if (auto* cb = dynamic_cast<controls::CheckBox*>(m_element.get())) {
             cb->SetChecked(isChecked);
+        } else if (auto* rb = dynamic_cast<controls::RadioButton*>(m_element.get())) {
+            rb->SetChecked(isChecked);
         }
         return *this;
     }
 
     /// <summary>
-    /// 掛載核取狀態變更事件回呼 (相容 CheckBox)。
+    /// 掛載核取/選取狀態變更事件回呼 (相容 CheckBox 與 RadioButton)。
     /// </summary>
     /// <typeparam name="Handler">回呼函數型別。</typeparam>
     /// <param name="handler">狀態變更事件處理常式。</param>
@@ -513,6 +527,8 @@ public:
     UIBuilder& OnCheckedChanged(Handler&& handler) {
         if (auto* cb = dynamic_cast<controls::CheckBox*>(m_element.get())) {
             cb->OnCheckedChanged(std::forward<Handler>(handler));
+        } else if (auto* rb = dynamic_cast<controls::RadioButton*>(m_element.get())) {
+            rb->OnCheckedChanged(std::forward<Handler>(handler));
         }
         return *this;
     }
@@ -689,6 +705,11 @@ public:
             sig.Bind(sharedTb, [formatter](controls::TextBlock& t, const ValType& val) {
                 t.SetText(formatter(val));
             });
+        } else if (dynamic_cast<controls::Control*>(m_element.get())) {
+            auto sharedCtrl = std::dynamic_pointer_cast<controls::Control>(m_element);
+            sig.Bind(sharedCtrl, [formatter](controls::Control& c, const ValType& val) {
+                c.SetText(formatter(val));
+            });
         }
         return *this;
     }
@@ -762,6 +783,198 @@ public:
         return *this;
     }
 
+    // --- RadioButton 專屬屬性 ---
+
+    /// <summary>
+    /// 設定群組名稱 (相容 RadioButton)。
+    /// </summary>
+    /// <param name="name">群組識別字串視圖。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& GroupName(compat::string_view name) {
+        if (auto* rb = dynamic_cast<controls::RadioButton*>(m_element.get())) {
+            rb->SetGroupName(name);
+        }
+        return *this;
+    }
+
+    // --- ProgressBar / Slider 專屬數值屬性與事件 ---
+
+    /// <summary>
+    /// 設定控制項數值 (相容 ProgressBar 與 Slider)。
+    /// </summary>
+    /// <param name="val">目標數值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Value(float val) {
+        if (auto* pb = dynamic_cast<controls::ProgressBar*>(m_element.get())) {
+            pb->SetValue(val);
+        } else if (auto* sl = dynamic_cast<controls::Slider*>(m_element.get())) {
+            sl->SetValue(val);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定數值下限 (相容 ProgressBar 與 Slider)。
+    /// </summary>
+    /// <param name="min">最小值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Minimum(float min) {
+        if (auto* pb = dynamic_cast<controls::ProgressBar*>(m_element.get())) {
+            pb->SetMinimum(min);
+        } else if (auto* sl = dynamic_cast<controls::Slider*>(m_element.get())) {
+            sl->SetMinimum(min);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定數值上限 (相容 ProgressBar 與 Slider)。
+    /// </summary>
+    /// <param name="max">最大值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Maximum(float max) {
+        if (auto* pb = dynamic_cast<controls::ProgressBar*>(m_element.get())) {
+            pb->SetMaximum(max);
+        } else if (auto* sl = dynamic_cast<controls::Slider*>(m_element.get())) {
+            sl->SetMaximum(max);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定步進量數值 (相容 ProgressBar)。
+    /// </summary>
+    /// <param name="step">步進值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Step(float step) {
+        if (auto* pb = dynamic_cast<controls::ProgressBar*>(m_element.get())) {
+            pb->SetStep(step);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定微調步進量 (相容 Slider)。
+    /// </summary>
+    /// <param name="change">微調量。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& SmallChange(float change) {
+        if (auto* sl = dynamic_cast<controls::Slider*>(m_element.get())) {
+            sl->SetSmallChange(change);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定大幅度調整步進量 (相容 Slider)。
+    /// </summary>
+    /// <param name="change">大調整量。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& LargeChange(float change) {
+        if (auto* sl = dynamic_cast<controls::Slider*>(m_element.get())) {
+            sl->SetLargeChange(change);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定是否為未定進度跑馬燈狀態 (相容 ProgressBar)。
+    /// </summary>
+    /// <param name="indeterminate">true 為未定狀態。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Indeterminate(bool indeterminate) {
+        if (auto* pb = dynamic_cast<controls::ProgressBar*>(m_element.get())) {
+            pb->SetIndeterminate(indeterminate);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 掛載數值變更事件處理常式 (相容 ProgressBar 與 Slider)。
+    /// </summary>
+    /// <typeparam name="Handler">回呼函數型別。</typeparam>
+    /// <param name="handler">事件回呼常式。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    template <typename Handler>
+    UIBuilder& OnValueChanged(Handler&& handler) {
+        if (auto* pb = dynamic_cast<controls::ProgressBar*>(m_element.get())) {
+            pb->OnValueChanged(std::forward<Handler>(handler));
+        } else if (auto* sl = dynamic_cast<controls::Slider*>(m_element.get())) {
+            sl->OnValueChanged(std::forward<Handler>(handler));
+        }
+        return *this;
+    }
+
+    // --- Separator 專屬屬性 ---
+
+    /// <summary>
+    /// 設定線條厚度 (相容 Separator)。
+    /// </summary>
+    /// <param name="thickness">厚度像素。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Thickness(float thickness) {
+        if (auto* sep = dynamic_cast<controls::Separator*>(m_element.get())) {
+            sep->SetThickness(thickness);
+        }
+        return *this;
+    }
+
+    // --- Label 專屬屬性 ---
+
+    /// <summary>
+    /// 設定關聯之目標控制項 (相容 Label)。
+    /// </summary>
+    /// <param name="target">目標控制項指標。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Target(controls::Control* target) {
+        if (auto* lbl = dynamic_cast<controls::Label*>(m_element.get())) {
+            lbl->SetTarget(target);
+        }
+        return *this;
+    }
+
+    // --- ListBox 專屬屬性與事件 ---
+
+    /// <summary>
+    /// 批次加入清單項目 (相容 ListBox)。
+    /// </summary>
+    /// <param name="items">字串項目初始化清單。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& Items(std::initializer_list<compat::string_view> items) {
+        if (auto* lb = dynamic_cast<controls::ListBox*>(m_element.get())) {
+            for (const auto& item : items) {
+                lb->AddItem(item);
+            }
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定選取索引 (相容 ListBox)。
+    /// </summary>
+    /// <param name="index">選取之索引數值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& SelectedIndex(int32_t index) {
+        if (auto* lb = dynamic_cast<controls::ListBox*>(m_element.get())) {
+            lb->SetSelectedIndex(index);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 掛載選取索引變更事件處理常式 (相容 ListBox)。
+    /// </summary>
+    /// <typeparam name="Handler">回呼函數型別。</typeparam>
+    /// <param name="handler">事件回呼常式。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    template <typename Handler>
+    UIBuilder& OnSelectedIndexChanged(Handler&& handler) {
+        if (auto* lb = dynamic_cast<controls::ListBox*>(m_element.get())) {
+            lb->OnSelectedIndexChanged(std::forward<Handler>(handler));
+        }
+        return *this;
+    }
+
 private:
     std::shared_ptr<T> m_element;
 };
@@ -823,12 +1036,21 @@ inline UIBuilder<layout::Grid> Grid(std::initializer_list<std::shared_ptr<core::
 }
 
 /// <summary>
-/// 建立文字標籤元件 (Label / TextBlock)。
+/// 建立純文字區塊元件 (TextBlock)。
 /// </summary>
 /// <param name="text">預設顯示文字視圖。</param>
 /// <returns>TextBlock 的 UIBuilder 包裝實例。</returns>
-inline UIBuilder<controls::TextBlock> Label(compat::string_view text = "") {
+inline UIBuilder<controls::TextBlock> TextBlock(compat::string_view text = "") {
     return UIBuilder<controls::TextBlock>(std::make_shared<controls::TextBlock>(text));
+}
+
+/// <summary>
+/// 建立文字標籤控制項 (Label)。
+/// </summary>
+/// <param name="text">預設顯示文字視圖。</param>
+/// <returns>Label 的 UIBuilder 包裝實例。</returns>
+inline UIBuilder<controls::Label> Label(compat::string_view text = "") {
+    return UIBuilder<controls::Label>(std::make_shared<controls::Label>(text));
 }
 
 /// <summary>
@@ -865,6 +1087,58 @@ inline UIBuilder<controls::TextBox> TextBox(compat::string_view placeholder = ""
 /// <returns>PictureBox 的 UIBuilder 包裝實例。</returns>
 inline UIBuilder<controls::PictureBox> PictureBox(std::shared_ptr<graphics::Bitmap> image = nullptr) {
     return UIBuilder<controls::PictureBox>(std::make_shared<controls::PictureBox>(std::move(image)));
+}
+
+/// <summary>
+/// 建立單選按鈕控制項 (RadioButton)。
+/// </summary>
+/// <param name="label">單選按鈕標籤文字視圖。</param>
+/// <returns>RadioButton 的 UIBuilder 包裝實例。</returns>
+inline UIBuilder<controls::RadioButton> RadioButton(compat::string_view label = "") {
+    return UIBuilder<controls::RadioButton>(std::make_shared<controls::RadioButton>(label));
+}
+
+/// <summary>
+/// 建立進度指示條控制項 (ProgressBar)。
+/// </summary>
+/// <param name="min">下限值。</param>
+/// <param name="max">上限值。</param>
+/// <param name="val">初始值。</param>
+/// <returns>ProgressBar 的 UIBuilder 包裝實例。</returns>
+inline UIBuilder<controls::ProgressBar> ProgressBar(float min = 0.0f, float max = 100.0f, float val = 0.0f) {
+    auto pb = std::make_shared<controls::ProgressBar>();
+    pb->SetMinimum(min);
+    pb->SetMaximum(max);
+    pb->SetValue(val);
+    return UIBuilder<controls::ProgressBar>(pb);
+}
+
+/// <summary>
+/// 建立數值滑桿控制項 (Slider)。
+/// </summary>
+/// <param name="min">下限值。</param>
+/// <param name="max">上限值。</param>
+/// <param name="val">初始值。</param>
+/// <returns>Slider 的 UIBuilder 包裝實例。</returns>
+inline UIBuilder<controls::Slider> Slider(float min = 0.0f, float max = 100.0f, float val = 0.0f) {
+    return UIBuilder<controls::Slider>(std::make_shared<controls::Slider>(min, max, val));
+}
+
+/// <summary>
+/// 建立清單方塊控制項 (ListBox)。
+/// </summary>
+/// <returns>ListBox 的 UIBuilder 包裝實例。</returns>
+inline UIBuilder<controls::ListBox> ListBox() {
+    return UIBuilder<controls::ListBox>(std::make_shared<controls::ListBox>());
+}
+
+/// <summary>
+/// 建立分隔線控制項 (Separator)。
+/// </summary>
+/// <param name="orientation">方向 (預設為 Horizontal)。</param>
+/// <returns>Separator 的 UIBuilder 包裝實例。</returns>
+inline UIBuilder<controls::Separator> Separator(layout::Orientation orientation = layout::Orientation::Horizontal) {
+    return UIBuilder<controls::Separator>(std::make_shared<controls::Separator>(orientation));
 }
 
 } // namespace dsl

@@ -139,14 +139,22 @@ int main() {
             return "Score: " + compat::to_string(val);
         });
 
-        std::shared_ptr<controls::TextBlock> textBlock = labelBuilder.Get();
-        assert(textBlock->GetText() == "Score: 100");
+        std::shared_ptr<controls::Label> labelElem = labelBuilder.Get();
+        assert(labelElem->GetText() == "Score: 100");
 
         score.Set(250);
-        assert(textBlock->GetText() == "Score: 250");
+        assert(labelElem->GetText() == "Score: 250");
 
         score = 500;
-        assert(textBlock->GetText() == "Score: 500");
+        assert(labelElem->GetText() == "Score: 500");
+
+        // Also verify TextBlock BindText
+        Signal<int32_t> tbScore(10);
+        auto tbBuilder = TextBlock("Init").BindText(tbScore, [](int32_t val) {
+            return "TB: " + compat::to_string(val);
+        });
+        std::shared_ptr<controls::TextBlock> tbElem = tbBuilder.Get();
+        assert(tbElem->GetText() == "TB: 10");
 
         compat::println("  [PASS] Signal<T> notifications and BindText synchronization verified.");
     }

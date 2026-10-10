@@ -1,4 +1,4 @@
-﻿# Button 類別
+# Button 類別
 
 - **命名空間**: `cppui::controls`
 - **標頭檔**: [`include/ui/controls/Button.hpp`](../../../include/ui/controls/Button.hpp)
@@ -34,6 +34,15 @@
 ### 事件監聽捷徑
 - `void OnClick(ClickEventHandler handler)`: 註冊帶按鈕引用的點擊回呼常式 `void(Button&)`.
 - `void OnClick(std::function<void()> handler)`: 註冊無參數的簡潔點擊回呼常式。
+
+### 對話方塊行為與預設按鈕 (Dialog & Default)
+- `void PerformClick()`: 以程式碼強制模擬使用者點擊按鈕，引發 Click 路由事件並執行關聯行為。
+- `COMPAT_NODISCARD bool IsDefault() const noexcept`: 查詢是否為對話方塊預設按鈕（按下 Enter 觸發）。
+- `void SetIsDefault(bool isDefault) noexcept`: 設定是否為對話方塊預設按鈕。
+- `COMPAT_NODISCARD bool IsCancel() const noexcept`: 查詢是否為對話方塊取消按鈕（按下 Esc 觸發）。
+- `void SetIsCancel(bool isCancel) noexcept`: 設定是否為對話方塊取消按鈕。
+- `COMPAT_NODISCARD app::DialogResult GetDialogResult() const noexcept`: 取得點擊按鈕後將回傳之對話方塊結果值。
+- `void SetDialogResult(app::DialogResult result) noexcept`: 設定點擊此按鈕時自動關閉所屬對話方塊表單之 `DialogResult`。
 
 ### 繪製與狀態呈現
 - `void OnRender(rendering::DrawingContext& dc) override`: 依據 Hover、Pressed、Disabled 及 IsFocused 動態選擇筆刷，並輸出圓角幾何背景、外框與焦點光圈。

@@ -52,6 +52,25 @@ public:
     /// <param name="mode">新尺寸模式。</param>
     void SetSizeMode(graphics::PictureBoxSizeMode mode);
 
+    /// <summary>
+    /// 取得影像檔案路徑 (ImageLocation)。
+    /// </summary>
+    /// <returns>檔案路徑字串視圖。</returns>
+    COMPAT_NODISCARD compat::string_view GetImageLocation() const noexcept { return m_imageLocation; }
+
+    /// <summary>
+    /// 設定影像檔案路徑並嘗試載入。
+    /// </summary>
+    /// <param name="path">檔案路徑字串視圖。</param>
+    void SetImageLocation(compat::string_view path);
+
+    /// <summary>
+    /// 從指定的影像檔案路徑載入影像。
+    /// </summary>
+    /// <param name="path">檔案路徑字串視圖。</param>
+    /// <returns>若載入成功傳回 true，失敗傳回 false。</returns>
+    bool Load(compat::string_view path);
+
 protected:
     /// <summary>度量計算控制項期望尺寸。</summary>
     core::Size MeasureOverride(core::Size availableSize) override;
@@ -65,6 +84,7 @@ protected:
 private:
     std::shared_ptr<graphics::Bitmap> m_image;
     graphics::PictureBoxSizeMode      m_sizeMode{ graphics::PictureBoxSizeMode::Normal };
+    std::string                       m_imageLocation;
 };
 
 } // namespace controls

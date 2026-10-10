@@ -86,7 +86,14 @@ set(CPPUI_SOURCES
     src/app/Application.cpp
     src/app/AppBuilder.cpp
     src/app/Dispatcher.cpp
+    src/app/Timer.cpp
     src/controls/PictureBox.cpp
+    src/controls/RadioButton.cpp
+    src/controls/ProgressBar.cpp
+    src/controls/Slider.cpp
+    src/controls/ListBox.cpp
+    src/controls/Separator.cpp
+    src/controls/Label.cpp
     src/graphics/Pen.cpp
     src/graphics/Pens.cpp
     src/graphics/Brush.cpp

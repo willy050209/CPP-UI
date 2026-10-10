@@ -7,6 +7,7 @@
 #include "ui/input/InputManager.hpp"
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/mvvm/ICommand.hpp"
+#include "ui/app/Form.hpp"
 #include "ui/theme/ThemeManager.hpp"
 #include "ui/theme/Theme.hpp"
 #include <stdexcept>
@@ -170,6 +171,12 @@ void Button::RaiseClick() {
     RaiseEvent(args);
     if (m_command && m_command->CanExecute()) {
         m_command->Execute();
+    }
+    if (m_dialogResult != app::DialogResult::None) {
+        if (auto* form = FindForm()) {
+            form->SetDialogResult(m_dialogResult);
+            form->Close();
+        }
     }
 }
 

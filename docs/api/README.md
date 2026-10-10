@@ -111,11 +111,12 @@ graph TD
 | 命名空間 (Namespace) | 模組標題 | 簡述與職責 | 核心型別導覽 |
 | :--- | :--- | :--- | :--- |
 | [`cppui::dsl`](namespaces/cppui_dsl.md) | **宣告式 Fluent RAD DSL** | 提供極簡鏈式 UI 建構樣板 `UIBuilder<T>` 與 `VStack`, `HStack`, `Grid`, `Button`, `PictureBox` 等語意化元件工廠函式。 | [`UIBuilder<T>`](namespaces/cppui_dsl.md), `VStack`, `HStack`, `Grid`, `Border`, `Button`, `TextBox`, `CheckBox`, `Label`, `PictureBox` |
-| [`cppui::app`](namespaces/cppui_app.md) | **應用程式與視窗中樞** | 封裝生命週期、訊息泵、非同步調度器 (Dispatcher)、表單生命週期與 Generic Host 應用程式構建器。 | [`Application`](classes/app_application.md), [`Dispatcher`](classes/app_dispatcher.md), [`Form`](classes/app_form.md), [`AppBuilder`](classes/app_appbuilder.md) |
+| [`cppui::app`](namespaces/cppui_app.md) | **應用程式與視窗中樞** | 封裝生命週期、訊息泵、非同步調度器 (Dispatcher)、表單控制器、UI 計時器 (Timer) 與 Generic Host 應用程式構建器。 | [`Application`](classes/app_application.md), [`Dispatcher`](classes/app_dispatcher.md), [`Form`](classes/app_form.md), [`Timer`](classes/app_timer.md), [`AppBuilder`](classes/app_appbuilder.md) |
 | [`cppui::ioc`](namespaces/cppui_ioc.md) | **依賴反轉 (IoC / DI)** | 提供執行期型別安全之依賴注入容器與服務解析機制。 | [`ServiceCollection`](classes/ioc_servicecollection.md), [`IServiceProvider`](classes/ioc_servicecollection.md) |
 | [`cppui::mvvm`](namespaces/cppui_mvvm.md) | **現代 MVVM 架構** | 提供視圖模型屬性通知機制與命令模式委派實作。 | [`ViewModelBase`](classes/mvvm_viewmodelbase.md), [`RelayCommand`](classes/mvvm_relaycommand.md), [`ICommand`](classes/mvvm_relaycommand.md) |
 | [`cppui::reactive`](namespaces/cppui_reactive.md) | **響應式資料流與信號** | 提供零依賴、型別安全且具備弱引用生命週期保護之 `Signal<T>` 狀態信號，實現資料到介面的自動同步與綁定。 | [`Signal<T>`](classes/reactive_signal.md) |
-| [`cppui::controls`](namespaces/cppui_controls.md) | **核心 UI 控制項庫** | 實作基礎控制項樣式基底 `Control`、單內容容器 `ContentControl`、互動按鈕 `Button`、核取方塊 `CheckBox`、文字編輯框 `TextBox`、圖片展示框 `PictureBox` 與捲動視區容器 `ScrollViewer`。 | [`Control`](classes/controls_control.md), [`ContentControl`](classes/controls_contentcontrol.md), [`Button`](classes/controls_button.md), [`CheckBox`](classes/controls_checkbox.md), [`TextBox`](classes/controls_textbox.md), [`TextBlock`](classes/controls_textblock.md), [`PictureBox`](classes/controls_picturebox.md), [`ScrollViewer`](classes/controls_scrollviewer.md) |
+| [`cppui::controls`](namespaces/cppui_controls.md) | **核心 UI 控制項庫** | 實作基礎控制項樣式基底 `Control`、單內容容器 `ContentControl`、按鈕 `Button`、單選鈕 `RadioButton`、核取方塊 `CheckBox`、標籤 `Label`、輸入框 `TextBox`、進度條 `ProgressBar`、滑桿 `Slider`、清單方塊 `ListBox`、分隔線 `Separator`、圖片展示框 `PictureBox` 與捲動視區容器 `ScrollViewer`。 | [`Control`](classes/controls_control.md), [`Button`](classes/controls_button.md), [`RadioButton`](classes/controls_radiobutton.md), [`CheckBox`](classes/controls_checkbox.md), [`Label`](classes/controls_label.md), [`TextBox`](classes/controls_textbox.md), [`ProgressBar`](classes/controls_progressbar.md), [`Slider`](classes/controls_slider.md), [`ListBox`](classes/controls_listbox.md), [`Separator`](classes/controls_separator.md), [`PictureBox`](classes/controls_picturebox.md), [`ScrollViewer`](classes/controls_scrollviewer.md) |
+
 | [`cppui::graphics`](namespaces/cppui_graphics.md) | **進階向量與點陣圖形 (GDI+ 風格 API)** | 提供解耦式一級圖形物件（`Pen`, `Brush`, `GraphicsPath`, `Bitmap`）、預定義樣式清單（`Pens`, `Brushes`, `Colors`）、多執行緒讀寫鎖保護與統一排程繪圖器 `Graphics`。 | [`Graphics`](classes/graphics_graphics.md), [`Pen`](classes/graphics_objects.md#1-pen-類別), [`Brush`](classes/graphics_objects.md#2-brush-類別族), [`GraphicsPath`](classes/graphics_objects.md#3-graphicspath-類別), [`Bitmap`](classes/graphics_objects.md#4-bitmap-類別), [`Pens`](classes/graphics_objects.md#5-pens-常數集合), [`Brushes`](classes/graphics_objects.md#6-brushes-常數集合) |
 | [`cppui::core`](namespaces/cppui_core.md) | **核心幾何與色彩** | 提供 2D 坐標、尺寸、矩形邊界、厚度與 RGBA 顏色等基礎 POD 數值型別，座標轉換中樞 [`CoordinateTransform`](classes/core_coordinatetransform.md)，以及視覺樹根基 [`Visual`](classes/core_visual.md) 與排版核心 [`UIElement`](classes/core_uielement.md)。 | [`Visual`](classes/core_visual.md), [`UIElement`](classes/core_uielement.md), [`CoordinateTransform`](classes/core_coordinatetransform.md), [`Point`](classes/core_point.md), [`Size`](classes/core_size.md), [`Rect`](classes/core_rect.md), [`Color`](classes/core_color.md), [`Thickness`](classes/core_thickness.md) |
 | [`cppui::input`](namespaces/cppui_input.md) | **輸入管線與路由事件** | 實作微軟 WPF / Avalonia 風格之雙向（隧道 Tunneling + 冒泡 Bubbling）事件路由系統、游標懸停追蹤、指標捕獲與鍵盤 Tab 焦點巡訪中樞。 | [`RoutedEvent`](classes/input_routedevent.md), [`RoutedEventArgs`](classes/input_routedeventargs.md), [`EventRoute`](classes/input_eventroute.md), [`PointerEventArgs`](classes/input_pointereventargs.md), [`KeyEventArgs`](classes/input_keyeventargs.md), [`FocusManager`](classes/input_focusmanager.md), [`InputManager`](classes/input_inputmanager.md) |
@@ -135,6 +136,7 @@ graph TD
 * [`Application`](classes/app_application.md)：應用程式密封靜態中樞，支援 `Application::Run(new Form1())` 極簡進入點、訊息泵循環、`DoEvents()`、`Post(action)` 非同步投遞、渲染平台切換 (`PlatformBackend`)、視窗清單管理與依賴注入中繼。
 * [`Dispatcher`](classes/app_dispatcher.md)：UI 執行緒非同步事件調度器，支援跨執行緒安全任務派發 (`Post` / `InvokeAsync`) 與執行緒親和性判定 (`CheckAccess`)。
 * [`Form`](classes/app_form.md)：桌面視窗基底類別，繼承自 `ContentControl`，封裝原生視窗與渲染管線（支援 Win32 軟體與 Skia 後端），具備 `OnLoad`、`OnShown`、支援取消關閉之 `OnFormClosing`、`OnFormClosed` 與模態 `ShowDialog()`。
+* [`Timer`](classes/app_timer.md)：UI 執行緒週期性計時器，對標 `System.Windows.Forms.Timer`，具備 `Interval` 毫秒間隔、`Tick` 事件派發、`PerformTick` 程式化測試與防堆疊合流機制。
 * [`AppBuilder` / `AppHost`](classes/app_appbuilder.md)：現代 Generic Host 應用程式構建器，支援鏈式相依服務配置、平台切換 (`UseSkia()` / `UseWin32()`) 與表單自動解析啟動。
 * [`FormClosingEventArgs` / `DialogResult`](classes/app_formeventargs.md)：表單生命週期事件引數（支援 `Cancel = true` 攔截取消）與視窗狀態列舉。
 * [`ServiceCollection`](classes/ioc_servicecollection.md) 與 [`IServiceProvider`](classes/ioc_iserviceprovider.md)：依賴反轉 (IoC) 容器，支援 Transient 與 Singleton 生命週期之服務工廠與實例註冊。
@@ -152,14 +154,21 @@ graph TD
 ### 核心控制項與排版網格 (Milestone 6 & 8 Controls & Grid)
 * [`Control`](classes/controls_control.md)：控制項抽象基底，提供 Location 幾何坐標、Padding、Background、Foreground、BorderBrush、BorderThickness、CornerRadius 與 Deflate/Inflate 邊界度量。
 * [`ContentControl`](classes/controls_contentcontrol.md)：單內容控制項容器，支援動態文字字串與任意 `UIElement` 自訂子元件。
-* [`Button`](classes/controls_button.md)：互動式按鈕，具備 Hover、Pressed、Disabled、獲焦霓虹外框、空白鍵/Enter 狀態機與 `Command` 綁定，發布 `ClickEvent`。
-* [`CheckBox`](classes/controls_checkbox.md)：核取方塊，具備向量抗鋸齒對稱勾號繪製、狀態切換與 `CheckedEvent`/`UncheckedEvent`。
-* [`TextBox`](classes/controls_textbox.md)：單行文字編輯框，支援輸入、退格、Delete、方向鍵左右移動、Home/End、Placeholder、焦點外框與 `TextChangedEvent`。
+* [`Button`](classes/controls_button.md)：互動式按鈕，具備 Hover、Pressed、Disabled、獲焦霓虹外框、空白鍵/Enter 狀態機、對話方塊結果 (`DialogResult`)、`PerformClick` 與 `Command` 綁定，發布 `ClickEvent`。
+* [`RadioButton`](classes/controls_radiobutton.md)：單選按鈕控制項，繼承自 Button，支援圓形標記、同容器/同群組名互斥選取與 `CheckedEvent`/`UncheckedEvent`。
+* [`CheckBox`](classes/controls_checkbox.md)：核取方塊，具備向量抗鋸齒對稱勾號繪製、狀態切換、三態 (`Indeterminate`) 與 `CheckedEvent`/`UncheckedEvent`/`IndeterminateEvent`。
+* [`Label`](classes/controls_label.md)：標籤控制項，支援文字/內容呈現與目標控制項 (`Target`) 焦點轉移關聯。
+* [`TextBox`](classes/controls_textbox.md)：單行文字編輯框，支援輸入、退格、Delete、方向鍵左右移動、Home/End、Placeholder、唯讀 (`IsReadOnly`)、最大長度限制 (`MaxLength`)、選取文字 (`SelectAll`/`Select`)、密碼遮罩 (`PasswordChar`)、焦點外框與 `TextChangedEvent`。
 * [`TextBlock`](classes/controls_textblock.md)：高效能唯讀純文字/多行文字展示元件。
-* [`PictureBox`](classes/controls_picturebox.md)：圖片展示控制項，支援 5 種尺寸縮放模式 (`Normal`, `StretchImage`, `AutoSize`, `CenterImage`, `Zoom`)，並提供 Fluent DSL 鏈式構建與響應式信號綁定。
-* [`ScrollViewer`](classes/controls_scrollviewer.md)：捲動視區容器，預設啟用邊界剪裁 (`ClipToBounds = true`)，支援滾輪、滑塊拖曳、PageUp/Down、鍵盤導航與 `OnPostRender` 置頂自適應卷軸呈現。
+* [`ProgressBar`](classes/controls_progressbar.md)：進度指示條控制項，支援水平/垂直方向、Min/Max/Value 範圍限制、`PerformStep`、`Increment`、未定跑馬燈與 `ValueChangedEvent`。
+* [`Slider`](classes/controls_slider.md)：數值滑桿控制項，支援滑塊拖曳、軌道點選跳轉、方向鍵微調 (`SmallChange`)、翻頁粗調 (`LargeChange`) 與 `ValueChangedEvent`。
+* [`ListBox`](classes/controls_listbox.md)：清單方塊控制項，支援項目增刪 (`AddItem`/`InsertItem`/`RemoveItem`/`ClearItems`)、單選索引 (`SelectedIndex`/`SelectedItem`)、鍵盤方向鍵導航與 `SelectedIndexChangedEvent`。
+* [`Separator`](classes/controls_separator.md)：分隔線控制項，支援水平與垂直方向、線條厚度與樣式設定。
+* [`PictureBox`](classes/controls_picturebox.md)：圖片展示控制項，支援 5 種尺寸縮放模式 (`Normal`, `StretchImage`, `AutoSize`, `CenterImage`, `Zoom`)、檔案路徑載入 (`Load`/`ImageLocation`)，並提供 Fluent DSL 鏈式構建與響應式信號綁定。
+* [`ScrollViewer`](classes/controls_scrollviewer.md)：捲動視區容器，預設啟用邊界剪裁 (`ClipToBounds = true`)，支援水平/垂直卷軸可見性策略 (`ScrollBarVisibility`)、方向滾動捷徑 (`ScrollToTop`/`ScrollToBottom`/`ScrollToLeftEnd`/`ScrollToRightEnd`/`LineLeft`/`LineRight`)、滾輪、滑塊拖曳、PageUp/Down、鍵盤導航與置頂自適應卷軸呈現。
 * [`Grid`](classes/layout_grid.md)：多儲存格網格排版容器，支援 Pixel、Auto、Star (*) 行列比例求解與 `SetRow` / `SetColumn` / `SetRowSpan` / `SetColumnSpan` 附加屬性。
 * [`Signal<T>`](classes/reactive_signal.md)：輕量響應式屬性信號樣板，支援值變更推播與弱引用安全的控制項屬性自動綁定。
+
 
 ### GDI+ 風格圖形、卷積與影像處理 (Advanced Graphics, Convolution & Image Processing)
 * [`Graphics`](classes/graphics_graphics.md)：核心圖形排程器，支援雙模式建構（`FromDrawingContext` UI 模式與 `FromImage` 離線記憶體位圖模式）、幾何圖元/路徑/影像/文字繪製、變換矩陣、剪裁區域與 `StateScope` RAII 狀態守衛。

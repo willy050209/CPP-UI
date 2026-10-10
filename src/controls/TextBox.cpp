@@ -65,6 +65,10 @@ TextBox::TextBox() {
         uint32_t vk = e.GetVirtualKey();
 
         if (vk == 0x08) { // Backspace
+            if (m_isReadOnly) {
+                e.SetHandled(true);
+                return;
+            }
             if (m_caretIndex > 0) {
                 // 回退一個 UTF-8 字元
                 size_t eraseStart = m_caretIndex - 1;
@@ -82,6 +86,10 @@ TextBox::TextBox() {
             }
             e.SetHandled(true);
         } else if (vk == 0x2E) { // Delete
+            if (m_isReadOnly) {
+                e.SetHandled(true);
+                return;
+            }
             if (m_caretIndex < m_text.size()) {
                 // 前進一個 UTF-8 字元刪除
                 size_t eraseEnd = m_caretIndex + 1;
@@ -139,9 +147,15 @@ TextBox::TextBox(compat::string_view placeholder) : TextBox() {
 }
 
 void TextBox::SetText(compat::string_view text) {
-    if (m_text != text) {
-        m_text = std::string(text.data(), text.size());
-        m_caretIndex = (std::min)(m_caretIndex, m_text.size());
+    std::string newText(text.data(), text.size());
+    if (m_maxLength > 0 && newText.size() > m_maxLength) {
+        newText.erase(m_maxLength);
+    }
+    if (m_text != newText) {
+        m_text = std::move(newText);
+        m_caretIndex = m_text.size();
+        m_selectionStart = (std::min)(m_selectionStart, m_text.size());
+        m_selectionLength = (std::min)(m_selectionLength, m_text.size() - m_selectionStart);
         InvalidateLayout();
         InvalidateMeasure();
         InvalidateVisual();
@@ -154,13 +168,86 @@ void TextBox::SetText(compat::string_view text) {
 }
 
 void TextBox::InsertText(compat::string_view text) {
-    if (text.empty()) return;
-    m_text.insert(m_caretIndex, text.data(), text.size());
-    m_caretIndex += text.size();
+    if (text.empty() || m_isReadOnly) return;
+    compat::string_view toInsert = text;
+    if (m_maxLength > 0) {
+        if (m_text.size() >= m_maxLength) return;
+        size_t avail = m_maxLength - m_text.size();
+        if (toInsert.size() > avail) {
+            toInsert = toInsert.substr(0, avail);
+        }
+    }
+    m_text.insert(m_caretIndex, toInsert.data(), toInsert.size());
+    m_caretIndex += toInsert.size();
     InvalidateLayout();
     InvalidateMeasure();
     InvalidateVisual();
     RaiseTextChanged();
+}
+
+void TextBox::SetReadOnly(bool readOnly) noexcept {
+    if (m_isReadOnly != readOnly) {
+        m_isReadOnly = readOnly;
+        InvalidateVisual();
+    }
+}
+
+void TextBox::SetMaxLength(size_t maxLen) {
+    m_maxLength = maxLen;
+    if (m_maxLength > 0 && m_text.size() > m_maxLength) {
+        m_text.erase(m_maxLength);
+        m_caretIndex = (std::min)(m_caretIndex, m_text.size());
+        m_selectionStart = (std::min)(m_selectionStart, m_text.size());
+        m_selectionLength = (std::min)(m_selectionLength, m_text.size() - m_selectionStart);
+        InvalidateLayout();
+        InvalidateMeasure();
+        InvalidateVisual();
+        RaiseTextChanged();
+    }
+}
+
+void TextBox::Clear() {
+    SetText("");
+    m_caretIndex = 0;
+    m_selectionStart = 0;
+    m_selectionLength = 0;
+}
+
+void TextBox::SelectAll() {
+    m_selectionStart = 0;
+    m_selectionLength = m_text.size();
+    InvalidateVisual();
+}
+
+void TextBox::Select(size_t start, size_t length) {
+    m_selectionStart = (std::min)(start, m_text.size());
+    m_selectionLength = (std::min)(length, m_text.size() - m_selectionStart);
+    InvalidateVisual();
+}
+
+std::string TextBox::GetSelectedText() const {
+    if (m_selectionLength == 0 || m_selectionStart >= m_text.size()) {
+        return "";
+    }
+    return m_text.substr(m_selectionStart, m_selectionLength);
+}
+
+void TextBox::SetIsPassword(bool isPassword) {
+    if (m_isPassword != isPassword) {
+        m_isPassword = isPassword;
+        InvalidateLayout();
+        InvalidateVisual();
+    }
+}
+
+void TextBox::SetPasswordChar(char ch) {
+    if (m_passwordChar != ch) {
+        m_passwordChar = ch;
+        if (m_isPassword) {
+            InvalidateLayout();
+            InvalidateVisual();
+        }
+    }
 }
 
 void TextBox::SetPlaceholder(compat::string_view placeholder) {
@@ -214,8 +301,13 @@ void TextBox::InvalidateLayout() {
 void TextBox::EnsureLayout() {
     if (!m_isLayoutDirty) return;
 
+    std::string displayText = m_text;
+    if (m_isPassword && !m_text.empty()) {
+        displayText = std::string(m_text.size(), m_passwordChar);
+    }
+
     // 單行文字以超寬約束排版，防止自動折行
-    m_textLayout = text::TextLayoutEngine::Get().CreateLayout(m_text, m_font, 100000.0f);
+    m_textLayout = text::TextLayoutEngine::Get().CreateLayout(displayText, m_font, 100000.0f);
     if (!m_placeholder.empty()) {
         m_placeholderLayout = text::TextLayoutEngine::Get().CreateLayout(m_placeholder, m_font, 100000.0f);
     }

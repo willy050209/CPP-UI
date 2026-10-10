@@ -13,6 +13,17 @@
 
 ---
 
+## 相關列舉型別
+
+### ScrollBarVisibility
+定義卷軸軌道與滑塊的可見性顯示策略（對標 WPF `ScrollBarVisibility`）：
+- `Disabled` (0): 卷軸被停用且不顯示，內容在該方向不可捲動。
+- `Auto` (1): 當內容延伸尺寸大於可視視區尺寸時自動顯示卷軸，否則隱藏。
+- `Hidden` (2): 卷軸隱藏不繪製，但若透過程式碼或滾輪捲動仍保留捲動能力。
+- `Visible` (3): 無論內容尺寸是否超出視區，卷軸恆常顯示。
+
+---
+
 ## 建構子
 
 - `ScrollViewer()`: 建立空白 `ScrollViewer`，預設啟用剪裁並註冊指標與滾輪事件處理器。
@@ -33,18 +44,25 @@
 - `COMPAT_NODISCARD float GetViewportWidth() const noexcept`: 取得目前容器可視區域寬度。
 
 ### 滾動操作與導航捷徑
-- `void ScrollToHome()`: 捲動至內容最頂端（偏移量歸零）。
-- `void ScrollToEnd()`: 捲動至內容最底端。
+- `void ScrollToHome() / void ScrollToTop()`: 捲動至內容最頂端（垂直偏移量歸零）。
+- `void ScrollToEnd() / void ScrollToBottom()`: 捲動至內容最底端。
+- `void ScrollToLeftEnd()`: 捲動至內容最左端（水平偏移量歸零）。
+- `void ScrollToRightEnd()`: 捲動至內容最右端。
 - `void LineUp()`: 向上捲動一個步進距離（`m_scrollStep`，預設 32px）。
 - `void LineDown()`: 向下捲動一個步進距離。
+- `void LineLeft()`: 向左捲動一個步進距離。
+- `void LineRight()`: 向右捲動一個步進距離。
 - `void PageUp()`: 向上捲動一整頁視區高度。
 - `void PageDown()`: 向下捲動一整頁視區高度。
 
-### 卷軸規格設定
+### 卷軸規格與可見性設定
+- `COMPAT_NODISCARD ScrollBarVisibility GetHorizontalScrollBarVisibility() const noexcept / void SetHorizontalScrollBarVisibility(ScrollBarVisibility visibility) noexcept`: 取得或設定水平卷軸可見性策略（`Disabled`, `Auto`, `Hidden`, `Visible`）。
+- `COMPAT_NODISCARD ScrollBarVisibility GetVerticalScrollBarVisibility() const noexcept / void SetVerticalScrollBarVisibility(ScrollBarVisibility visibility) noexcept`: 取得或設定垂直卷軸可見性策略（`Disabled`, `Auto`, `Hidden`, `Visible`）。
 - `COMPAT_NODISCARD float GetScrollStep() const noexcept`: 取得單次滾輪或按鍵之步進像素距離。
 - `void SetScrollStep(float step) noexcept`: 設定步進像素距離（最小值為 1.0f）。
 - `COMPAT_NODISCARD float GetScrollBarWidth() const noexcept`: 取得垂直卷軸之寬度（預設 10px）。
 - `void SetScrollBarWidth(float width) noexcept`: 設定垂直卷軸寬度（最小值為 4.0f）。
+
 
 ### 排版與渲染管線
 - `core::Size MeasureOverride(core::Size availableSize) override`: 測量階段，向子內容提供未受限垂直高度以計算實際延伸尺寸。

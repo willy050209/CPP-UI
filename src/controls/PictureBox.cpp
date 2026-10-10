@@ -39,6 +39,27 @@ void PictureBox::SetSizeMode(graphics::PictureBoxSizeMode mode) {
     }
 }
 
+void PictureBox::SetImageLocation(compat::string_view path) {
+    m_imageLocation = std::string(path.data(), path.size());
+    if (!m_imageLocation.empty()) {
+        Load(m_imageLocation);
+    }
+}
+
+bool PictureBox::Load(compat::string_view path) {
+    if (path.empty()) {
+        throw std::invalid_argument("PictureBox::Load: path cannot be empty.");
+    }
+    m_imageLocation = std::string(path.data(), path.size());
+    try {
+        auto bmp = std::make_shared<graphics::Bitmap>(path);
+        SetImage(bmp);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 core::Size PictureBox::MeasureOverride(core::Size availableSize) {
     if (!m_image) {
         return core::Size(0.0f, 0.0f);

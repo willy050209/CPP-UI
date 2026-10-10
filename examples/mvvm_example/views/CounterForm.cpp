@@ -15,11 +15,11 @@ CounterForm::CounterForm(std::shared_ptr<CounterViewModel> viewModel)
     SetFormSize(560, 360);
     SetDataContext(m_viewModel);
 
-    m_countLabel = Label(m_viewModel ? m_viewModel->GetCountText() : "計數數值: 0")
+    m_countLabel = TextBlock(m_viewModel ? m_viewModel->GetCountText() : "計數數值: 0")
         .FontSize(28.0f)
         .Foreground(core::Color(100, 200, 255, 255));
 
-    m_statusLabel = Label(m_viewModel ? m_viewModel->GetStatusMessage() : "")
+    m_statusLabel = TextBlock(m_viewModel ? m_viewModel->GetStatusMessage() : "")
         .FontSize(14.0f)
         .Foreground(core::Color(180, 180, 180, 255));
 

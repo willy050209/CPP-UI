@@ -1,4 +1,4 @@
-﻿# TextBox 類別
+# TextBox 類別
 
 - **命名空間**: `cppui::controls`
 - **標頭檔**: [`include/ui/controls/TextBox.hpp`](../../../include/ui/controls/TextBox.hpp)
@@ -33,8 +33,25 @@
 - `COMPAT_NODISCARD float GetFontSize() const noexcept / void SetFontSize(float size)`: 取得或設定字體大小。
 - `COMPAT_NODISCARD compat::string_view GetFontFamily() const noexcept / void SetFontFamily(compat::string_view family)`: 取得或設定字體系列。
 
+### 唯讀與長度限制
+- `COMPAT_NODISCARD bool IsReadOnly() const noexcept / void SetReadOnly(bool readOnly) noexcept`: 取得或設定文字輸入框是否為唯讀模式。
+- `COMPAT_NODISCARD size_t GetMaxLength() const noexcept / void SetMaxLength(size_t maxLen)`: 取得或設定最大輸入字元長度限制（0 代表無長度上限）。
+
+### 內容清除與文字選取
+- `void Clear()`: 清空文字框內的所有文字，並將游標重置至開頭。
+- `void SelectAll()`: 全選文字輸入框內的所有字元。
+- `void Select(size_t start, size_t length)`: 設定選取範圍起點與字元長度。
+- `COMPAT_NODISCARD size_t GetSelectionStart() const noexcept`: 取得目前選取區段之起始索引。
+- `COMPAT_NODISCARD size_t GetSelectionLength() const noexcept`: 取得目前選取區段之字元長度。
+- `COMPAT_NODISCARD std::string GetSelectedText() const`: 取得目前選取反白區段之文字副本。
+
+### 密碼掩碼模式
+- `COMPAT_NODISCARD bool IsPassword() const noexcept / void SetIsPassword(bool isPassword)`: 取得或設定是否啟用密碼遮罩隱藏模式。
+- `COMPAT_NODISCARD char GetPasswordChar() const noexcept / void SetPasswordChar(char ch)`: 取得或設定密碼掩碼字元（預設為 `'*'`）。
+
 ### 事件監聽捷徑
 - `void OnTextChanged(std::function<void(compat::string_view)> handler)`: 註冊文字內容變更監聽函式。
 
 ### 命中測試與繪製
-- `void OnRender(rendering::DrawingContext& dc) override`: 繪製背景與外框、設定內縮剪裁區域、繪製排版文字或佔位符，並在控制項獲焦時於字元邊界繪製垂直插入游標。
+- `void OnRender(rendering::DrawingContext& dc) override`: 繪製背景與外框、設定內縮剪裁區域、繪製排版文字（或密碼遮罩符號）或佔位符，並在控制項獲焦時於字元邊界繪製垂直插入游標。
+

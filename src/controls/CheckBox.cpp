@@ -8,6 +8,7 @@ namespace controls {
 
 const input::RoutedEvent CheckBox::CheckedEvent(101, "Checked", input::RoutingStrategy::Bubble);
 const input::RoutedEvent CheckBox::UncheckedEvent(102, "Unchecked", input::RoutingStrategy::Bubble);
+const input::RoutedEvent CheckBox::IndeterminateEvent(103, "Indeterminate", input::RoutingStrategy::Bubble);
 
 CheckBox::CheckBox() {
     const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
@@ -28,17 +29,39 @@ CheckBox::CheckBox(compat::string_view label) : CheckBox() {
 }
 
 void CheckBox::SetChecked(bool checked) {
-    if (m_isChecked != checked) {
-        m_isChecked = checked;
+    SetCheckState(checked ? CheckState::Checked : CheckState::Unchecked);
+}
+
+void CheckBox::SetCheckState(CheckState state) {
+    if (m_checkState != state) {
+        m_checkState = state;
         InvalidateVisual();
 
-        input::RoutedEventArgs args(m_isChecked ? CheckedEvent : UncheckedEvent, this);
-        RaiseEvent(args);
+        if (m_checkState == CheckState::Checked) {
+            input::RoutedEventArgs args(CheckedEvent, this);
+            RaiseEvent(args);
+        } else if (m_checkState == CheckState::Unchecked) {
+            input::RoutedEventArgs args(UncheckedEvent, this);
+            RaiseEvent(args);
+        } else {
+            input::RoutedEventArgs args(IndeterminateEvent, this);
+            RaiseEvent(args);
+        }
     }
 }
 
 void CheckBox::Toggle() {
-    SetChecked(!m_isChecked);
+    if (m_isThreeState) {
+        if (m_checkState == CheckState::Unchecked) {
+            SetCheckState(CheckState::Checked);
+        } else if (m_checkState == CheckState::Checked) {
+            SetCheckState(CheckState::Indeterminate);
+        } else {
+            SetCheckState(CheckState::Unchecked);
+        }
+    } else {
+        SetCheckState(m_checkState == CheckState::Checked ? CheckState::Unchecked : CheckState::Checked);
+    }
 }
 
 void CheckBox::OnCheckedChanged(std::function<void(bool)> handler) {
@@ -47,6 +70,12 @@ void CheckBox::OnCheckedChanged(std::function<void(bool)> handler) {
     });
     AddHandler(UncheckedEvent, [handler](input::RoutedEventArgs&) {
         handler(false);
+    });
+}
+
+void CheckBox::OnIndeterminate(std::function<void()> handler) {
+    AddHandler(IndeterminateEvent, [handler](input::RoutedEventArgs&) {
+        handler();
     });
 }
 
@@ -89,12 +118,17 @@ void CheckBox::OnRender(rendering::DrawingContext& dc) {
     core::Rect boxRect(left, boxY, m_boxSize, m_boxSize);
 
     // 繪製方框
-    if (m_isChecked) {
+    if (m_checkState == CheckState::Checked) {
         // 勾選態：藍色填色
         dc.DrawRoundedRectangle(boxRect, m_cornerRadius, m_checkColor);
         // 白色向量勾號
         dc.DrawLine(core::Point(left + 4.0f, boxY + 9.5f), core::Point(left + 7.5f, boxY + 13.5f), core::Color(255, 255, 255, 255), 2.0f);
         dc.DrawLine(core::Point(left + 7.5f, boxY + 13.5f), core::Point(left + 14.0f, boxY + 5.0f), core::Color(255, 255, 255, 255), 2.0f);
+    } else if (m_checkState == CheckState::Indeterminate) {
+        // 未定態：藍色填色 + 中央白色實心小正方形
+        dc.DrawRoundedRectangle(boxRect, m_cornerRadius, m_checkColor);
+        core::Rect dotRect(left + 4.5f, boxY + 4.5f, m_boxSize - 9.0f, m_boxSize - 9.0f);
+        dc.DrawRectangle(dotRect, core::Color(255, 255, 255, 255));
     } else {
         // 未勾選態：深色底 + 灰色框
         core::Color bg = m_isHovered ? core::Color(45, 52, 65, 255) : core::Color(30, 35, 45, 255);
@@ -109,14 +143,6 @@ void CheckBox::OnRender(rendering::DrawingContext& dc) {
     if (IsFocused()) {
         core::Rect ring(boxRect.x - 2.0f, boxRect.y - 2.0f, boxRect.width + 4.0f, boxRect.height + 4.0f);
         dc.DrawRoundedRectangle(ring, m_cornerRadius + 2.0f, m_focusBorder);
-        if (m_isChecked) {
-            dc.DrawRoundedRectangle(boxRect, m_cornerRadius, m_checkColor);
-            dc.DrawLine(core::Point(left + 4.0f, boxY + 9.5f), core::Point(left + 7.5f, boxY + 13.5f), core::Color(255, 255, 255, 255), 2.0f);
-            dc.DrawLine(core::Point(left + 7.5f, boxY + 13.5f), core::Point(left + 14.0f, boxY + 5.0f), core::Color(255, 255, 255, 255), 2.0f);
-        } else {
-            core::Color bg = m_isHovered ? core::Color(45, 52, 65, 255) : core::Color(30, 35, 45, 255);
-            dc.DrawRoundedRectangle(boxRect, m_cornerRadius, bg);
-        }
     }
 }
 
