@@ -71,3 +71,18 @@ add_executable(dialog_gallery
     dialog_gallery/main.cpp
 )
 target_link_libraries(dialog_gallery PRIVATE cppui_core)
+
+# 8. BMI 計算機教學範例
+add_executable(bmi_calculator
+    bmi_calculator/main.cpp
+    bmi_calculator/BmiForm.cpp
+)
+target_link_libraries(bmi_calculator PRIVATE cppui_core)
+
+# 9. 圖形函數、圖片繪製與 Grayscale 灰階濾鏡展示範例
+add_executable(graphics_drawing_demo
+    graphics_drawing_demo/main.cpp
+    graphics_drawing_demo/DrawingDemoForm.cpp
+)
+target_link_libraries(graphics_drawing_demo PRIVATE cppui_core)
+

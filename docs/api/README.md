@@ -254,7 +254,9 @@ graph TD
 * [**宣告式 Fluent RAD DSL 與響應式信號開發指南**](guides/fluent_rad_dsl_and_signals.md)：詳解以 `< 50` 行程式碼使用 `VStack`, `HStack`, `Grid`, `Button`, `TextBox` 與 `Signal<T>` 快速宣告桌面 UI、自動雙向資料綁定與事件串接。
 * [**跨平台抽象架構指南**](guides/cross_platform_architecture.md)：詳解 PAL 視窗抽象、Linux X11 原生視窗支援、純 C++ 記憶體視窗、無外部依賴文字多行排版與 8x8 ASCII 軟體光柵字模庫。
 * [**Skia 向量渲染管線指南**](guides/skia_rendering_pipeline.md)：介紹 Google Skia (m151) 向量繪圖核心整合、DisplayList 指令原生回放與雙引擎優雅回退機制。
-* [**快速入門 (Quickstart)**](guides/quickstart.md)：從零建立第一個 CPPUI 原生視窗、綁定事件循環並完成每秒 60 FPS 畫面繪製。
+* [**快速入門 (Quickstart)**](guides/quickstart.md)：使用高階 `Application` 與 `Form` 建立第一個原生視窗、透過 Fluent DSL 排版介面並啟動 60 FPS 訊息泵。
+* [**建立我的第一個 BMI 計算機程式 (Tutorial: BMI Calculator)**](guides/tutorial_bmi_calculator.md)：從零開始打造現代深色卡片介面之健康指數計算機，涵蓋輸入驗證 (`compat::parse`)、體位判定與動態色彩回饋。
+* [**2D 圖形繪圖與影像濾鏡教學 (Tutorial: Graphics & Drawing)**](guides/tutorial_graphics_drawing.md)：掌握 GDI+ 風格 2D 向量繪圖 (`Graphics`)、漸層畫刷、幾何路徑、圖片載入/繪製與高效能灰階影像濾鏡 (`ImageFilters`)。
 * [**輸入管線、路由事件與焦點管理實戰指南**](guides/input_and_routed_events.md)：深入探討雙向路由事件體系（Tunneling + Bubbling）、`e.Handled` 短路阻斷、游標懸停追蹤、指標捕獲與鍵盤 TabIndex 尋路演算法。
 * [**高分屏 DPI 與座標轉換指南**](guides/dpi_and_coordinates.md)：說明設備獨立像素 (DIP)、物理像素、客戶區排版空間與 `CoordinateTransform` 類別的最佳實踐。
 * [**DisplayList 二進位錄製深度解析**](guides/display_list_recording.md)：深入探討命令錄製架構、記憶體池重用、Clip Stack 矩形剪裁與每秒數千萬次操作之微架構調優。

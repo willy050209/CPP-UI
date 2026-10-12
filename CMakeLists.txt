@@ -44,7 +44,7 @@ if(CPPUI_ENABLE_ASAN)
         add_link_options(/INCREMENTAL:NO /DEBUG)
         get_filename_component(_MSVC_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
         find_file(_MSVC_ASAN_DLL
-            NAMES clang_rt.asan_dynamic-x86_64.dll
+            NAMES clang_rt.asan_dynamic-x86_64.dll clang_rt.asan_dynamic-i386.dll
             PATHS "${_MSVC_BIN_DIR}"
             NO_DEFAULT_PATH
         )

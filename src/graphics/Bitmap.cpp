@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <cstring>
+#include <fstream>
 
 namespace cppui {
 namespace graphics {
@@ -274,6 +275,56 @@ void Bitmap::RotateFlip(RotateFlipType rotateFlipType) {
     m_width  = dstW;
     m_height = dstH;
     m_pixels = std::move(temp);
+}
+
+/// <summary>
+/// 將影像儲存為未壓縮 32-bit BMP 點陣圖檔案。
+/// </summary>
+bool Bitmap::SaveAsBmp(compat::string_view filename) const {
+    if (filename.empty() || m_width == 0 || m_height == 0) return false;
+    std::shared_lock<std::shared_mutex> lock(m_mutex);
+
+    std::ofstream out(std::string(filename.data(), filename.size()), std::ios::binary);
+    if (!out) return false;
+
+    const uint32_t imageSize = m_width * m_height * 4;
+    const uint32_t fileSize = 54 + imageSize;
+
+    uint8_t fileHeader[14] = {
+        'B', 'M',
+        static_cast<uint8_t>(fileSize & 0xFF),
+        static_cast<uint8_t>((fileSize >> 8) & 0xFF),
+        static_cast<uint8_t>((fileSize >> 16) & 0xFF),
+        static_cast<uint8_t>((fileSize >> 24) & 0xFF),
+        0, 0, 0, 0,
+        54, 0, 0, 0
+    };
+
+    const int32_t biHeight = -static_cast<int32_t>(m_height);
+    uint8_t infoHeader[40] = {
+        40, 0, 0, 0,
+        static_cast<uint8_t>(m_width & 0xFF),
+        static_cast<uint8_t>((m_width >> 8) & 0xFF),
+        static_cast<uint8_t>((m_width >> 16) & 0xFF),
+        static_cast<uint8_t>((m_width >> 24) & 0xFF),
+        static_cast<uint8_t>(biHeight & 0xFF),
+        static_cast<uint8_t>((biHeight >> 8) & 0xFF),
+        static_cast<uint8_t>((biHeight >> 16) & 0xFF),
+        static_cast<uint8_t>((biHeight >> 24) & 0xFF),
+        1, 0,
+        32, 0,
+        0, 0, 0, 0,
+        static_cast<uint8_t>(imageSize & 0xFF),
+        static_cast<uint8_t>((imageSize >> 8) & 0xFF),
+        static_cast<uint8_t>((imageSize >> 16) & 0xFF),
+        static_cast<uint8_t>((imageSize >> 24) & 0xFF),
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+
+    out.write(reinterpret_cast<const char*>(fileHeader), 14);
+    out.write(reinterpret_cast<const char*>(infoHeader), 40);
+    out.write(reinterpret_cast<const char*>(m_pixels.data()), imageSize);
+    return true;
 }
 
 } // namespace graphics

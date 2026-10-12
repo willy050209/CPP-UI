@@ -17,6 +17,10 @@
 #include <vector>
 
 namespace cppui {
+namespace graphics {
+class Bitmap;
+} // namespace graphics
+
 namespace rendering {
 class SoftwareRenderTarget;
 class IRenderContext;
@@ -197,6 +201,13 @@ public:
     /// 觸發內部畫面重新佈局與重繪。
     /// </summary>
     void InvalidateForm();
+
+    /// <summary>
+    /// 將表單當前視覺內容與佈局渲染至離線點陣圖 (Bitmap)。
+    /// 支援離線視窗截圖與無頭驗證。
+    /// </summary>
+    /// <returns>點陣圖共享指標。</returns>
+    COMPAT_NODISCARD std::shared_ptr<graphics::Bitmap> CaptureToBitmap();
 
 protected:
     /// <summary>

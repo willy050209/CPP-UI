@@ -151,6 +151,13 @@ public:
     /// <param name="rotateFlipType">旋轉與翻轉類型。</param>
     void RotateFlip(RotateFlipType rotateFlipType);
 
+    /// <summary>
+    /// 將影像儲存為未壓縮 32-bit BMP 點陣圖檔案。
+    /// </summary>
+    /// <param name="filename">輸出檔案路徑。</param>
+    /// <returns>成功傳回 true，失敗傳回 false。</returns>
+    bool SaveAsBmp(compat::string_view filename) const;
+
 private:
     uint32_t                   m_width{ 0 };
     uint32_t                   m_height{ 0 };

@@ -12,6 +12,7 @@
 #include "ui/theme/Theme.hpp"
 #include "../rendering/backend/SoftwareRenderContext.hpp"
 #include "../rendering/backend/SkiaRenderContext.hpp"
+#include "ui/graphics/Bitmap.hpp"
 #include <algorithm>
 
 namespace cppui {
@@ -219,6 +220,30 @@ void Form::InvalidateForm() {
     if (m_window) {
         m_window->RequestRedraw();
     }
+}
+
+/// <summary>
+/// 將表單當前視覺內容與佈局渲染至離線點陣圖 (Bitmap)。
+/// </summary>
+std::shared_ptr<graphics::Bitmap> Form::CaptureToBitmap() {
+    uint32_t w = m_width > 0 ? m_width : 400;
+    uint32_t h = m_height > 0 ? m_height : 300;
+
+    core::Size avail(static_cast<float>(w), static_cast<float>(h));
+    layout::LayoutManager::Get().UpdateLayout(*this, avail);
+
+    rendering::SoftwareRenderTarget target;
+    target.Resize(w, h);
+    target.Clear(GetBackground());
+
+    rendering::DisplayList dl;
+    rendering::DrawingContext dc(dl);
+    Render(dc);
+
+    rendering::DisplayListRenderer renderer;
+    renderer.Render(dl, &target);
+
+    return std::make_shared<graphics::Bitmap>(w, h, target.GetPixelSpan());
 }
 
 void Form::EnsurePlatformWindow() {
