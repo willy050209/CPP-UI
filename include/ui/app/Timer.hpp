@@ -146,7 +146,7 @@ public:
     struct Impl;
 
 private:
-    std::shared_ptr<Impl> m_impl;
+    compat::propagate_const<std::shared_ptr<Impl>> m_impl;
 };
 
 } // namespace app

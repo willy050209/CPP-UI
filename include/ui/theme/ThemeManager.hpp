@@ -5,10 +5,9 @@
 
 #pragma once
 
-#include <vector>
-#include <functional>
-#include <utility>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include "compat/compat.hpp"
 #include "Theme.hpp"
 
@@ -71,11 +70,10 @@ public:
 
 private:
     ThemeManager();
-    ~ThemeManager() = default;
+    ~ThemeManager();
 
-    Theme m_currentTheme;
-    size_t m_nextHandlerId = 1;
-    std::vector<std::pair<size_t, ThemeChangedHandler>> m_handlers;
+    struct Impl;
+    compat::propagate_const<std::unique_ptr<Impl>> m_impl;
 };
 
 } // namespace theme

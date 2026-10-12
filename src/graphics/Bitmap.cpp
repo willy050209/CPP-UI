@@ -1,27 +1,50 @@
 /**
  * @file Bitmap.cpp
- * @brief GDI+ 風格 32-bit 點陣影像實作，具備執行緒安全自動同步
+ * @brief GDI+ 風格 32-bit 點陣影像實作，具備執行緒安全自動同步與 Pimpl 編譯防火牆
  */
 
 #include "ui/graphics/Bitmap.hpp"
-#include <stdexcept>
 #include <algorithm>
 #include <cstring>
 #include <fstream>
+#include <mutex>
+#include <shared_mutex>
+#include <stdexcept>
+#include <vector>
 
 namespace cppui {
 namespace graphics {
 
-Bitmap::Bitmap(uint32_t width, uint32_t height, PixelFormat format)
-    : m_width(width), m_height(height), m_format(format) {
+struct Bitmap::Impl {
+    uint32_t                   m_width{ 0 };
+    uint32_t                   m_height{ 0 };
+    PixelFormat                m_format{ PixelFormat::Format32bppArgb };
+    std::vector<uint32_t>      m_pixels;
+    bool                       m_isLocked{ false };
+    mutable std::shared_mutex  m_mutex;
+
+    Impl(uint32_t width, uint32_t height, PixelFormat format)
+        : m_width(width), m_height(height), m_format(format) {
+        if (width > 0 && height > 0) {
+            m_pixels.resize(static_cast<size_t>(width) * height, 0);
+        }
+    }
+
+    Impl(uint32_t width, uint32_t height, compat::span<const uint32_t> pixels, PixelFormat format)
+        : m_width(width), m_height(height), m_format(format) {
+        size_t required = static_cast<size_t>(width) * height;
+        m_pixels.assign(pixels.data(), pixels.data() + required);
+    }
+};
+
+Bitmap::Bitmap(uint32_t width, uint32_t height, PixelFormat format) {
     if (width == 0 || height == 0) {
         throw std::invalid_argument("Bitmap dimensions must be positive.");
     }
-    m_pixels.resize(static_cast<size_t>(width) * height, 0);
+    m_impl = std::make_unique<Impl>(width, height, format);
 }
 
-Bitmap::Bitmap(uint32_t width, uint32_t height, compat::span<const uint32_t> pixels, PixelFormat format)
-    : m_width(width), m_height(height), m_format(format) {
+Bitmap::Bitmap(uint32_t width, uint32_t height, compat::span<const uint32_t> pixels, PixelFormat format) {
     if (width == 0 || height == 0) {
         throw std::invalid_argument("Bitmap dimensions must be positive.");
     }
@@ -29,156 +52,147 @@ Bitmap::Bitmap(uint32_t width, uint32_t height, compat::span<const uint32_t> pix
     if (pixels.size() < required) {
         throw std::invalid_argument("Provided pixel buffer size is smaller than image dimensions.");
     }
-    m_pixels.assign(pixels.data(), pixels.data() + required);
+    m_impl = std::make_unique<Impl>(width, height, pixels, format);
 }
 
-Bitmap::Bitmap(compat::string_view filename)
-    : m_width(64), m_height(64), m_format(PixelFormat::Format32bppArgb) {
+Bitmap::Bitmap(compat::string_view filename) {
     if (filename.empty()) {
         throw std::invalid_argument("Filename cannot be empty.");
     }
     // 程序化產生棋盤測試紋理以供未有檔案解碼庫時使用
-    m_pixels.resize(static_cast<size_t>(m_width) * m_height, 0);
-    for (uint32_t y = 0; y < m_height; ++y) {
-        for (uint32_t x = 0; x < m_width; ++x) {
+    m_impl = std::make_unique<Impl>(64, 64, PixelFormat::Format32bppArgb);
+    for (uint32_t y = 0; y < m_impl->m_height; ++y) {
+        for (uint32_t x = 0; x < m_impl->m_width; ++x) {
             bool check = ((x / 8) + (y / 8)) % 2 == 0;
-            m_pixels[y * m_width + x] = check ? 0xFFFFFFFF : 0xFF808080;
+            m_impl->m_pixels[y * m_impl->m_width + x] = check ? 0xFFFFFFFF : 0xFF808080;
         }
     }
 }
 
+Bitmap::~Bitmap() = default;
+
 Bitmap::Bitmap(const Bitmap& other)
     : std::enable_shared_from_this<Bitmap>(other) {
-    std::shared_lock<std::shared_mutex> lock(other.m_mutex);
-    m_width    = other.m_width;
-    m_height   = other.m_height;
-    m_format   = other.m_format;
-    m_pixels   = other.m_pixels;
-    m_isLocked = other.m_isLocked;
+    if (other.m_impl) {
+        std::shared_lock<std::shared_mutex> lock(other.m_impl->m_mutex);
+        m_impl = std::make_unique<Impl>(other.m_impl->m_width, other.m_impl->m_height, other.m_impl->m_format);
+        m_impl->m_pixels = other.m_impl->m_pixels;
+        m_impl->m_isLocked = other.m_impl->m_isLocked;
+    } else {
+        m_impl = std::make_unique<Impl>(0, 0, PixelFormat::Format32bppArgb);
+    }
 }
 
-Bitmap::Bitmap(Bitmap&& other) noexcept
-    : std::enable_shared_from_this<Bitmap>(std::move(other)) {
-    std::unique_lock<std::shared_mutex> lock(other.m_mutex);
-    m_width    = other.m_width;
-    m_height   = other.m_height;
-    m_format   = other.m_format;
-    m_pixels   = std::move(other.m_pixels);
-    m_isLocked = other.m_isLocked;
-    other.m_width = 0;
-    other.m_height = 0;
-    other.m_isLocked = false;
-}
+Bitmap::Bitmap(Bitmap&& other) noexcept = default;
 
 Bitmap& Bitmap::operator=(const Bitmap& other) {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
-        std::lock(lockThis, lockOther);
-
-        m_width    = other.m_width;
-        m_height   = other.m_height;
-        m_format   = other.m_format;
-        m_pixels   = other.m_pixels;
-        m_isLocked = other.m_isLocked;
+        if (other.m_impl) {
+            std::shared_lock<std::shared_mutex> lockOther(other.m_impl->m_mutex);
+            auto newImpl = std::make_unique<Impl>(other.m_impl->m_width, other.m_impl->m_height, other.m_impl->m_format);
+            newImpl->m_pixels = other.m_impl->m_pixels;
+            newImpl->m_isLocked = other.m_impl->m_isLocked;
+            m_impl = std::move(newImpl);
+        } else {
+            m_impl = nullptr;
+        }
     }
     return *this;
 }
 
-Bitmap& Bitmap::operator=(Bitmap&& other) noexcept {
-    if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::unique_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
-        std::lock(lockThis, lockOther);
-
-        m_width    = other.m_width;
-        m_height   = other.m_height;
-        m_format   = other.m_format;
-        m_pixels   = std::move(other.m_pixels);
-        m_isLocked = other.m_isLocked;
-        other.m_width = 0;
-        other.m_height = 0;
-        other.m_isLocked = false;
-    }
-    return *this;
-}
+Bitmap& Bitmap::operator=(Bitmap&& other) noexcept = default;
 
 uint32_t Bitmap::GetWidth() const noexcept {
-    return m_width;
+    return m_impl ? m_impl->m_width : 0;
 }
 
 uint32_t Bitmap::GetHeight() const noexcept {
-    return m_height;
+    return m_impl ? m_impl->m_height : 0;
 }
 
 PixelFormat Bitmap::GetPixelFormat() const noexcept {
-    return m_format;
+    return m_impl ? m_impl->m_format : PixelFormat::Format32bppArgb;
 }
 
 uint32_t Bitmap::GetStride() const noexcept {
-    return m_width * static_cast<uint32_t>(sizeof(uint32_t));
+    return m_impl ? (m_impl->m_width * static_cast<uint32_t>(sizeof(uint32_t))) : 0;
 }
 
 core::Color Bitmap::GetPixel(uint32_t x, uint32_t y) const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
-    if (x >= m_width || y >= m_height) {
+    if (!m_impl) {
+        throw std::out_of_range("Bitmap is uninitialized.");
+    }
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    if (x >= m_impl->m_width || y >= m_impl->m_height) {
         throw std::out_of_range("Coordinates out of bitmap bounds.");
     }
-    uint32_t argb = m_pixels[static_cast<size_t>(y) * m_width + x];
+    uint32_t argb = m_impl->m_pixels[static_cast<size_t>(y) * m_impl->m_width + x];
     return core::Color::FromArgb(argb);
 }
 
 void Bitmap::SetPixel(uint32_t x, uint32_t y, core::Color color) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
-    if (x >= m_width || y >= m_height) {
+    if (!m_impl) {
+        throw std::out_of_range("Bitmap is uninitialized.");
+    }
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    if (x >= m_impl->m_width || y >= m_impl->m_height) {
         throw std::out_of_range("Coordinates out of bitmap bounds.");
     }
-    m_pixels[static_cast<size_t>(y) * m_width + x] = color.ToArgb();
+    m_impl->m_pixels[static_cast<size_t>(y) * m_impl->m_width + x] = color.ToArgb();
 }
 
 void Bitmap::Clear(core::Color color) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    if (!m_impl) return;
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
     uint32_t argb = color.ToArgb();
-    std::fill(m_pixels.begin(), m_pixels.end(), argb);
+    std::fill(m_impl->m_pixels.begin(), m_impl->m_pixels.end(), argb);
 }
 
 compat::span<const uint32_t> Bitmap::GetPixelSpan() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
-    return compat::span<const uint32_t>(m_pixels.data(), m_pixels.size());
+    if (!m_impl) return {};
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    return compat::span<const uint32_t>(m_impl->m_pixels.data(), m_impl->m_pixels.size());
 }
 
 compat::span<uint32_t> Bitmap::GetPixelSpanMut() {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
-    return compat::span<uint32_t>(m_pixels.data(), m_pixels.size());
+    if (!m_impl) return {};
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    return compat::span<uint32_t>(m_impl->m_pixels.data(), m_impl->m_pixels.size());
 }
 
 void* Bitmap::LockBits(const core::Rect& rect, uint32_t flags) {
     (void)rect;
     (void)flags;
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
-    m_isLocked = true;
-    return m_pixels.data();
+    if (!m_impl) return nullptr;
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    m_impl->m_isLocked = true;
+    return m_impl->m_pixels.data();
 }
 
 void Bitmap::UnlockBits() {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
-    m_isLocked = false;
+    if (!m_impl) return;
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    m_impl->m_isLocked = false;
 }
 
 std::shared_ptr<Bitmap> Bitmap::Clone() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
-
-    if (m_width == 0 || m_height == 0) {
+    if (!m_impl) {
+        throw std::invalid_argument("Cannot clone uninitialized bitmap.");
+    }
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    if (m_impl->m_width == 0 || m_impl->m_height == 0) {
         throw std::invalid_argument("Bitmap dimensions must be positive to clone.");
     }
-
-    auto result = std::make_shared<Bitmap>(m_width, m_height, m_format);
-    std::copy(m_pixels.begin(), m_pixels.end(), result->m_pixels.begin());
+    auto result = std::make_shared<Bitmap>(m_impl->m_width, m_impl->m_height, m_impl->m_format);
+    std::copy(m_impl->m_pixels.begin(), m_impl->m_pixels.end(), result->m_impl->m_pixels.begin());
     return result;
 }
 
 std::shared_ptr<Bitmap> Bitmap::Clone(const core::Rect& rect, PixelFormat format) const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    if (!m_impl) {
+        throw std::invalid_argument("Cannot clone uninitialized bitmap.");
+    }
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
 
     int32_t rx = static_cast<int32_t>(rect.x);
     int32_t ry = static_cast<int32_t>(rect.y);
@@ -195,21 +209,22 @@ std::shared_ptr<Bitmap> Bitmap::Clone(const core::Rect& rect, PixelFormat format
 
     for (uint32_t dy = 0; dy < targetH; ++dy) {
         int32_t sy = ry + static_cast<int32_t>(dy);
-        if (sy < 0 || sy >= static_cast<int32_t>(m_height)) continue;
+        if (sy < 0 || sy >= static_cast<int32_t>(m_impl->m_height)) continue;
 
         for (uint32_t dx = 0; dx < targetW; ++dx) {
             int32_t sx = rx + static_cast<int32_t>(dx);
-            if (sx < 0 || sx >= static_cast<int32_t>(m_width)) continue;
+            if (sx < 0 || sx >= static_cast<int32_t>(m_impl->m_width)) continue;
 
-            uint32_t px = m_pixels[static_cast<size_t>(sy) * m_width + sx];
-            result->m_pixels[static_cast<size_t>(dy) * targetW + dx] = px;
+            uint32_t px = m_impl->m_pixels[static_cast<size_t>(sy) * m_impl->m_width + sx];
+            result->m_impl->m_pixels[static_cast<size_t>(dy) * targetW + dx] = px;
         }
     }
     return result;
 }
 
 void Bitmap::RotateFlip(RotateFlipType rotateFlipType) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    if (!m_impl) return;
+    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
 
     bool flipX = false;
     bool flipY = false;
@@ -239,8 +254,8 @@ void Bitmap::RotateFlip(RotateFlipType rotateFlipType) {
             break;
     }
 
-    uint32_t srcW = m_width;
-    uint32_t srcH = m_height;
+    uint32_t srcW = m_impl->m_width;
+    uint32_t srcH = m_impl->m_height;
     uint32_t dstW = (rotateAngle == 90 || rotateAngle == 270) ? srcH : srcW;
     uint32_t dstH = (rotateAngle == 90 || rotateAngle == 270) ? srcW : srcH;
 
@@ -268,26 +283,23 @@ void Bitmap::RotateFlip(RotateFlipType rotateFlipType) {
                 ry = srcW - 1 - tx;
             }
 
-            temp[static_cast<size_t>(ry) * dstW + rx] = m_pixels[static_cast<size_t>(y) * srcW + x];
+            temp[static_cast<size_t>(ry) * dstW + rx] = m_impl->m_pixels[static_cast<size_t>(y) * srcW + x];
         }
     }
 
-    m_width  = dstW;
-    m_height = dstH;
-    m_pixels = std::move(temp);
+    m_impl->m_width  = dstW;
+    m_impl->m_height = dstH;
+    m_impl->m_pixels = std::move(temp);
 }
 
-/// <summary>
-/// 將影像儲存為未壓縮 32-bit BMP 點陣圖檔案。
-/// </summary>
 bool Bitmap::SaveAsBmp(compat::string_view filename) const {
-    if (filename.empty() || m_width == 0 || m_height == 0) return false;
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    if (filename.empty() || !m_impl || m_impl->m_width == 0 || m_impl->m_height == 0) return false;
+    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
 
     std::ofstream out(std::string(filename.data(), filename.size()), std::ios::binary);
     if (!out) return false;
 
-    const uint32_t imageSize = m_width * m_height * 4;
+    const uint32_t imageSize = m_impl->m_width * m_impl->m_height * 4;
     const uint32_t fileSize = 54 + imageSize;
 
     uint8_t fileHeader[14] = {
@@ -300,13 +312,13 @@ bool Bitmap::SaveAsBmp(compat::string_view filename) const {
         54, 0, 0, 0
     };
 
-    const int32_t biHeight = -static_cast<int32_t>(m_height);
+    const int32_t biHeight = -static_cast<int32_t>(m_impl->m_height);
     uint8_t infoHeader[40] = {
         40, 0, 0, 0,
-        static_cast<uint8_t>(m_width & 0xFF),
-        static_cast<uint8_t>((m_width >> 8) & 0xFF),
-        static_cast<uint8_t>((m_width >> 16) & 0xFF),
-        static_cast<uint8_t>((m_width >> 24) & 0xFF),
+        static_cast<uint8_t>(m_impl->m_width & 0xFF),
+        static_cast<uint8_t>((m_impl->m_width >> 8) & 0xFF),
+        static_cast<uint8_t>((m_impl->m_width >> 16) & 0xFF),
+        static_cast<uint8_t>((m_impl->m_width >> 24) & 0xFF),
         static_cast<uint8_t>(biHeight & 0xFF),
         static_cast<uint8_t>((biHeight >> 8) & 0xFF),
         static_cast<uint8_t>((biHeight >> 16) & 0xFF),
@@ -323,7 +335,7 @@ bool Bitmap::SaveAsBmp(compat::string_view filename) const {
 
     out.write(reinterpret_cast<const char*>(fileHeader), 14);
     out.write(reinterpret_cast<const char*>(infoHeader), 40);
-    out.write(reinterpret_cast<const char*>(m_pixels.data()), imageSize);
+    out.write(reinterpret_cast<const char*>(m_impl->m_pixels.data()), imageSize);
     return true;
 }
 

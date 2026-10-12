@@ -166,6 +166,20 @@ int main() {
         compat::println("[PASS] Controls theme application verified.");
     }
 
+    // -------------------------------------------------------------------------
+    // [Test 5] ThemeManager Pimpl 與深常數性 (Deep Constness) 驗證
+    // -------------------------------------------------------------------------
+    compat::println("[Test 5] ThemeManager Deep Constness via Pimpl...");
+    {
+        ThemeManager& tm = ThemeManager::Get();
+        tm.SetThemeMode(ThemeMode::Dark);
+
+        const ThemeManager& constTm = tm;
+        const Theme& currentTheme = constTm.GetCurrentTheme();
+        assert(currentTheme.GetMode() == ThemeMode::Dark);
+        compat::println("[PASS] ThemeManager deep constness verified.");
+    }
+
     compat::println("All theme and design token tests passed successfully!");
     return 0;
 }

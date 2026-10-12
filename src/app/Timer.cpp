@@ -290,7 +290,7 @@ void Timer::SetInterval(int32_t intervalMs) {
     }
 
     if (wasEnabled) {
-        TimerScheduler::GetInstance().Register(m_impl, intervalMs);
+        TimerScheduler::GetInstance().Register(compat::get_underlying(m_impl), intervalMs);
     }
 }
 
@@ -314,9 +314,9 @@ void Timer::SetEnabled(bool enabled) {
     }
 
     if (enabled) {
-        TimerScheduler::GetInstance().Register(m_impl, interval);
+        TimerScheduler::GetInstance().Register(compat::get_underlying(m_impl), interval);
     } else {
-        TimerScheduler::GetInstance().Unregister(m_impl);
+        TimerScheduler::GetInstance().Unregister(compat::get_underlying(m_impl));
     }
 }
 

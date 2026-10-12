@@ -6,10 +6,7 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
 #include <memory>
-#include <shared_mutex>
-#include <mutex>
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/graphics/GraphicsTypes.hpp"
@@ -68,7 +65,7 @@ public:
     Bitmap& operator=(Bitmap&& other) noexcept;
 
     /// <summary>解構子。</summary>
-    ~Bitmap() = default;
+    ~Bitmap();
 
     /// <summary>取得影像寬度像素值。</summary>
     /// <returns>寬度。</returns>
@@ -159,12 +156,8 @@ public:
     bool SaveAsBmp(compat::string_view filename) const;
 
 private:
-    uint32_t                   m_width{ 0 };
-    uint32_t                   m_height{ 0 };
-    PixelFormat                m_format{ PixelFormat::Format32bppArgb };
-    std::vector<uint32_t>      m_pixels;
-    bool                       m_isLocked{ false };
-    mutable std::shared_mutex  m_mutex;
+    struct Impl;
+    compat::propagate_const<std::unique_ptr<Impl>> m_impl;
 };
 
 } // namespace graphics

@@ -661,6 +661,69 @@ static void TestFailFastValidation() {
 }
 
 // =============================================================================
+// 10. Pimpl 與深常數性 (Deep Constness) 測試
+// =============================================================================
+static void TestPimplDeepConstnessAndMoveSemantics() {
+    compat::println("[Test] Testing Pimpl, deep constness and move semantics...");
+
+    // 1. Bitmap Pimpl & Move/Copy semantics
+    {
+        Bitmap bmp1(32, 32);
+        bmp1.SetPixel(0, 0, Colors::Blue);
+
+        // Deep constness verification
+        const Bitmap& constBmp = bmp1;
+        assert(constBmp.GetWidth() == 32);
+        assert(constBmp.GetHeight() == 32);
+        assert(constBmp.GetPixel(0, 0).ToArgb() == Colors::Blue.ToArgb());
+        assert(constBmp.GetPixelSpan().size() == 32 * 32);
+
+        // Copy constructor
+        Bitmap bmpCopy(constBmp);
+        assert(bmpCopy.GetWidth() == 32);
+        assert(bmpCopy.GetPixel(0, 0).ToArgb() == Colors::Blue.ToArgb());
+
+        // Move constructor
+        Bitmap bmpMoved(std::move(bmp1));
+        assert(bmpMoved.GetWidth() == 32);
+        assert(bmpMoved.GetPixel(0, 0).ToArgb() == Colors::Blue.ToArgb());
+
+        // Move assignment
+        Bitmap bmpMovedAssign(16, 16);
+        bmpMovedAssign = std::move(bmpMoved);
+        assert(bmpMovedAssign.GetWidth() == 32);
+        assert(bmpMovedAssign.GetPixel(0, 0).ToArgb() == Colors::Blue.ToArgb());
+    }
+
+    // 2. Graphics Pimpl & Move semantics
+    {
+        auto bmp = std::make_shared<Bitmap>(64, 64);
+        Graphics g = Graphics::FromImage(bmp);
+        g.SetSmoothingMode(SmoothingMode::AntiAlias);
+        g.SetInterpolationMode(InterpolationMode::Bilinear);
+
+        // Const queries
+        const Graphics& constG = g;
+        assert(constG.GetSmoothingMode() == SmoothingMode::AntiAlias);
+        assert(constG.GetInterpolationMode() == InterpolationMode::Bilinear);
+
+        // Move constructor
+        Graphics gMoved(std::move(g));
+        const Graphics& constGMoved = gMoved;
+        assert(constGMoved.GetSmoothingMode() == SmoothingMode::AntiAlias);
+
+        // Move assignment
+        auto bmp2 = std::make_shared<Bitmap>(32, 32);
+        Graphics gAssign = Graphics::FromImage(bmp2);
+        gAssign = std::move(gMoved);
+        const Graphics& constGAssign = gAssign;
+        assert(constGAssign.GetSmoothingMode() == SmoothingMode::AntiAlias);
+    }
+
+    compat::println(" -> PASS: Pimpl and deep constness verified.");
+}
+
+// =============================================================================
 // main 測試進入點
 // =============================================================================
 int main() {
@@ -677,9 +740,10 @@ int main() {
     TestPictureBoxAndFluent();
     TestMultiThreadSynchronization();
     TestFailFastValidation();
+    TestPimplDeepConstnessAndMoveSemantics();
 
     compat::println("==================================================");
-    compat::println("  ALL 9 GRAPHICS GDI+ TEST SUITES PASSED (100%)   ");
+    compat::println("  ALL 10 GRAPHICS GDI+ TEST SUITES PASSED (100%)  ");
     compat::println("==================================================");
     return 0;
 }

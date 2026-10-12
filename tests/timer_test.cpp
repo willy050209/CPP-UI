@@ -294,6 +294,23 @@ void Test10_ControlsNamespaceAliasAndRAIIDestruction() {
     compat::println("[PASS] Test10 passed.");
 }
 
+void Test11_PimplDeepConstness() {
+    compat::println("--- Running Test11_PimplDeepConstness ---");
+    cppui::app::Timer timer(300);
+    timer.Start();
+    timer.SetTag(reinterpret_cast<void*>(0x1234));
+
+    const cppui::app::Timer& constTimer = timer;
+    TEST_ASSERT(constTimer.GetInterval() == 300);
+    TEST_ASSERT(constTimer.IsEnabled());
+    TEST_ASSERT(constTimer.GetTag() == reinterpret_cast<void*>(0x1234));
+    TEST_ASSERT(constTimer.GetTickHandlerCount() == 0);
+
+    timer.Stop();
+    TEST_ASSERT(!constTimer.IsEnabled());
+    compat::println("[PASS] Test11 passed.");
+}
+
 } // anonymous namespace
 
 int main() {
@@ -311,9 +328,10 @@ int main() {
     Test8_RealTimeIntervalAndMessagePump();
     Test9_UIThreadAffinity();
     Test10_ControlsNamespaceAliasAndRAIIDestruction();
+    Test11_PimplDeepConstness();
 
     compat::println("====================================================");
-    compat::println("   ALL 10 TIMER UNIT TESTS PASSED SUCCESSFULLY!     ");
+    compat::println("   ALL 11 TIMER UNIT TESTS PASSED SUCCESSFULLY!     ");
     compat::println("====================================================");
     return 0;
 }

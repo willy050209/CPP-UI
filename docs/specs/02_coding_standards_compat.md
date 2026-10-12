@@ -39,6 +39,11 @@ CPPUI 專案全面引入自行研發的 [`compat.hpp`](../../include/compat/comp
   - 預期內的業務錯誤或管線查詢：使用 **`compat::expected<T, E>`** 或 `compat::optional<T>`。
 - **編譯期檢查與現代屬性**：積極使用 `COMPAT_NODISCARD`（純查詢方法）。盡量使用 `constexpr` 讓運算提前至編譯期。廣泛應用 `compat::ranges` 與 `compat::views`。
 
+### 2.6 現代 Pimpl 慣用法與編譯防火牆規範 (Modern Pimpl & Compilation Firewall Standard) [Strict]
+- **深常數性指標強制 (Deep Constness)**：凡公開介面類別（如複雜資源、多執行緒鎖、平台代碼、繪圖管線等）採用 Pimpl 模式時，**強制使用 `compat::propagate_const<std::unique_ptr<Impl>>`**。嚴格禁止使用原生 `std::unique_ptr<Impl>` 或裸指針，防止淺常數性（Shallow Constness）漏洞導致 `const` 成員方法能意外修改 `Impl` 狀態。
+- **完整型別與生命週期規範 (Complete Type in .cpp)**：解構子 `~ClassName()`、移動建構子與移動賦值運算子必須在 `.hpp` 中宣告，並在 `.cpp`（`Impl` 定義為完整型別的編譯單元）中使用 `= default` 或明確實作。嚴禁在標頭檔 inline 實作解構子，避免觸發不完整型別（Incomplete Type）刪除之未定義行為或編譯錯誤。
+- **編譯防火牆與 ABI 穩定性 (Compilation Firewall & ABI Stability)**：公開標頭檔嚴禁引入私有第三方、平台相依或巨型內部標頭檔（如 `<shared_mutex>`、渲染後端具體類別、Win32/X11 控制代碼等），所有內部成員變數與私有輔助方法一律封裝於 `.cpp` 中的 `Impl` 結構內。確保對外匯出類別的記憶體佈局與大小鎖定為單一指標（8 位元組），防止內部演進破壞 ABI 向下相容性。
+
 ---
 
 ## 3. 強制性相容型別與現代化視圖使用規範 (Modern Views & Types)
@@ -52,6 +57,7 @@ CPPUI 專案全面引入自行研發的 [`compat.hpp`](../../include/compat/comp
 | **平台相依整數**| `int`, `long`, `short`, `unsigned int` | `int32_t`, `uint32_t`, `size_t` | 消除 32/64 位元平台與資料模型歧異。 |
 | **字串視圖** | `const char*` + `size_t` / `const std::string&` | `compat::string_view` | 避免多餘字串拷貝，唯讀字串參數首選。 |
 | **陣列切片視圖**| `const T*` + `size_t` / `const std::vector<T>&` | `compat::span<T>` / `compat::span<const T>` | 連續記憶體緩衝區（如指令流、字符 Glyphs）首選。 |
+| **Pimpl 實作指標**| `std::unique_ptr<Impl>` / `Impl*` | `compat::propagate_const<std::unique_ptr<Impl>>` | 消除淺常數性漏洞，保證深常數傳播、ABI 穩定性與編譯防火牆。 |
 | **集合惰性管線**| 手寫暫存 `std::vector` / 繁複迴圈 | `compat::views::*` 搭配 `operator\|` | 零分配惰性過濾與投影（`filter`, `transform`, `take`）。 |
 | **可空值語意** | 裸指標 `nullptr` 代表無值 | `compat::optional<T>` | 清楚表述數值可能不存在（如文字命中測試結果）。 |
 | **型別安全聯合**| `union` 或 `void*` | `compat::variant<Ts...>` | 用於多型事件參數、屬性值包裝。 |

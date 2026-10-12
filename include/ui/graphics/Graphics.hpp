@@ -242,28 +242,8 @@ public:
     };
 
 private:
-    struct InternalState {
-        float tx = 0.0f;
-        float ty = 0.0f;
-        float sx = 1.0f;
-        float sy = 1.0f;
-        float rot = 0.0f;
-        core::Rect clipRect{ 0.0f, 0.0f, 100000.0f, 100000.0f };
-        SmoothingMode smoothing = SmoothingMode::Default;
-        InterpolationMode interpolation = InterpolationMode::Default;
-    };
-
-    core::Point TransformPoint(core::Point p) const;
-    core::Rect  TransformRect(const core::Rect& r) const;
-
-    rendering::DrawingContext*                     m_dc{ nullptr };
-    std::shared_ptr<Bitmap>                        m_image;
-    std::unique_ptr<rendering::DisplayList>        m_ownedList;
-    std::unique_ptr<rendering::DrawingContext>     m_ownedDC;
-
-    InternalState                                  m_currentState;
-    std::vector<std::pair<uint32_t, InternalState>> m_stateStack;
-    uint32_t                                       m_nextStateId{ 1 };
+    struct Impl;
+    compat::propagate_const<std::unique_ptr<Impl>> m_impl;
 };
 
 } // namespace graphics

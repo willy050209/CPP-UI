@@ -101,3 +101,7 @@ graph TD
 4. **依賴方向嚴格由上至下 (No Circular Dependency)**：
    * `controls` $\rightarrow$ `layout` $\rightarrow$ `core` $\rightarrow$ `rendering` $\rightarrow$ `compat`。
    * 下層元件絕對不可依賴或包含上層標頭檔。
+
+5. **公開介面編譯防火牆 (Pimpl Compilation Firewall)**：
+   * 凡具備複雜內部狀態、多執行緒鎖或平台相依之公開核心類別，強制採用現代 Pimpl 模式（參見 [設計規範 05](05_modern_pimpl_and_abi_firewall.md)）。
+   * 公開標頭檔嚴禁洩漏底層渲染具體類別、`<shared_mutex>` 或原生控制代碼，鎖定記憶體佈局為單一指標（8 位元組），保護 ABI 穩定性與編譯速度。

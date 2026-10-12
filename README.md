@@ -161,7 +161,7 @@ int main() {
 | **對話方塊** | [📂 **對話方塊與檔案選取器指南**](docs/api/guides/dialogs_and_file_picker_guide.md) | 深入 MessageBox 與 FileDialog 雙後端派送架構 |
 | **架構架構** | [🏗️ **MVVM 與 IoC 依賴注入架構**](docs/api/guides/mvvm_and_ioc_architecture.md) | 視圖模型、指令綁定與依賴反轉實踐 |
 | **跨平台** | [🐧 **跨平台抽象與 Linux X11 支援**](docs/api/guides/cross_platform_architecture.md) | PAL 抽象層、X11 原生視窗與通用視窗支援 |
-| **設計規範** | [📜 **設計規範 01 ~ 04 (Design Specs)**](docs/specs/01_architecture_layers.md) | 三層架構分離、代碼規範、記憶體架構與事件標準 |
+| **設計規範** | [📜 **設計規範 01 ~ 05 (Design Specs)**](docs/specs/01_architecture_layers.md) | 三層架構分離、代碼規範、記憶體架構、事件標準與現代 Pimpl 模式 |
 
 ---
 

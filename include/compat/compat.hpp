@@ -154,6 +154,13 @@ namespace detail {
 #  define COMPAT_CONSTEXPR_20 inline
 #endif
 
+// Inline variable support (C++17+ uses inline, C++14/11 degrades to static to prevent MSVC C7525 & ODR violations)
+#if (COMPAT_CPLUSPLUS >= COMPAT_CXX_17)
+#  define COMPAT_INLINE_VAR inline
+#else
+#  define COMPAT_INLINE_VAR static
+#endif
+
 
 // ABI tagging and inline namespace support for fallback implementations
 #ifndef COMPAT_ABI_TAG
@@ -189,6 +196,9 @@ namespace detail {
 #  define COMPAT_HAS_STD_RANGES_SHIFT           0
 #  define COMPAT_HAS_STD_RANGES_GENERATE_RANDOM 0
 #  define COMPAT_HAS_STD_FILESYSTEM             0
+#  define COMPAT_HAS_STD_CLAMP                  0
+#  define COMPAT_HAS_STD_SPAN                   0
+#  define COMPAT_HAS_STD_PROPAGATE_CONST        0
 
 #else
 
@@ -387,6 +397,42 @@ namespace detail {
 #    endif
 #  else
 #    define COMPAT_HAS_STD_FILESYSTEM 0
+#  endif
+
+// Feature detection: std::clamp (C++17+)
+#  if defined(__cpp_lib_clamp) && (__cpp_lib_clamp >= 201603L)
+#    define COMPAT_HAS_STD_CLAMP 1
+#  elif (COMPAT_CPLUSPLUS >= COMPAT_CXX_17)
+#    define COMPAT_HAS_STD_CLAMP 1
+#  else
+#    define COMPAT_HAS_STD_CLAMP 0
+#  endif
+
+// Feature detection: std::span (C++20+)
+#  if defined(__cpp_lib_span) && (__cpp_lib_span >= 202002L)
+#    define COMPAT_HAS_STD_SPAN 1
+#  elif (COMPAT_CPLUSPLUS >= COMPAT_CXX_20) && defined(__has_include)
+#    if __has_include(<span>)
+#      define COMPAT_HAS_STD_SPAN 1
+#    else
+#      define COMPAT_HAS_STD_SPAN 0
+#    endif
+#  else
+#    define COMPAT_HAS_STD_SPAN 0
+#  endif
+
+// Feature detection: std::experimental::propagate_const (Library Fundamentals TS)
+// Note: GCC libstdc++ <experimental/propagate_const> has a confirmed defect where default-construction
+// of propagate_const<T*> leaves scalar pointer members uninitialized (holding indeterminate/garbage values).
+// CPP-Compat defaults to its conforming, zero-overhead implementation with safe value-initialization.
+#  if defined(COMPAT_FORCE_STD_IMPLEMENTATION) && defined(__has_include)
+#    if __has_include(<experimental/propagate_const>) && (COMPAT_CPLUSPLUS >= COMPAT_CXX_14)
+#      define COMPAT_HAS_STD_PROPAGATE_CONST 1
+#    else
+#      define COMPAT_HAS_STD_PROPAGATE_CONST 0
+#    endif
+#  else
+#    define COMPAT_HAS_STD_PROPAGATE_CONST 0
 #  endif
 
 #endif // !defined(COMPAT_FORCE_SELF_IMPLEMENTATION)
@@ -3714,11 +3760,7 @@ namespace self_ranges {
         /// </summary>
         struct default_sentinel_t {};
 
-#if (COMPAT_CPLUSPLUS >= COMPAT_CXX_17)
-        inline constexpr default_sentinel_t default_sentinel{};
-#else
-        constexpr default_sentinel_t default_sentinel{};
-#endif
+        COMPAT_INLINE_VAR constexpr default_sentinel_t default_sentinel{};
 
         /// <summary>
         /// 懸空迭代器佔位型別 (對齊 C++20 std::ranges::dangling)。
@@ -4229,13 +4271,7 @@ namespace self_ranges {
         /// <summary>
         /// ISO C++23 範圍建構式標記常數實體 (對齊 std::from_range)。
         /// </summary>
-#if (COMPAT_CPLUSPLUS >= COMPAT_CXX_17)
-        inline constexpr from_range_t from_range{};
-#else
-        namespace {
-            constexpr const from_range_t& from_range = static_const<from_range_t>::value;
-        }
-#endif
+        COMPAT_INLINE_VAR constexpr from_range_t from_range{};
 
         namespace detail {
             template <typename S, typename I>
@@ -12774,6 +12810,631 @@ namespace compat {
 #endif
 
 // ============================================================================
+// Module Section: include/compat/PropagateConst.hpp
+// ============================================================================
+
+#if COMPAT_HAS_STD_PROPAGATE_CONST && !defined(COMPAT_FORCE_SELF_IMPLEMENTATION)
+#  include <experimental/propagate_const>
+
+namespace compat {
+    using std::experimental::propagate_const;
+    using std::experimental::get_underlying;
+} // namespace compat
+
+#else
+
+namespace compat {
+
+    template <typename T>
+    class propagate_const;
+
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const T&
+    get_underlying(const propagate_const<T>& pt) noexcept;
+
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 T&
+    get_underlying(propagate_const<T>& pt) noexcept;
+
+    namespace detail {
+        namespace propagate_const_detail {
+
+            template <typename T>
+            struct get_element_type {
+            private:
+                template <typename U>
+                static auto test(int) -> typename std::remove_reference<decltype(*std::declval<U&>())>::type;
+
+                template <typename>
+                static void test(...);
+
+            public:
+                using type = decltype(test<T>(0));
+            };
+
+            template <typename T>
+            struct get_element_type<T*> {
+                using type = T;
+            };
+
+            template <typename U>
+            struct is_propagate_const_helper : std::false_type {};
+
+            template <typename U>
+            struct is_propagate_const_helper<propagate_const<U>> : std::true_type {};
+
+            // 條件式隱含轉換至裸指標基底類別 (對齊 ISO Library Fundamentals TS)
+            template <typename T, typename Elem, bool = std::is_convertible<const T, const Elem*>::value>
+            struct conv_c {};
+
+            template <typename T, typename Elem>
+            struct conv_c<T, Elem, true> {
+                COMPAT_CONSTEXPR_14 operator const Elem*() const;
+            };
+
+            template <typename T, typename Elem, bool = std::is_convertible<T, Elem*>::value>
+            struct conv_nc {};
+
+            template <typename T, typename Elem>
+            struct conv_nc<T, Elem, true> {
+                COMPAT_CONSTEXPR_14 operator Elem*();
+            };
+
+            template <typename T, typename Elem>
+            struct conv_base : conv_c<T, Elem>, conv_nc<T, Elem> {};
+
+            template <typename T, typename Elem>
+            struct conv_base<T*, Elem> {
+                COMPAT_CONSTEXPR_14 operator const T*() const noexcept;
+                COMPAT_CONSTEXPR_14 operator T*() noexcept;
+            };
+
+        } // namespace propagate_const_detail
+    } // namespace detail
+
+    /// <summary>
+    /// ISO C++ Library Fundamentals TS 常數傳播指標包裝器 (對齊 std::experimental::propagate_const)。
+    /// 當此包裝器或宿主物件處於 const 存取路徑時，會強制將 const 屬性傳播至底層所指向之物件 (Deep Const)。
+    /// 向下相容至 C++11。
+    /// </summary>
+    /// <typeparam name="T">指標或類指標型別 (如 U*, std::unique_ptr&lt;U&gt;, std::shared_ptr&lt;U&gt;)。</typeparam>
+    template <typename T>
+    class propagate_const : public detail::propagate_const_detail::conv_base<
+                                T, typename detail::propagate_const_detail::get_element_type<T>::type> {
+    public:
+        using element_type = typename detail::propagate_const_detail::get_element_type<T>::type;
+
+        static_assert(std::is_object<typename std::remove_pointer<T>::type>::value &&
+                      !std::is_array<T>::value &&
+                      (std::is_class<T>::value || std::is_pointer<T>::value),
+                      "propagate_const requires a class or a pointer to an object type");
+
+    private:
+        template <typename U>
+        friend class propagate_const;
+
+        template <typename U>
+        friend COMPAT_CONSTEXPR_14 const U&
+        compat::get_underlying(const propagate_const<U>& pt) noexcept;
+
+        template <typename U>
+        friend COMPAT_CONSTEXPR_14 U&
+        compat::get_underlying(propagate_const<U>& pt) noexcept;
+
+        template <typename U, typename Elem, bool>
+        friend struct detail::propagate_const_detail::conv_c;
+
+        template <typename U, typename Elem, bool>
+        friend struct detail::propagate_const_detail::conv_nc;
+
+        template <typename U, typename Elem>
+        friend struct detail::propagate_const_detail::conv_base;
+
+        template <typename U>
+        static COMPAT_CONSTEXPR_14 element_type* to_raw_pointer(U* u) noexcept { return u; }
+
+        template <typename U>
+        static COMPAT_CONSTEXPR_14 const element_type* to_raw_pointer(const U* u) noexcept { return u; }
+
+        template <typename U>
+        static COMPAT_CONSTEXPR_14 element_type* to_raw_pointer(U& u) { return u.get(); }
+
+        template <typename U>
+        static COMPAT_CONSTEXPR_14 const element_type* to_raw_pointer(const U& u) { return u.get(); }
+
+    public:
+        // --------------------------------------------------------------------
+        // 建構子 (Constructors)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// 預設建構子，值初始化 (Value-initialize) 被包裝之指標物件 (指標歸零為 nullptr)。
+        /// </summary>
+        template <typename Dummy = T,
+                  typename = typename std::enable_if<std::is_default_constructible<Dummy>::value>::type>
+        COMPAT_CONSTEXPR_14 propagate_const() : m_t{} {}
+
+        /// <summary>
+        /// 移動建構子。
+        /// </summary>
+        constexpr propagate_const(propagate_const&&) = default;
+
+        /// <summary>
+        /// 複製建構子顯式刪除 (對齊 ISO TS 規範)。
+        /// </summary>
+        propagate_const(const propagate_const&) = delete;
+
+        /// <summary>
+        /// 相容 propagate_const&lt;U&gt; 移動建構子 (隱含轉換)。
+        /// </summary>
+        template <typename U,
+                  typename = typename std::enable_if<
+                      std::is_constructible<T, U&&>::value &&
+                      std::is_convertible<U&&, T>::value
+                  >::type>
+        COMPAT_CONSTEXPR_14 propagate_const(propagate_const<U>&& pu)
+            : m_t(std::move(compat::get_underlying(pu))) {}
+
+        /// <summary>
+        /// 相容 propagate_const&lt;U&gt; 移動建構子 (顯式轉換)。
+        /// </summary>
+        template <typename U,
+                  typename = typename std::enable_if<
+                      std::is_constructible<T, U&&>::value &&
+                      !std::is_convertible<U&&, T>::value
+                  >::type,
+                  int = 0>
+        explicit COMPAT_CONSTEXPR_14 propagate_const(propagate_const<U>&& pu)
+            : m_t(std::move(compat::get_underlying(pu))) {}
+
+        /// <summary>
+        /// 轉發建構子 (隱含轉換)。
+        /// </summary>
+        template <typename U,
+                  typename = typename std::enable_if<
+                      std::is_constructible<T, U&&>::value &&
+                      std::is_convertible<U&&, T>::value &&
+                      !detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value
+                  >::type>
+        COMPAT_CONSTEXPR_14 propagate_const(U&& u)
+            : m_t(std::forward<U>(u)) {}
+
+        /// <summary>
+        /// 轉發建構子 (顯式轉換)。
+        /// </summary>
+        template <typename U,
+                  typename = typename std::enable_if<
+                      std::is_constructible<T, U&&>::value &&
+                      !std::is_convertible<U&&, T>::value &&
+                      !detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value
+                  >::type,
+                  int = 0>
+        explicit COMPAT_CONSTEXPR_14 propagate_const(U&& u)
+            : m_t(std::forward<U>(u)) {}
+
+        // --------------------------------------------------------------------
+        // 賦值運算子 (Assignment Operators)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// 複製賦值運算子顯式刪除 (對齊 ISO TS 規範)。
+        /// </summary>
+        propagate_const& operator=(const propagate_const&) = delete;
+
+        /// <summary>
+        /// 移動賦值運算子。
+        /// </summary>
+        COMPAT_CONSTEXPR_14 propagate_const& operator=(propagate_const&&) = default;
+
+        /// <summary>
+        /// 相容 propagate_const&lt;U&gt; 移動賦值運算子。
+        /// </summary>
+        template <typename U,
+                  typename = typename std::enable_if<std::is_convertible<U&&, T>::value>::type>
+        COMPAT_CONSTEXPR_14 propagate_const& operator=(propagate_const<U>&& pu) {
+            m_t = std::move(compat::get_underlying(pu));
+            return *this;
+        }
+
+        /// <summary>
+        /// 轉發賦值運算子。
+        /// </summary>
+        template <typename U,
+                  typename = typename std::enable_if<
+                      std::is_convertible<U&&, T>::value &&
+                      !detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value
+                  >::type>
+        COMPAT_CONSTEXPR_14 propagate_const& operator=(U&& u) {
+            m_t = std::forward<U>(u);
+            return *this;
+        }
+
+        // --------------------------------------------------------------------
+        // 觀察器 (Observers)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// 檢查被包裝之指標是否非空。
+        /// </summary>
+        COMPAT_NODISCARD explicit COMPAT_CONSTEXPR_14 operator bool() const noexcept(noexcept(static_cast<bool>(std::declval<const T&>()))) {
+            return static_cast<bool>(m_t);
+        }
+
+        /// <summary>
+        /// 邏輯非運算子，檢查被包裝之指標是否為空。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!() const noexcept(noexcept(!static_cast<bool>(std::declval<const T&>()))) {
+            return !static_cast<bool>(m_t);
+        }
+
+        /// <summary>
+        /// 取得底層指向物件之常數指標 (唯讀存取)。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const element_type* operator->() const {
+            return get();
+        }
+
+        /// <summary>
+        /// 取得底層指向物件之非常數指標 (可變更存取)。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 element_type* operator->() {
+            return get();
+        }
+
+        /// <summary>
+        /// 解參考取得底層物件之常數引用 (唯讀存取)。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const element_type& operator*() const {
+            return *get();
+        }
+
+        /// <summary>
+        /// 解參考取得底層物件之非常數引用 (可變更存取)。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 element_type& operator*() {
+            return *get();
+        }
+
+        /// <summary>
+        /// 取得裸指標 (唯讀常數存取)。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const element_type* get() const {
+            return to_raw_pointer(m_t);
+        }
+
+        /// <summary>
+        /// 取得裸指標 (非常數存取)。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 element_type* get() {
+            return to_raw_pointer(m_t);
+        }
+
+        // --------------------------------------------------------------------
+        // 修改器 (Modifiers)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// 與另一個 propagate_const 交換底層指標。
+        /// </summary>
+        COMPAT_CONSTEXPR_14 void swap(propagate_const& pt) noexcept(noexcept(std::swap(std::declval<T&>(), std::declval<T&>()))) {
+            using std::swap;
+            swap(m_t, compat::get_underlying(pt));
+        }
+
+    private:
+        T m_t;
+    };
+
+    // ------------------------------------------------------------------------
+    // 條件式隱含轉換至裸指標運算子實作
+    // ------------------------------------------------------------------------
+
+    namespace detail {
+        namespace propagate_const_detail {
+
+            template <typename T, typename Elem>
+            COMPAT_CONSTEXPR_14
+            conv_base<T*, Elem>::operator const T*() const noexcept {
+                return static_cast<const propagate_const<T*>*>(this)->get();
+            }
+
+            template <typename T, typename Elem>
+            COMPAT_CONSTEXPR_14
+            conv_base<T*, Elem>::operator T*() noexcept {
+                return static_cast<propagate_const<T*>*>(this)->get();
+            }
+
+            template <typename T, typename Elem>
+            COMPAT_CONSTEXPR_14
+            conv_c<T, Elem, true>::operator const Elem*() const {
+                return static_cast<const propagate_const<T>*>(this)->get();
+            }
+
+            template <typename T, typename Elem>
+            COMPAT_CONSTEXPR_14
+            conv_nc<T, Elem, true>::operator Elem*() {
+                return static_cast<propagate_const<T>*>(this)->get();
+            }
+
+        } // namespace propagate_const_detail
+    } // namespace detail
+
+    // ------------------------------------------------------------------------
+    // 非成員函式 (Non-member Functions)
+    // ------------------------------------------------------------------------
+
+    /// <summary>
+    /// 存取 propagate_const 底層包裝之常數指標物件。
+    /// </summary>
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const T&
+    get_underlying(const propagate_const<T>& pt) noexcept {
+        return pt.m_t;
+    }
+
+    /// <summary>
+    /// 存取 propagate_const 底層包裝之非常數指標物件。
+    /// </summary>
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 T&
+    get_underlying(propagate_const<T>& pt) noexcept {
+        return pt.m_t;
+    }
+
+    /// <summary>
+    /// 特化交換函式。
+    /// </summary>
+    template <typename T>
+    COMPAT_CONSTEXPR_14 void swap(propagate_const<T>& p1, propagate_const<T>& p2)
+        noexcept(noexcept(p1.swap(p2))) {
+        p1.swap(p2);
+    }
+
+    // ------------------------------------------------------------------------
+    // 關聯性比較運算子 (Relational Operators)
+    // ------------------------------------------------------------------------
+
+    // 與 nullptr_t 比較
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const propagate_const<T>& pt, std::nullptr_t) {
+        return compat::get_underlying(pt) == nullptr;
+    }
+
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(std::nullptr_t, const propagate_const<T>& pt) {
+        return nullptr == compat::get_underlying(pt);
+    }
+
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const propagate_const<T>& pt, std::nullptr_t) {
+        return compat::get_underlying(pt) != nullptr;
+    }
+
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(std::nullptr_t, const propagate_const<T>& pt) {
+        return nullptr != compat::get_underlying(pt);
+    }
+
+    // 兩 propagate_const 互比
+    template <typename T, typename U>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const propagate_const<T>& pt, const propagate_const<U>& pu) {
+        return compat::get_underlying(pt) == compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const propagate_const<T>& pt, const propagate_const<U>& pu) {
+        return compat::get_underlying(pt) != compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator<(const propagate_const<T>& pt, const propagate_const<U>& pu) {
+        return compat::get_underlying(pt) < compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator>(const propagate_const<T>& pt, const propagate_const<U>& pu) {
+        return compat::get_underlying(pt) > compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator<=(const propagate_const<T>& pt, const propagate_const<U>& pu) {
+        return compat::get_underlying(pt) <= compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator>=(const propagate_const<T>& pt, const propagate_const<U>& pu) {
+        return compat::get_underlying(pt) >= compat::get_underlying(pu);
+    }
+
+    // propagate_const 與底層指標/相容型別比較
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const propagate_const<T>& pt, const U& u) {
+        return compat::get_underlying(pt) == u;
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const propagate_const<T>& pt, const U& u) {
+        return compat::get_underlying(pt) != u;
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator<(const propagate_const<T>& pt, const U& u) {
+        return compat::get_underlying(pt) < u;
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator>(const propagate_const<T>& pt, const U& u) {
+        return compat::get_underlying(pt) > u;
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator<=(const propagate_const<T>& pt, const U& u) {
+        return compat::get_underlying(pt) <= u;
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator>=(const propagate_const<T>& pt, const U& u) {
+        return compat::get_underlying(pt) >= u;
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<T>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const T& t, const propagate_const<U>& pu) {
+        return t == compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<T>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const T& t, const propagate_const<U>& pu) {
+        return t != compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<T>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator<(const T& t, const propagate_const<U>& pu) {
+        return t < compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<T>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator>(const T& t, const propagate_const<U>& pu) {
+        return t > compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<T>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator<=(const T& t, const propagate_const<U>& pu) {
+        return t <= compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<T>::type>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator>=(const T& t, const propagate_const<U>& pu) {
+        return t >= compat::get_underlying(pu);
+    }
+
+#if defined(__cpp_impl_three_way_comparison) && (__cpp_impl_three_way_comparison >= 201907L)
+#  if defined(__has_include)
+#    if __has_include(<compare>)
+#      include <compare>
+    template <typename T, typename U>
+    COMPAT_NODISCARD constexpr auto operator<=>(const propagate_const<T>& pt, const propagate_const<U>& pu)
+        -> decltype(compat::get_underlying(pt) <=> compat::get_underlying(pu)) {
+        return compat::get_underlying(pt) <=> compat::get_underlying(pu);
+    }
+
+    template <typename T, typename U,
+              typename = typename std::enable_if<!detail::propagate_const_detail::is_propagate_const_helper<typename std::decay<U>::type>::value>::type>
+    COMPAT_NODISCARD constexpr auto operator<=>(const propagate_const<T>& pt, const U& u)
+        -> decltype(compat::get_underlying(pt) <=> u) {
+        return compat::get_underlying(pt) <=> u;
+    }
+#    endif
+#  endif
+#endif
+
+} // namespace compat
+
+// ----------------------------------------------------------------------------
+// std 特化 (std::hash 與比較函式物件)
+// ----------------------------------------------------------------------------
+
+namespace std {
+
+    template <typename T>
+    struct hash<compat::propagate_const<T>> {
+        using result_type = std::size_t;
+        using argument_type = compat::propagate_const<T>;
+
+        std::size_t operator()(const compat::propagate_const<T>& p) const
+            noexcept(noexcept(std::hash<T>{}(compat::get_underlying(p)))) {
+            return std::hash<T>{}(compat::get_underlying(p));
+        }
+    };
+
+    template <typename T>
+    struct equal_to<compat::propagate_const<T>> {
+        typedef compat::propagate_const<T> first_argument_type;
+        typedef compat::propagate_const<T> second_argument_type;
+        typedef bool result_type;
+
+        COMPAT_CONSTEXPR_14 bool operator()(const compat::propagate_const<T>& x,
+                                            const compat::propagate_const<T>& y) const {
+            return std::equal_to<T>{}(compat::get_underlying(x), compat::get_underlying(y));
+        }
+    };
+
+    template <typename T>
+    struct not_equal_to<compat::propagate_const<T>> {
+        typedef compat::propagate_const<T> first_argument_type;
+        typedef compat::propagate_const<T> second_argument_type;
+        typedef bool result_type;
+
+        COMPAT_CONSTEXPR_14 bool operator()(const compat::propagate_const<T>& x,
+                                            const compat::propagate_const<T>& y) const {
+            return std::not_equal_to<T>{}(compat::get_underlying(x), compat::get_underlying(y));
+        }
+    };
+
+    template <typename T>
+    struct less<compat::propagate_const<T>> {
+        typedef compat::propagate_const<T> first_argument_type;
+        typedef compat::propagate_const<T> second_argument_type;
+        typedef bool result_type;
+
+        COMPAT_CONSTEXPR_14 bool operator()(const compat::propagate_const<T>& x,
+                                            const compat::propagate_const<T>& y) const {
+            return std::less<T>{}(compat::get_underlying(x), compat::get_underlying(y));
+        }
+    };
+
+    template <typename T>
+    struct greater<compat::propagate_const<T>> {
+        typedef compat::propagate_const<T> first_argument_type;
+        typedef compat::propagate_const<T> second_argument_type;
+        typedef bool result_type;
+
+        COMPAT_CONSTEXPR_14 bool operator()(const compat::propagate_const<T>& x,
+                                            const compat::propagate_const<T>& y) const {
+            return std::greater<T>{}(compat::get_underlying(x), compat::get_underlying(y));
+        }
+    };
+
+    template <typename T>
+    struct less_equal<compat::propagate_const<T>> {
+        typedef compat::propagate_const<T> first_argument_type;
+        typedef compat::propagate_const<T> second_argument_type;
+        typedef bool result_type;
+
+        COMPAT_CONSTEXPR_14 bool operator()(const compat::propagate_const<T>& x,
+                                            const compat::propagate_const<T>& y) const {
+            return std::less_equal<T>{}(compat::get_underlying(x), compat::get_underlying(y));
+        }
+    };
+
+    template <typename T>
+    struct greater_equal<compat::propagate_const<T>> {
+        typedef compat::propagate_const<T> first_argument_type;
+        typedef compat::propagate_const<T> second_argument_type;
+        typedef bool result_type;
+
+        COMPAT_CONSTEXPR_14 bool operator()(const compat::propagate_const<T>& x,
+                                            const compat::propagate_const<T>& y) const {
+            return std::greater_equal<T>{}(compat::get_underlying(x), compat::get_underlying(y));
+        }
+    };
+
+} // namespace std
+
+#endif
+
+// ============================================================================
 // Module Section: include/compat/Ranges.hpp
 // ============================================================================
 
@@ -12949,7 +13610,6 @@ namespace compat {
 // ============================================================================
 
 #if COMPAT_HAS_STD_RANGES
-#  include <algorithm>
 #  include <functional>
 #  include <numeric>
 
@@ -13176,6 +13836,434 @@ namespace compat {
         using namespace ::compat::detail::self_algo::ranges;
     }
 } // namespace compat
+#endif
+
+#if COMPAT_HAS_STD_CLAMP && !defined(COMPAT_FORCE_SELF_IMPLEMENTATION)
+namespace compat {
+    using std::clamp;
+} // namespace compat
+#else
+namespace compat {
+
+    /// <summary>
+    /// 將數值限定於 [lo, hi] 區間之夾取函式（向下相容 C++14，對齊 C++17 std::clamp）。
+    /// </summary>
+    /// <typeparam name="T">欲進行比較的數值型別。</typeparam>
+    /// <param name="val">欲夾取的數值。</param>
+    /// <param name="lo">區間下限，必須滿足 !(hi &lt; lo)。</param>
+    /// <param name="hi">區間上限。</param>
+    /// <returns>若 val &lt; lo 則回傳 lo；若 hi &lt; val 則回傳 hi；否則回傳 val。</returns>
+    template <typename T>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const T& clamp(const T& val, const T& lo, const T& hi) {
+        COMPAT_ASSERT(!(hi < lo));
+        return (val < lo) ? lo : (hi < val) ? hi : val;
+    }
+
+    /// <summary>
+    /// 使用自訂比較謂詞將數值限定於 [lo, hi] 區間之夾取函式（向下相容 C++14，對齊 C++17 std::clamp）。
+    /// </summary>
+    /// <typeparam name="T">欲進行比較的數值型別。</typeparam>
+    /// <typeparam name="Compare">自訂比較函式物件型別。</typeparam>
+    /// <param name="val">欲夾取的數值。</param>
+    /// <param name="lo">區間下限，必須滿足 !comp(hi, lo)。</param>
+    /// <param name="hi">區間上限。</param>
+    /// <param name="comp">自訂二元比較述詞。</param>
+    /// <returns>若 comp(val, lo) 則回傳 lo；若 comp(hi, val) 則回傳 hi；否則回傳 val。</returns>
+    template <typename T, typename Compare>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const T& clamp(const T& val, const T& lo, const T& hi, Compare comp) {
+        COMPAT_ASSERT(!comp(hi, lo));
+        return comp(val, lo) ? lo : comp(hi, val) ? hi : val;
+    }
+
+} // namespace compat
+#endif
+
+// ============================================================================
+// Module Section: include/compat/Span.hpp
+// ============================================================================
+
+#if COMPAT_HAS_STD_SPAN
+#  include <span>
+#endif
+
+#if COMPAT_HAS_STD_SPAN && defined(COMPAT_FORCE_STD_IMPLEMENTATION)
+
+namespace compat {
+    using std::byte;
+    using std::span;
+    using std::dynamic_extent;
+    using std::as_bytes;
+    using std::as_writable_bytes;
+} // namespace compat
+
+#else
+
+namespace compat {
+
+#if defined(__cpp_lib_byte) || (COMPAT_CPLUSPLUS >= COMPAT_CXX_17)
+    using byte = std::byte;
+#else
+    enum class byte : unsigned char {};
+#endif
+
+    /// <summary>
+    /// ISO C++20 動態範圍標記常數 (對齊 std::dynamic_extent)。
+    /// </summary>
+    COMPAT_INLINE_VAR constexpr std::size_t dynamic_extent = static_cast<std::size_t>(-1);
+
+    namespace detail {
+        namespace span_detail {
+
+            template <typename T>
+            using remove_cv_t = typename std::remove_cv<T>::type;
+
+            template <typename C, typename T>
+            struct is_contiguous_container {
+            private:
+                template <typename U>
+                static auto test(int) -> decltype(
+                    std::declval<U>().data(),
+                    std::declval<U>().size(),
+                    std::true_type{}
+                );
+
+                template <typename>
+                static std::false_type test(...);
+
+            public:
+                static constexpr bool value = decltype(test<C>(0))::value;
+            };
+
+        } // namespace span_detail
+    } // namespace detail
+
+    /// <summary>
+    /// ISO C++20 連續記憶體切片視圖 (對齊 std::span)。
+    /// 提供零複製、型別安全且向下相容 C++11 的連續緩衝區引用。
+    /// </summary>
+    /// <typeparam name="T">元素型別。</typeparam>
+    /// <typeparam name="Extent">視圖長度；預設為 dynamic_extent (動態長度)。</typeparam>
+    template <typename T, std::size_t Extent = dynamic_extent>
+    class span {
+    public:
+        using element_type           = T;
+        using value_type             = typename std::remove_cv<T>::type;
+        using size_type              = std::size_t;
+        using difference_type        = std::ptrdiff_t;
+        using pointer                = T*;
+        using const_pointer          = const T*;
+        using reference              = T&;
+        using const_reference        = const T&;
+        using iterator               = T*;
+        using const_iterator         = const T*;
+        using reverse_iterator       = std::reverse_iterator<iterator>;
+        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+        static constexpr std::size_t extent = Extent;
+
+        // --------------------------------------------------------------------
+        // 建構子 (Constructors)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// 預設建構子，建立空視圖。
+        /// </summary>
+        COMPAT_CONSTEXPR_14 span() noexcept : m_data(nullptr), m_size(0) {
+            static_assert(Extent == 0 || Extent == dynamic_extent, "Static extent must be 0 for default constructor");
+        }
+
+        /// <summary>
+        /// 依據指標與元素數量建構視圖。
+        /// </summary>
+        /// <param name="ptr">起始指標。</param>
+        /// <param name="count">元素個數。</param>
+        COMPAT_CONSTEXPR_14 span(pointer ptr, size_type count) noexcept
+            : m_data(ptr), m_size(count) {
+            COMPAT_ASSERT(Extent == dynamic_extent || count == Extent);
+        }
+
+        /// <summary>
+        /// 依據指標區間 [first, last) 建構視圖。
+        /// </summary>
+        /// <param name="first">起始指標。</param>
+        /// <param name="last">末端哨兵指標。</param>
+        COMPAT_CONSTEXPR_14 span(pointer first, pointer last) noexcept
+            : m_data(first), m_size(static_cast<size_type>(last - first)) {
+            COMPAT_ASSERT(last >= first);
+            COMPAT_ASSERT(Extent == dynamic_extent || static_cast<size_type>(last - first) == Extent);
+        }
+
+        /// <summary>
+        /// 依據原生 C 陣列參考建構視圖。
+        /// </summary>
+        template <std::size_t N,
+                  typename = typename std::enable_if<(Extent == dynamic_extent || Extent == N)>::type>
+        COMPAT_CONSTEXPR_14 span(element_type (&arr)[N]) noexcept
+            : m_data(arr), m_size(N) {}
+
+        /// <summary>
+        /// 依據 std::array 建構視圖。
+        /// </summary>
+        template <std::size_t N,
+                  typename = typename std::enable_if<(Extent == dynamic_extent || Extent == N)>::type>
+        COMPAT_CONSTEXPR_14 span(std::array<value_type, N>& arr) noexcept
+            : m_data(arr.data()), m_size(N) {}
+
+        /// <summary>
+        /// 依據 const std::array 建構唯讀視圖。
+        /// </summary>
+        template <std::size_t N,
+                  typename = typename std::enable_if<(Extent == dynamic_extent || Extent == N) && std::is_const<element_type>::value>::type>
+        COMPAT_CONSTEXPR_14 span(const std::array<value_type, N>& arr) noexcept
+            : m_data(arr.data()), m_size(N) {}
+
+        /// <summary>
+        /// 依據具備連續記憶體的容器 (如 std::vector, std::string) 建構視圖。
+        /// </summary>
+        template <typename Container,
+                  typename = typename std::enable_if<
+                      !std::is_same<typename std::decay<Container>::type, span>::value &&
+                      detail::span_detail::is_contiguous_container<Container, element_type>::value &&
+                      std::is_convertible<decltype(std::declval<Container&>().data()), pointer>::value
+                  >::type>
+        COMPAT_CONSTEXPR_14 span(Container& cont) noexcept
+            : m_data(cont.data()), m_size(cont.size()) {
+            COMPAT_ASSERT(Extent == dynamic_extent || cont.size() == Extent);
+        }
+
+        /// <summary>
+        /// 依據唯讀容器建構唯讀視圖。
+        /// </summary>
+        template <typename Container,
+                  typename = typename std::enable_if<
+                      !std::is_same<typename std::decay<Container>::type, span>::value &&
+                      std::is_const<element_type>::value &&
+                      detail::span_detail::is_contiguous_container<const Container, element_type>::value &&
+                      std::is_convertible<decltype(std::declval<const Container&>().data()), pointer>::value
+                  >::type>
+        COMPAT_CONSTEXPR_14 span(const Container& cont) noexcept
+            : m_data(cont.data()), m_size(cont.size()) {
+            COMPAT_ASSERT(Extent == dynamic_extent || cont.size() == Extent);
+        }
+
+        /// <summary>
+        /// 轉換建構子：允許從型別相容之 span (如非 const 至 const) 轉換。
+        /// </summary>
+        template <typename OtherType, std::size_t OtherExtent,
+                  typename = typename std::enable_if<
+                      (Extent == dynamic_extent || Extent == OtherExtent) &&
+                      std::is_convertible<OtherType(*)[], element_type(*)[]>::value
+                  >::type>
+        COMPAT_CONSTEXPR_14 span(const span<OtherType, OtherExtent>& other) noexcept
+            : m_data(other.data()), m_size(other.size()) {}
+
+        constexpr span(const span&) noexcept = default;
+        COMPAT_CONSTEXPR_14 span& operator=(const span&) noexcept = default;
+
+#if COMPAT_HAS_STD_SPAN
+        /// <summary>
+        /// 與 C++20 std::span 互相轉換建構子。
+        /// </summary>
+        constexpr span(std::span<element_type, Extent> s) noexcept : m_data(s.data()), m_size(s.size()) {}
+
+        /// <summary>
+        /// 隱含轉換為 C++20 std::span。
+        /// </summary>
+        constexpr operator std::span<element_type, Extent>() const noexcept {
+            return std::span<element_type, Extent>(m_data, size());
+        }
+#endif
+
+        // --------------------------------------------------------------------
+        // 觀察器 (Observers)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// 取得指向底層資料緩衝區的原始指標。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 pointer data() const noexcept { return m_data; }
+
+        /// <summary>
+        /// 取得視圖包含的元素個數。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 size_type size() const noexcept {
+            return (Extent == dynamic_extent) ? m_size : Extent;
+        }
+
+        /// <summary>
+        /// 取得視圖佔用的總位元組大小。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 size_type size_bytes() const noexcept {
+            return size() * sizeof(element_type);
+        }
+
+        /// <summary>
+        /// 檢查視圖是否為空。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool empty() const noexcept { return size() == 0; }
+
+        // --------------------------------------------------------------------
+        // 元素存取 (Element Access)
+        // --------------------------------------------------------------------
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference operator[](size_type idx) const noexcept {
+            COMPAT_ASSERT(idx < size());
+            return m_data[idx];
+        }
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference front() const noexcept {
+            COMPAT_ASSERT(!empty());
+            return m_data[0];
+        }
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference back() const noexcept {
+            COMPAT_ASSERT(!empty());
+            return m_data[size() - 1];
+        }
+
+        // --------------------------------------------------------------------
+        // 迭代器支援 (Iterators)
+        // --------------------------------------------------------------------
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 iterator begin() const noexcept { return m_data; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 iterator end() const noexcept { return m_data + size(); }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const_iterator cbegin() const noexcept { return m_data; }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const_iterator cend() const noexcept { return m_data + size(); }
+
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reverse_iterator rbegin() const noexcept {
+            return reverse_iterator(end());
+        }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reverse_iterator rend() const noexcept {
+            return reverse_iterator(begin());
+        }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const_reverse_iterator crbegin() const noexcept {
+            return const_reverse_iterator(cend());
+        }
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const_reverse_iterator crend() const noexcept {
+            return const_reverse_iterator(cbegin());
+        }
+
+        // --------------------------------------------------------------------
+        // 子視圖切片 (Subviews: subspan, first, last)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// 取得從 offset 開始、長度為 count 的子視圖 (subspan)。
+        /// 實作具備雙重保護：
+        /// 1. Debug 模式驗證 offset &lt;= size() 與 count &lt;= size() - offset；
+        /// 2. Release 模式自動箝位防止無號數下溢或越界緩衝區建構。
+        /// </summary>
+        /// <param name="offset">起始偏移量。</param>
+        /// <param name="count">欲截取的元素個數；預設為 dynamic_extent，表示截取至末端。</param>
+        /// <returns>子視圖 span 物件。</returns>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 span<element_type, dynamic_extent> subspan(
+            size_type offset, size_type count = dynamic_extent) const noexcept {
+            // 合約前置條件檢驗 (Fail-Fast)
+            COMPAT_ASSERT(offset <= size());
+
+            // 邊界防禦：若 offset 越界則安全箝位至末端空區間
+            if (COMPAT_UNLIKELY(offset > size())) {
+                return span<element_type, dynamic_extent>(m_data ? (m_data + size()) : nullptr, static_cast<size_type>(0));
+            }
+
+            size_type max_count = size() - offset;
+
+            // 安全計算子區間長度：未指定 (dynamic_extent) 或超過剩餘長度時安全夾取至 max_count
+            size_type actual_count = (count == dynamic_extent || count > max_count) ? max_count : count;
+
+            return span<element_type, dynamic_extent>(m_data + offset, actual_count);
+        }
+
+        /// <summary>
+        /// 編譯期樣板子視圖 (Compile-time Template Subspan)。
+        /// </summary>
+        template <std::size_t Offset, std::size_t Count = dynamic_extent>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 auto subspan() const noexcept
+            -> span<element_type, (Count != dynamic_extent ? Count : (Extent != dynamic_extent ? Extent - Offset : dynamic_extent))> {
+            static_assert(Extent == dynamic_extent || Offset <= Extent, "Offset out of bounds");
+            static_assert(Extent == dynamic_extent || Count == dynamic_extent || Count <= Extent - Offset, "Count out of bounds");
+            COMPAT_ASSERT(Offset <= size());
+            size_type max_c = (Offset <= size()) ? (size() - Offset) : 0;
+            size_type actual_c = (Count == dynamic_extent || Count > max_c) ? max_c : Count;
+            return span<element_type, (Count != dynamic_extent ? Count : (Extent != dynamic_extent ? Extent - Offset : dynamic_extent))>(
+                m_data + Offset, actual_c
+            );
+        }
+
+        /// <summary>
+        /// 取得視圖前 count 個元素的前綴子視圖。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 span<element_type, dynamic_extent> first(size_type count) const noexcept {
+            size_type safe_count = (count > size()) ? size() : count;
+            return span<element_type, dynamic_extent>(m_data, safe_count);
+        }
+
+        /// <summary>
+        /// 編譯期樣板前綴子視圖。
+        /// </summary>
+        template <std::size_t Count>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 span<element_type, Count> first() const noexcept {
+            static_assert(Extent == dynamic_extent || Count <= Extent, "Count out of bounds");
+            COMPAT_ASSERT(Count <= size());
+            return span<element_type, Count>(m_data, Count);
+        }
+
+        /// <summary>
+        /// 取得視圖末尾 count 個元素的後綴子視圖。
+        /// </summary>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 span<element_type, dynamic_extent> last(size_type count) const noexcept {
+            size_type safe_count = (count > size()) ? size() : count;
+            return span<element_type, dynamic_extent>(m_data + (size() - safe_count), safe_count);
+        }
+
+        /// <summary>
+        /// 編譯期樣板後綴子視圖。
+        /// </summary>
+        template <std::size_t Count>
+        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 span<element_type, Count> last() const noexcept {
+            static_assert(Extent == dynamic_extent || Count <= Extent, "Count out of bounds");
+            COMPAT_ASSERT(Count <= size());
+            return span<element_type, Count>(m_data + (size() - Count), Count);
+        }
+
+    private:
+        pointer   m_data = nullptr;
+        size_type m_size = 0;
+    };
+
+    // ------------------------------------------------------------------------
+    // as_bytes & as_writable_bytes
+    // ------------------------------------------------------------------------
+
+    /// <summary>
+    /// 將任意型別的 span 轉換為唯讀位元組視圖 (對齊 std::as_bytes)。
+    /// </summary>
+    template <typename T, std::size_t Extent>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14
+    span<const byte, (Extent == dynamic_extent ? dynamic_extent : Extent * sizeof(T))>
+    as_bytes(span<T, Extent> s) noexcept {
+        return span<const byte, (Extent == dynamic_extent ? dynamic_extent : Extent * sizeof(T))>(
+            reinterpret_cast<const byte*>(s.data()),
+            s.size_bytes()
+        );
+    }
+
+    /// <summary>
+    /// 將非常數型別的 span 轉換為可寫位元組視圖 (對齊 std::as_writable_bytes)。
+    /// </summary>
+    template <typename T, std::size_t Extent,
+              typename = typename std::enable_if<!std::is_const<T>::value>::type>
+    COMPAT_NODISCARD COMPAT_CONSTEXPR_14
+    span<byte, (Extent == dynamic_extent ? dynamic_extent : Extent * sizeof(T))>
+    as_writable_bytes(span<T, Extent> s) noexcept {
+        return span<byte, (Extent == dynamic_extent ? dynamic_extent : Extent * sizeof(T))>(
+            reinterpret_cast<byte*>(s.data()),
+            s.size_bytes()
+        );
+    }
+
+} // namespace compat
+
 #endif
 
 // ============================================================================
@@ -14304,11 +15392,7 @@ private:
 
 using format_parse_context = basic_format_parse_context<char>;
 
-#if (COMPAT_CPLUSPLUS >= COMPAT_CXX_17)
-alignas(64) inline constexpr char DigitsLut[200] = {
-#else
-alignas(64) static const char DigitsLut[200] = {
-#endif
+alignas(64) COMPAT_INLINE_VAR constexpr char DigitsLut[200] = {
     '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9',
     '1', '0', '1', '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9',
     '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',
@@ -16520,7 +17604,11 @@ namespace compat {
 /// <returns>Formatted std::string representation.</returns>
 template <typename T>
 COMPAT_NODISCARD inline std::string to_string(const T& value) {
+#if COMPAT_HAS_STD_FORMAT
+    return std::format("{}", value);
+#else
     return detail::FormatToString("{}", value);
+#endif
 }
 
 } // namespace compat
@@ -16751,77 +17839,6 @@ inline void println() {
 #  define COMPAT_INLINE_VAR static
 #endif
 
-namespace compat {
-    /// <summary>
-    /// 跨 C++14/17/20/23 相容的 clamp 函式
-    /// </summary>
-    template <typename T>
-    COMPAT_NODISCARD inline COMPAT_CONSTEXPR_14 const T& clamp(const T& v, const T& lo, const T& hi) {
-        return (v < lo) ? lo : (hi < v) ? hi : v;
-    }
-
-    /// <summary>
-    /// 跨 C++14/17/20/23 相容的連續緩衝區切片視圖 (span)
-    /// </summary>
-    template <typename T>
-    class span {
-    public:
-        using element_type           = T;
-        using value_type             = typename std::remove_cv<T>::type;
-        using size_type              = std::size_t;
-        using difference_type        = std::ptrdiff_t;
-        using pointer                = T*;
-        using const_pointer          = const T*;
-        using reference              = T&;
-        using const_reference        = const T&;
-        using iterator               = T*;
-        using const_iterator         = const T*;
-
-        COMPAT_CONSTEXPR_14 span() noexcept : m_data(nullptr), m_size(0) {}
-        COMPAT_CONSTEXPR_14 span(pointer ptr, size_type count) noexcept : m_data(ptr), m_size(count) {}
-        COMPAT_CONSTEXPR_14 span(pointer first, pointer last) noexcept : m_data(first), m_size(static_cast<size_type>(last - first)) {}
-
-        template <std::size_t N>
-        COMPAT_CONSTEXPR_14 span(element_type (&arr)[N]) noexcept : m_data(arr), m_size(N) {}
-
-        template <typename Container, typename = typename std::enable_if<
-            !std::is_same<typename std::decay<Container>::type, span>::value &&
-            std::is_convertible<decltype(std::declval<Container&>().data()), pointer>::value
-        >::type>
-        COMPAT_CONSTEXPR_14 span(Container& cont) noexcept : m_data(cont.data()), m_size(cont.size()) {}
-
-        template <typename Container, typename = typename std::enable_if<
-            !std::is_same<typename std::decay<Container>::type, span>::value &&
-            std::is_convertible<decltype(std::declval<const Container&>().data()), pointer>::value
-        >::type>
-        COMPAT_CONSTEXPR_14 span(const Container& cont) noexcept : m_data(cont.data()), m_size(cont.size()) {}
-
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 pointer data() const noexcept { return m_data; }
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 size_type size() const noexcept { return m_size; }
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 size_type size_bytes() const noexcept { return m_size * sizeof(element_type); }
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool empty() const noexcept { return m_size == 0; }
-
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference operator[](size_type idx) const noexcept { return m_data[idx]; }
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference front() const noexcept { return m_data[0]; }
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 reference back() const noexcept { return m_data[m_size - 1]; }
-
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 iterator begin() const noexcept { return m_data; }
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 iterator end() const noexcept { return m_data + m_size; }
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const_iterator cbegin() const noexcept { return m_data; }
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 const_iterator cend() const noexcept { return m_data + m_size; }
-
-        COMPAT_NODISCARD COMPAT_CONSTEXPR_14 span subspan(size_type offset, size_type count = static_cast<size_type>(-1)) const noexcept {
-            if (offset >= m_size) return span();
-            size_type maxCount = m_size - offset;
-            return span(m_data + offset, static_cast<size_type>((count > maxCount) ? maxCount : count));
-        }
-
-    private:
-        pointer   m_data = nullptr;
-        size_type m_size = 0;
-    };
-} // namespace compat
-
 // Undefine strictly internal private implementation details only
 #undef COMPAT_HAS_EXCEPTIONS
 #undef COMPAT_THROW_OR_ABORT
@@ -16845,6 +17862,9 @@ namespace compat {
 #undef COMPAT_HAS_STD_RANGES_SHIFT
 #undef COMPAT_HAS_STD_RANGES_GENERATE_RANDOM
 #undef COMPAT_HAS_STD_FILESYSTEM
+#undef COMPAT_HAS_STD_CLAMP
+#undef COMPAT_HAS_STD_SPAN
+#undef COMPAT_HAS_STD_PROPAGATE_CONST
 #undef COMPAT_BAD_EXPECTED_ACCESS_DEFINED
 #undef COMPAT_HAS_STD_OPTIONAL
 

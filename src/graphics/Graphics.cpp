@@ -1,6 +1,6 @@
 /**
  * @file Graphics.cpp
- * @brief GDI+ 風格統一繪圖排程與畫布控制中樞類別實作
+ * @brief GDI+ 風格統一繪圖排程與畫布控制中樞類別實作，具備現代 Pimpl 編譯防火牆
  */
 
 #include "ui/graphics/Graphics.hpp"
@@ -9,9 +9,10 @@
 #include "ui/rendering/DisplayListRenderer.hpp"
 #include "ui/rendering/backend/IRenderContext.hpp"
 #include "ui/text/TextLayoutEngine.hpp"
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
-#include <algorithm>
+#include <vector>
 
 namespace cppui {
 namespace graphics {
@@ -70,7 +71,56 @@ private:
     Bitmap& m_bmp;
 };
 
+struct InternalState {
+    float tx = 0.0f;
+    float ty = 0.0f;
+    float sx = 1.0f;
+    float sy = 1.0f;
+    float rot = 0.0f;
+    core::Rect clipRect;
+    SmoothingMode smoothing = SmoothingMode::Default;
+    InterpolationMode interpolation = InterpolationMode::Default;
+};
+
 } // namespace
+
+struct Graphics::Impl {
+    rendering::DrawingContext* dc = nullptr;
+    std::shared_ptr<Bitmap> image;
+    std::unique_ptr<rendering::DisplayList> ownedList;
+    std::unique_ptr<rendering::DrawingContext> ownedDC;
+    InternalState currentState;
+    std::vector<std::pair<uint32_t, InternalState>> stateStack;
+    uint32_t nextStateId = 1;
+
+    core::Point TransformPoint(core::Point p) const {
+        float sx = p.x * currentState.sx;
+        float sy = p.y * currentState.sy;
+        if (currentState.rot != 0.0f) {
+            float rad = currentState.rot * PI / 180.0f;
+            float cosA = std::cos(rad);
+            float sinA = std::sin(rad);
+            float rx = sx * cosA - sy * sinA;
+            float ry = sx * sinA + sy * cosA;
+            return core::Point(rx + currentState.tx, ry + currentState.ty);
+        }
+        return core::Point(sx + currentState.tx, sy + currentState.ty);
+    }
+
+    core::Rect TransformRect(const core::Rect& r) const {
+        core::Point p = TransformPoint(core::Point(r.x, r.y));
+        return core::Rect(p.x, p.y, r.width * currentState.sx, r.height * currentState.sy);
+    }
+
+    void Flush() {
+        if (image && ownedList && ownedList->GetOpCount() > 0) {
+            rendering::DisplayListRenderer renderer;
+            SoftwareBitmapTarget target(*image);
+            renderer.Render(*ownedList, &target);
+            ownedList->Clear();
+        }
+    }
+};
 
 Graphics Graphics::FromDrawingContext(rendering::DrawingContext& dc) {
     return Graphics(dc);
@@ -84,43 +134,29 @@ Graphics Graphics::FromImage(std::shared_ptr<Bitmap> image) {
 }
 
 Graphics::Graphics(rendering::DrawingContext& dc)
-    : m_dc(&dc) {
-    m_currentState.clipRect = core::Rect(0.0f, 0.0f, 100000.0f, 100000.0f);
+    : m_impl(std::make_unique<Impl>()) {
+    m_impl->dc = &dc;
+    m_impl->currentState.clipRect = core::Rect(0.0f, 0.0f, 100000.0f, 100000.0f);
 }
 
 Graphics::Graphics(std::shared_ptr<Bitmap> image)
-    : m_image(image) {
+    : m_impl(std::make_unique<Impl>()) {
     if (!image) {
         throw std::invalid_argument("Target image cannot be null.");
     }
-    m_ownedList = std::make_unique<rendering::DisplayList>();
-    m_ownedDC   = std::make_unique<rendering::DrawingContext>(*m_ownedList);
-    m_dc        = m_ownedDC.get();
-    m_currentState.clipRect = core::Rect(0.0f, 0.0f, static_cast<float>(image->GetWidth()), static_cast<float>(image->GetHeight()));
+    m_impl->image = image;
+    m_impl->ownedList = std::make_unique<rendering::DisplayList>();
+    m_impl->ownedDC   = std::make_unique<rendering::DrawingContext>(*m_impl->ownedList);
+    m_impl->dc        = m_impl->ownedDC.get();
+    m_impl->currentState.clipRect = core::Rect(0.0f, 0.0f, static_cast<float>(image->GetWidth()), static_cast<float>(image->GetHeight()));
 }
 
-Graphics::Graphics(Graphics&& other) noexcept
-    : m_dc(other.m_dc)
-    , m_image(std::move(other.m_image))
-    , m_ownedList(std::move(other.m_ownedList))
-    , m_ownedDC(std::move(other.m_ownedDC))
-    , m_currentState(other.m_currentState)
-    , m_stateStack(std::move(other.m_stateStack))
-    , m_nextStateId(other.m_nextStateId) {
-    other.m_dc = nullptr;
-}
+Graphics::Graphics(Graphics&& other) noexcept = default;
 
 Graphics& Graphics::operator=(Graphics&& other) noexcept {
     if (this != &other) {
         Flush();
-        m_dc           = other.m_dc;
-        m_image        = std::move(other.m_image);
-        m_ownedList    = std::move(other.m_ownedList);
-        m_ownedDC      = std::move(other.m_ownedDC);
-        m_currentState = other.m_currentState;
-        m_stateStack   = std::move(other.m_stateStack);
-        m_nextStateId  = other.m_nextStateId;
-        other.m_dc     = nullptr;
+        m_impl = std::move(other.m_impl);
     }
     return *this;
 }
@@ -129,68 +165,56 @@ Graphics::~Graphics() {
     Flush();
 }
 
-core::Point Graphics::TransformPoint(core::Point p) const {
-    float sx = p.x * m_currentState.sx;
-    float sy = p.y * m_currentState.sy;
-    if (m_currentState.rot != 0.0f) {
-        float rad = m_currentState.rot * PI / 180.0f;
-        float cosA = std::cos(rad);
-        float sinA = std::sin(rad);
-        float rx = sx * cosA - sy * sinA;
-        float ry = sx * sinA + sy * cosA;
-        return core::Point(rx + m_currentState.tx, ry + m_currentState.ty);
-    }
-    return core::Point(sx + m_currentState.tx, sy + m_currentState.ty);
-}
-
-core::Rect Graphics::TransformRect(const core::Rect& r) const {
-    core::Point p = TransformPoint(core::Point(r.x, r.y));
-    return core::Rect(p.x, p.y, r.width * m_currentState.sx, r.height * m_currentState.sy);
-}
-
 uint32_t Graphics::Save() {
-    uint32_t id = m_nextStateId++;
-    m_stateStack.emplace_back(id, m_currentState);
+    if (!m_impl) return 0;
+    uint32_t id = m_impl->nextStateId++;
+    m_impl->stateStack.emplace_back(id, m_impl->currentState);
     return id;
 }
 
 void Graphics::Restore(uint32_t stateId) {
-    while (!m_stateStack.empty()) {
-        auto top = m_stateStack.back();
-        m_stateStack.pop_back();
+    if (!m_impl) return;
+    while (!m_impl->stateStack.empty()) {
+        auto top = m_impl->stateStack.back();
+        m_impl->stateStack.pop_back();
         if (top.first == stateId) {
-            m_currentState = top.second;
+            m_impl->currentState = top.second;
             break;
         }
     }
 }
 
 void Graphics::TranslateTransform(float dx, float dy) {
-    m_currentState.tx += dx;
-    m_currentState.ty += dy;
+    if (!m_impl) return;
+    m_impl->currentState.tx += dx;
+    m_impl->currentState.ty += dy;
 }
 
 void Graphics::ScaleTransform(float sx, float sy) {
-    m_currentState.sx *= sx;
-    m_currentState.sy *= sy;
+    if (!m_impl) return;
+    m_impl->currentState.sx *= sx;
+    m_impl->currentState.sy *= sy;
 }
 
 void Graphics::RotateTransform(float angleDegrees) {
-    m_currentState.rot += angleDegrees;
+    if (!m_impl) return;
+    m_impl->currentState.rot += angleDegrees;
 }
 
 void Graphics::ResetTransform() {
-    m_currentState.tx = 0.0f;
-    m_currentState.ty = 0.0f;
-    m_currentState.sx = 1.0f;
-    m_currentState.sy = 1.0f;
-    m_currentState.rot = 0.0f;
+    if (!m_impl) return;
+    m_impl->currentState.tx = 0.0f;
+    m_impl->currentState.ty = 0.0f;
+    m_impl->currentState.sx = 1.0f;
+    m_impl->currentState.sy = 1.0f;
+    m_impl->currentState.rot = 0.0f;
 }
 
 void Graphics::SetClip(const core::Rect& rect) {
-    m_currentState.clipRect = TransformRect(rect);
-    if (m_dc) {
-        m_dc->PushClip(m_currentState.clipRect);
+    if (!m_impl) return;
+    m_impl->currentState.clipRect = m_impl->TransformRect(rect);
+    if (m_impl->dc) {
+        m_impl->dc->PushClip(m_impl->currentState.clipRect);
     }
 }
 
@@ -199,44 +223,47 @@ void Graphics::SetClip(const GraphicsPath& path) {
 }
 
 void Graphics::ResetClip() {
-    if (m_image) {
-        m_currentState.clipRect = core::Rect(0.0f, 0.0f, static_cast<float>(m_image->GetWidth()), static_cast<float>(m_image->GetHeight()));
+    if (!m_impl) return;
+    if (m_impl->image) {
+        m_impl->currentState.clipRect = core::Rect(0.0f, 0.0f, static_cast<float>(m_impl->image->GetWidth()), static_cast<float>(m_impl->image->GetHeight()));
     } else {
-        m_currentState.clipRect = core::Rect(0.0f, 0.0f, 100000.0f, 100000.0f);
+        m_impl->currentState.clipRect = core::Rect(0.0f, 0.0f, 100000.0f, 100000.0f);
     }
-    if (m_dc) {
-        m_dc->PopClip();
+    if (m_impl->dc) {
+        m_impl->dc->PopClip();
     }
 }
 
 core::Rect Graphics::GetClipBounds() const {
-    return m_currentState.clipRect;
+    return m_impl ? m_impl->currentState.clipRect : core::Rect{};
 }
 
 void Graphics::SetSmoothingMode(SmoothingMode mode) {
-    m_currentState.smoothing = mode;
+    if (!m_impl) return;
+    m_impl->currentState.smoothing = mode;
 }
 
 SmoothingMode Graphics::GetSmoothingMode() const {
-    return m_currentState.smoothing;
+    return m_impl ? m_impl->currentState.smoothing : SmoothingMode::Default;
 }
 
 void Graphics::SetInterpolationMode(InterpolationMode mode) {
-    m_currentState.interpolation = mode;
+    if (!m_impl) return;
+    m_impl->currentState.interpolation = mode;
 }
 
 InterpolationMode Graphics::GetInterpolationMode() const {
-    return m_currentState.interpolation;
+    return m_impl ? m_impl->currentState.interpolation : InterpolationMode::Default;
 }
 
 void Graphics::Clear(core::Color color) {
-    if (!m_dc) return;
-    m_dc->DrawRectangle(m_currentState.clipRect, color);
+    if (!m_impl || !m_impl->dc) return;
+    m_impl->dc->DrawRectangle(m_impl->currentState.clipRect, color);
 }
 
 void Graphics::DrawLine(const Pen& pen, core::Point pt1, core::Point pt2) {
-    if (!m_dc) return;
-    m_dc->DrawLine(TransformPoint(pt1), TransformPoint(pt2), pen.GetColor(), pen.GetWidth());
+    if (!m_impl || !m_impl->dc) return;
+    m_impl->dc->DrawLine(m_impl->TransformPoint(pt1), m_impl->TransformPoint(pt2), pen.GetColor(), pen.GetWidth());
 }
 
 void Graphics::DrawLine(const Pen& pen, float x1, float y1, float x2, float y2) {
@@ -251,7 +278,7 @@ void Graphics::DrawLines(const Pen& pen, compat::span<const core::Point> points)
 }
 
 void Graphics::DrawRectangle(const Pen& pen, const core::Rect& rect) {
-    if (rect.IsEmpty() || !m_dc) return;
+    if (rect.IsEmpty() || !m_impl || !m_impl->dc) return;
     core::Point p1(rect.Left(), rect.Top());
     core::Point p2(rect.Right(), rect.Top());
     core::Point p3(rect.Right(), rect.Bottom());
@@ -274,8 +301,8 @@ void Graphics::DrawRectangles(const Pen& pen, compat::span<const core::Rect> rec
 }
 
 void Graphics::FillRectangle(const Brush& brush, const core::Rect& rect) {
-    if (rect.IsEmpty() || !m_dc) return;
-    m_dc->DrawRectangle(TransformRect(rect), GetBrushColor(brush));
+    if (rect.IsEmpty() || !m_impl || !m_impl->dc) return;
+    m_impl->dc->DrawRectangle(m_impl->TransformRect(rect), GetBrushColor(brush));
 }
 
 void Graphics::FillRectangle(const Brush& brush, float x, float y, float width, float height) {
@@ -295,13 +322,13 @@ void Graphics::DrawRoundedRectangle(const Pen& pen, const core::Rect& rect, floa
 }
 
 void Graphics::FillRoundedRectangle(const Brush& brush, const core::Rect& rect, float radius) {
-    if (!m_dc || rect.IsEmpty()) return;
-    m_dc->DrawRoundedRectangle(TransformRect(rect), radius, GetBrushColor(brush));
+    if (!m_impl || !m_impl->dc || rect.IsEmpty()) return;
+    m_impl->dc->DrawRoundedRectangle(m_impl->TransformRect(rect), radius, GetBrushColor(brush));
 }
 
 void Graphics::DrawEllipse(const Pen& pen, const core::Rect& rect) {
-    if (!m_dc || rect.IsEmpty()) return;
-    m_dc->DrawEllipse(TransformRect(rect), pen.GetColor(), pen.GetWidth());
+    if (!m_impl || !m_impl->dc || rect.IsEmpty()) return;
+    m_impl->dc->DrawEllipse(m_impl->TransformRect(rect), pen.GetColor(), pen.GetWidth());
 }
 
 void Graphics::DrawEllipse(const Pen& pen, float x, float y, float width, float height) {
@@ -309,8 +336,8 @@ void Graphics::DrawEllipse(const Pen& pen, float x, float y, float width, float 
 }
 
 void Graphics::FillEllipse(const Brush& brush, const core::Rect& rect) {
-    if (!m_dc || rect.IsEmpty()) return;
-    m_dc->FillEllipse(TransformRect(rect), GetBrushColor(brush));
+    if (!m_impl || !m_impl->dc || rect.IsEmpty()) return;
+    m_impl->dc->FillEllipse(m_impl->TransformRect(rect), GetBrushColor(brush));
 }
 
 void Graphics::FillEllipse(const Brush& brush, float x, float y, float width, float height) {
@@ -379,21 +406,21 @@ void Graphics::DrawCurve(const Pen& pen, compat::span<const core::Point> points)
 }
 
 void Graphics::DrawPath(const Pen& pen, const GraphicsPath& path) {
-    if (!m_dc) return;
+    if (!m_impl || !m_impl->dc) return;
     GraphicsPath transformedPath = path.Clone();
-    if (m_currentState.tx != 0.0f || m_currentState.ty != 0.0f || m_currentState.sx != 1.0f || m_currentState.sy != 1.0f) {
-        transformedPath.Transform(m_currentState.sx, 0.0f, 0.0f, m_currentState.sy, m_currentState.tx, m_currentState.ty);
+    if (m_impl->currentState.tx != 0.0f || m_impl->currentState.ty != 0.0f || m_impl->currentState.sx != 1.0f || m_impl->currentState.sy != 1.0f) {
+        transformedPath.Transform(m_impl->currentState.sx, 0.0f, 0.0f, m_impl->currentState.sy, m_impl->currentState.tx, m_impl->currentState.ty);
     }
-    m_dc->DrawPath(&transformedPath, pen.GetColor(), pen.GetWidth());
+    m_impl->dc->DrawPath(&transformedPath, pen.GetColor(), pen.GetWidth());
 }
 
 void Graphics::FillPath(const Brush& brush, const GraphicsPath& path) {
-    if (!m_dc) return;
+    if (!m_impl || !m_impl->dc) return;
     GraphicsPath transformedPath = path.Clone();
-    if (m_currentState.tx != 0.0f || m_currentState.ty != 0.0f || m_currentState.sx != 1.0f || m_currentState.sy != 1.0f) {
-        transformedPath.Transform(m_currentState.sx, 0.0f, 0.0f, m_currentState.sy, m_currentState.tx, m_currentState.ty);
+    if (m_impl->currentState.tx != 0.0f || m_impl->currentState.ty != 0.0f || m_impl->currentState.sx != 1.0f || m_impl->currentState.sy != 1.0f) {
+        transformedPath.Transform(m_impl->currentState.sx, 0.0f, 0.0f, m_impl->currentState.sy, m_impl->currentState.tx, m_impl->currentState.ty);
     }
-    m_dc->FillPath(&transformedPath, &brush, GetBrushColor(brush), static_cast<uint8_t>(path.GetFillMode()));
+    m_impl->dc->FillPath(&transformedPath, &brush, GetBrushColor(brush), static_cast<uint8_t>(path.GetFillMode()));
 }
 
 void Graphics::DrawImage(std::shared_ptr<Bitmap> image, const core::Rect& destRect) {
@@ -403,8 +430,8 @@ void Graphics::DrawImage(std::shared_ptr<Bitmap> image, const core::Rect& destRe
 }
 
 void Graphics::DrawImage(std::shared_ptr<Bitmap> image, const core::Rect& destRect, const core::Rect& srcRect) {
-    if (!image || !m_dc) return;
-    m_dc->DrawImage(image.get(), TransformRect(destRect), srcRect);
+    if (!image || !m_impl || !m_impl->dc) return;
+    m_impl->dc->DrawImage(image.get(), m_impl->TransformRect(destRect), srcRect);
 }
 
 void Graphics::DrawImage(std::shared_ptr<Bitmap> image, float x, float y) {
@@ -421,8 +448,8 @@ void Graphics::DrawImageUnscaled(std::shared_ptr<Bitmap> image, core::Point orig
 }
 
 void Graphics::DrawString(compat::string_view text, const text::FontDescriptor& font, const Brush& brush, core::Point origin) {
-    if (!m_dc || text.empty()) return;
-    m_dc->DrawText(text, TransformPoint(origin), font, GetBrushColor(brush));
+    if (!m_impl || !m_impl->dc || text.empty()) return;
+    m_impl->dc->DrawText(text, m_impl->TransformPoint(origin), font, GetBrushColor(brush));
 }
 
 void Graphics::DrawString(compat::string_view text, const text::FontDescriptor& font, const Brush& brush, const core::Rect& layoutRect) {
@@ -434,11 +461,8 @@ core::Size Graphics::MeasureString(compat::string_view text, const text::FontDes
 }
 
 void Graphics::Flush() {
-    if (m_image && m_ownedList && m_ownedList->GetOpCount() > 0) {
-        rendering::DisplayListRenderer renderer;
-        SoftwareBitmapTarget target(*m_image);
-        renderer.Render(*m_ownedList, &target);
-        m_ownedList->Clear();
+    if (m_impl) {
+        m_impl->Flush();
     }
 }
 
