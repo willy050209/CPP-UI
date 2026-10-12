@@ -185,4 +185,4 @@ MessageBox::ShowWithMode(
 
 ## 7. 範例展示程式 (`dialog_gallery`)
 
-請參見 [`examples/dialog_gallery/main.cpp`](file:///D:/program/C++/CPP-UI/examples/dialog_gallery/main.cpp)，可直接建置並啟動此完整展示專案，體驗包含訊息方塊、開檔、多選、存檔、即時主題切換與後端模式動態切換之所有特性。
+請參見 [`examples/dialog_gallery/main.cpp`](../../../examples/dialog_gallery/main.cpp)，可直接建置並啟動此完整展示專案，體驗包含訊息方塊、開檔、多選、存檔、即時主題切換與後端模式動態切換之所有特性。

@@ -237,3 +237,26 @@ endif()
 if(CPPUI_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+# -----------------------------------------------------------------------------
+# 安裝與導出規則 (Installation and CMake Package Export)
+# -----------------------------------------------------------------------------
+include(GNUInstallDirs)
+
+install(TARGETS cppui_core cppui_headers
+    EXPORT CPPUIConfig
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(EXPORT CPPUIConfig
+    FILE CPPUIConfig.cmake
+    NAMESPACE CPPUI::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/CPPUI
+)

@@ -12,7 +12,7 @@
 `OpenFileDialog` 封裝開啟檔案時的使用者選取互動，支援單一檔案選取、多重檔案選取 (`Multiselect`)、唯讀選項與檔案存在性檢查。
 
 具備**雙後端透明派送**：
-- Windows 下優先使用 COM [`IFileOpenDialog`](file:///D:/program/C++/CPP-UI/src/dialogs/Win32DialogService.cpp)，支援系統捷徑與完整 Shell 整合。
+- Windows 下優先使用 COM [`IFileOpenDialog`](../../../../src/dialogs/Win32DialogService.cpp)，支援系統捷徑與完整 Shell 整合。
 - Linux / WSL / 測試環境自動退回純 CPPUI 主題視窗 [`FileDialogForm`](dialogs_filedialogform.md)。
 
 ---

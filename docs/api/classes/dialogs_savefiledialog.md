@@ -12,7 +12,7 @@
 `SaveFileDialog` 封裝儲存檔案時的使用者路徑選擇互動，支援預設副檔名自動補齊 (`DefaultExt`)、檔案已存在時之覆寫確認提示 (`OverwritePrompt`) 與新建提示。
 
 底層透明銜接：
-- Windows 下優先使用 COM [`IFileSaveDialog`](file:///D:/program/C++/CPP-UI/src/dialogs/Win32DialogService.cpp)，原生支援 `FOS_OVERWRITEPROMPT`。
+- Windows 下優先使用 COM [`IFileSaveDialog`](../../../../src/dialogs/Win32DialogService.cpp)，原生支援 `FOS_OVERWRITEPROMPT`。
 - Linux / WSL / 測試環境自動退回純 CPPUI 主題視窗 [`FileDialogForm`](dialogs_filedialogform.md)，在使用者嘗試覆寫時透過主題 [`MessageBoxForm`](dialogs_messagebox.md#純-cppui-主題視窗-messageboxform) 詢問確認。
 
 ---
