@@ -13,6 +13,7 @@
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/input/FocusEventArgs.hpp"
 #include "ui/input/FocusManager.hpp"
+#include "ui/input/ILightDismissable.hpp"
 
 namespace cppui {
 namespace core {
@@ -85,6 +86,20 @@ public:
     /// <param name="element">即將解構之 UI 元件指標。</param>
     void NotifyElementDestroyed(core::UIElement* element) noexcept;
 
+    // --- 浮層彈出控制項 (Popup Light-Dismiss) ---
+
+    /// <summary>註冊當前已開啟之浮層 (用於 Light-Dismiss 監聽)。</summary>
+    /// <param name="popup">開啟之 ILightDismissable 指標。</param>
+    void RegisterOpenPopup(ILightDismissable* popup);
+
+    /// <summary>註銷已關閉之浮層。</summary>
+    /// <param name="popup">關閉之 ILightDismissable 指標。</param>
+    void UnregisterOpenPopup(ILightDismissable* popup);
+
+    /// <summary>取得當前所有已開啟之浮層清單。</summary>
+    /// <returns>ILightDismissable 指標陣列常數引用。</returns>
+    COMPAT_NODISCARD const std::vector<ILightDismissable*>& GetOpenPopups() const noexcept { return m_openPopups; }
+
     // 分流事件處理輔助方法
 
     /// <summary>處理滑鼠移動原始事件。</summary>
@@ -142,6 +157,7 @@ private:
 
     core::UIElement* m_hoveredElement = nullptr;
     core::UIElement* m_capturedElement = nullptr;
+    std::vector<ILightDismissable*> m_openPopups;
 };
 
 } // namespace input

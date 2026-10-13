@@ -5,6 +5,7 @@
 
 #include "ui/app/Form.hpp"
 #include "ui/app/Application.hpp"
+#include "ui/controls/OverlayLayer.hpp"
 #include "ui/input/InputManager.hpp"
 #include "ui/layout/LayoutManager.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
@@ -23,6 +24,11 @@ Form::Form() {
     const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
     SetBackground(theme.Colors().windowBackground);
     m_hasExplicitBackground = false;
+
+    m_overlayLayer = std::make_shared<controls::OverlayLayer>();
+    m_overlayLayer->SetWidth(static_cast<float>(m_width));
+    m_overlayLayer->SetHeight(static_cast<float>(m_height));
+    AddVisualChild(m_overlayLayer);
 
     m_themeHandlerId = theme::ThemeManager::Get().AddThemeChangedHandler([this](const theme::Theme& t) {
         if (!m_hasExplicitBackground) {
@@ -231,6 +237,12 @@ std::shared_ptr<graphics::Bitmap> Form::CaptureToBitmap() {
 
     core::Size avail(static_cast<float>(w), static_cast<float>(h));
     layout::LayoutManager::Get().UpdateLayout(*this, avail);
+    if (m_overlayLayer) {
+        m_overlayLayer->SetWidth(avail.width);
+        m_overlayLayer->SetHeight(avail.height);
+        layout::LayoutManager::Get().UpdateLayout(*m_overlayLayer, avail);
+        BringVisualChildToFront(m_overlayLayer.get());
+    }
 
     rendering::SoftwareRenderTarget target;
     target.Resize(w, h);
@@ -244,6 +256,10 @@ std::shared_ptr<graphics::Bitmap> Form::CaptureToBitmap() {
     renderer.Render(dl, &target);
 
     return std::make_shared<graphics::Bitmap>(w, h, target.GetPixelSpan());
+}
+
+controls::OverlayLayer* Form::GetOverlayLayer() const noexcept {
+    return m_overlayLayer.get();
 }
 
 void Form::EnsurePlatformWindow() {
@@ -298,6 +314,12 @@ void Form::RenderFrame() {
 
     core::Size avail(static_cast<float>(m_width), static_cast<float>(m_height));
     layout::LayoutManager::Get().UpdateLayout(*this, avail);
+    if (m_overlayLayer) {
+        m_overlayLayer->SetWidth(avail.width);
+        m_overlayLayer->SetHeight(avail.height);
+        layout::LayoutManager::Get().UpdateLayout(*m_overlayLayer, avail);
+        BringVisualChildToFront(m_overlayLayer.get());
+    }
 
     if (Application::GetPlatformBackend() == PlatformBackend::Skia) {
         if (!m_renderContext) {
@@ -319,8 +341,9 @@ void Form::RenderFrame() {
         }
     } else {
         if (!m_renderTarget) {
-            m_renderTarget = std::make_unique<rendering::SoftwareRenderTarget>();
-            m_renderTarget->Resize(m_width, m_height);
+            auto swTarget = std::make_unique<rendering::SoftwareRenderTarget>();
+            swTarget->Resize(m_width, m_height);
+            m_renderTarget = std::move(swTarget);
         }
 
         m_renderTarget->Clear(GetBackground());
@@ -336,6 +359,10 @@ void Form::RenderFrame() {
 void Form::HandleWindowResize(uint32_t width, uint32_t height) {
     m_width = width;
     m_height = height;
+    if (m_overlayLayer) {
+        m_overlayLayer->SetWidth(static_cast<float>(width));
+        m_overlayLayer->SetHeight(static_cast<float>(height));
+    }
     if (m_renderContext) {
         m_renderContext->Resize(width, height);
     }

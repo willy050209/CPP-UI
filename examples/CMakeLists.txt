@@ -86,3 +86,10 @@ add_executable(graphics_drawing_demo
 )
 target_link_libraries(graphics_drawing_demo PRIVATE cppui_core)
 
+# 10. 彈出層與浮動控制項展示庫 (Popup, ToolTip, ContextMenu, ComboBox)
+add_executable(popup_gallery
+    popup_gallery/main.cpp
+)
+target_link_libraries(popup_gallery PRIVATE cppui_core)
+
+

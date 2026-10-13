@@ -1,6 +1,7 @@
 #include "ui/input/InputManager.hpp"
 #include "ui/input/EventRoute.hpp"
 #include "ui/core/UIElement.hpp"
+#include <algorithm>
 
 namespace cppui {
 namespace input {
@@ -44,6 +45,7 @@ void InputManager::ReleasePointerCapture(core::UIElement* element) {
 void InputManager::ResetState() {
     m_capturedElement = nullptr;
     m_hoveredElement = nullptr;
+    m_openPopups.clear();
 }
 
 void InputManager::NotifyElementDestroyed(core::UIElement* element) noexcept {
@@ -52,6 +54,29 @@ void InputManager::NotifyElementDestroyed(core::UIElement* element) noexcept {
     }
     if (m_capturedElement == element) {
         m_capturedElement = nullptr;
+    }
+    auto* dismissable = dynamic_cast<ILightDismissable*>(element);
+    if (dismissable) {
+        m_openPopups.erase(
+            std::remove(m_openPopups.begin(), m_openPopups.end(), dismissable),
+            m_openPopups.end()
+        );
+    }
+}
+
+void InputManager::RegisterOpenPopup(ILightDismissable* popup) {
+    if (!popup) return;
+    auto it = std::find(m_openPopups.begin(), m_openPopups.end(), popup);
+    if (it == m_openPopups.end()) {
+        m_openPopups.push_back(popup);
+    }
+}
+
+void InputManager::UnregisterOpenPopup(ILightDismissable* popup) {
+    if (!popup) return;
+    auto it = std::find(m_openPopups.begin(), m_openPopups.end(), popup);
+    if (it != m_openPopups.end()) {
+        m_openPopups.erase(it);
     }
 }
 
@@ -81,6 +106,31 @@ void InputManager::ProcessMouseMove(core::UIElement& root, const pal::RawMouseEv
 void InputManager::ProcessMouseDown(core::UIElement& root, const pal::RawMouseEventData& mouseData, pal::KeyModifiers mods) {
     core::Visual* hitVisual = root.HitTest(mouseData.position);
     auto* hitUI = dynamic_cast<core::UIElement*>(hitVisual);
+
+    // Light-Dismiss: 若存在開啟且未鎖定常開的浮層，且點擊落於該浮層及其目標之外，則自動收合
+    if (!m_openPopups.empty()) {
+        std::vector<ILightDismissable*> toClose;
+        for (auto* popup : m_openPopups) {
+            if (!popup || popup->StaysOpen()) continue;
+
+            bool isInside = false;
+            core::Visual* cur = hitUI;
+            auto* popupElement = dynamic_cast<core::UIElement*>(popup);
+            while (cur) {
+                if ((popupElement && cur == popupElement) || (popup->PlacementTarget() && cur == popup->PlacementTarget())) {
+                    isInside = true;
+                    break;
+                }
+                cur = cur->GetVisualParent();
+            }
+            if (!isInside) {
+                toClose.push_back(popup);
+            }
+        }
+        for (auto* popup : toClose) {
+            popup->SetIsOpen(false);
+        }
+    }
 
     core::UIElement* target = m_capturedElement ? m_capturedElement : hitUI;
     if (!target) target = &root;
@@ -147,6 +197,15 @@ void InputManager::ProcessMouseWheel(core::UIElement& root, const pal::RawMouseE
 }
 
 void InputManager::ProcessKeyDown(core::UIElement& root, const pal::RawKeyEventData& keyData, pal::KeyModifiers mods) {
+    // 檢查 Escape 鍵關閉頂層 Popup (VK_ESCAPE = 0x1B)
+    if (keyData.virtualKey == 0x1B && !m_openPopups.empty()) {
+        auto* topmost = m_openPopups.back();
+        if (topmost) {
+            topmost->SetIsOpen(false);
+            return; // 優先消費 ESC 鍵關閉浮層
+        }
+    }
+
     // 檢查 Tab / Shift+Tab 鍵盤焦點導航 (VK_TAB = 0x09)
     if (keyData.virtualKey == 0x09) {
         bool shiftPressed = pal::HasModifier(mods, pal::KeyModifiers::Shift);

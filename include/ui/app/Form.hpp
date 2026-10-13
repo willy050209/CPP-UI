@@ -17,6 +17,10 @@
 #include <vector>
 
 namespace cppui {
+namespace controls {
+class OverlayLayer;
+} // namespace controls
+
 namespace graphics {
 class Bitmap;
 } // namespace graphics
@@ -198,6 +202,12 @@ public:
     COMPAT_NODISCARD std::shared_ptr<pal::IPlatformWindow> GetPlatformWindow() const noexcept { return m_window; }
 
     /// <summary>
+    /// 取得視窗頂層懸浮圖層 (OverlayLayer)。
+    /// </summary>
+    /// <returns>OverlayLayer 指標。</returns>
+    COMPAT_NODISCARD controls::OverlayLayer* GetOverlayLayer() const noexcept;
+
+    /// <summary>
     /// 觸發內部畫面重新佈局與重繪。
     /// </summary>
     void InvalidateForm();
@@ -254,6 +264,7 @@ private:
     std::vector<FormClosingHandler> m_closingHandlers;
     std::vector<FormClosedHandler> m_closedHandlers;
     size_t m_themeHandlerId = 0;
+    std::shared_ptr<controls::OverlayLayer> m_overlayLayer;
 };
 
 } // namespace app

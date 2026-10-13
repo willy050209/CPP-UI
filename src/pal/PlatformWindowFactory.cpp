@@ -16,6 +16,10 @@
 #include "x11/PlatformWindowX11.hpp"
 #endif
 
+#if defined(CPPUI_HAS_WAYLAND) && CPPUI_HAS_WAYLAND
+#include "wayland/PlatformWindowWayland.hpp"
+#endif
+
 namespace cppui {
 namespace pal {
 
@@ -25,7 +29,18 @@ std::shared_ptr<IPlatformWindow> PlatformWindowFactory::Create(const WindowDesc&
     }
 #ifdef _WIN32
     return std::make_shared<win32::PlatformWindowWin32>(desc);
-#elif defined(CPPUI_HAS_X11) && CPPUI_HAS_X11
+#else
+#if defined(CPPUI_HAS_WAYLAND) && CPPUI_HAS_WAYLAND
+    const char* waylandDisplay = std::getenv("WAYLAND_DISPLAY");
+    if (waylandDisplay && waylandDisplay[0] != '\0') {
+        try {
+            return std::make_shared<wayland::PlatformWindowWayland>(desc);
+        } catch (...) {
+            // Wayland 連線失敗時優雅後退至 X11
+        }
+    }
+#endif
+#if defined(CPPUI_HAS_X11) && CPPUI_HAS_X11
     const char* displayEnv = std::getenv("DISPLAY");
     if (displayEnv && displayEnv[0] != '\0') {
         try {
@@ -34,8 +49,7 @@ std::shared_ptr<IPlatformWindow> PlatformWindowFactory::Create(const WindowDesc&
             // X11 連線失敗或無伺服器時優雅後退至純記憶體 Generic 視窗
         }
     }
-    return std::make_shared<PlatformWindowGeneric>(desc);
-#else
+#endif
     return std::make_shared<PlatformWindowGeneric>(desc);
 #endif
 }
@@ -56,6 +70,18 @@ std::shared_ptr<IPlatformWindow> PlatformWindowFactory::CreateX11(const WindowDe
 #else
     (void)desc;
     throw std::runtime_error("PlatformWindowFactory::CreateX11: X11 backend is not compiled in this build.");
+#endif
+}
+
+std::shared_ptr<IPlatformWindow> PlatformWindowFactory::CreateWayland(const WindowDesc& desc) {
+    if (desc.width == 0 || desc.height == 0) {
+        throw std::invalid_argument("PlatformWindowFactory::CreateWayland: Window dimensions must be greater than zero.");
+    }
+#if defined(CPPUI_HAS_WAYLAND) && CPPUI_HAS_WAYLAND
+    return std::make_shared<wayland::PlatformWindowWayland>(desc);
+#else
+    (void)desc;
+    throw std::runtime_error("PlatformWindowFactory::CreateWayland: Wayland backend is not compiled in this build.");
 #endif
 }
 

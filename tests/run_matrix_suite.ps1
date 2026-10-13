@@ -200,6 +200,12 @@ $frameworkSources = @(
     "src\controls\ListBox.cpp",
     "src\controls\Separator.cpp",
     "src\controls\Label.cpp",
+    "src\controls\OverlayLayer.cpp",
+    "src\controls\Popup.cpp",
+    "src\controls\ToolTip.cpp",
+    "src\controls\MenuItem.cpp",
+    "src\controls\ContextMenu.cpp",
+    "src\controls\ComboBox.cpp",
     "src\graphics\Pen.cpp",
     "src\graphics\Pens.cpp",
     "src\graphics\Brush.cpp",
@@ -385,7 +391,7 @@ $testTargets = @(
         NeedObjs       = @(
             "ViewModelBase", "RelayCommand", "Application", "Dispatcher", "Form", "AppBuilder",
             "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32", "SkiaRenderContext",
-            "ServiceCollection", "Button", "Control", "ContentControl",
+            "ServiceCollection", "Button", "Control", "ContentControl", "OverlayLayer",
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
@@ -405,7 +411,7 @@ $testTargets = @(
         NeedObjs       = @(
             "Form", "Application", "AppBuilder", "Dispatcher", "SkiaRenderContext",
             "ServiceCollection", "PlatformWindowFactory",
-            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl", "OverlayLayer",
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
@@ -440,7 +446,7 @@ $testTargets = @(
         NeedObjs       = @(
             "Form", "Application", "AppBuilder", "Dispatcher", "SkiaRenderContext",
             "ServiceCollection", "PlatformWindowFactory",
-            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl", "OverlayLayer",
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
@@ -459,7 +465,7 @@ $testTargets = @(
         IsSmoke        = $false
         NeedObjs       = @(
             "Control", "ContentControl", "Button", "TextBox", "TextBlock", "Form", "Application", "Dispatcher",
-            "AppBuilder", "ServiceCollection", "SkiaRenderContext",
+            "AppBuilder", "ServiceCollection", "SkiaRenderContext", "OverlayLayer",
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "LayoutManager",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
@@ -499,7 +505,7 @@ $testTargets = @(
             "OpenFileDialog", "SaveFileDialog", "FileDialogForm", "Win32DialogService",
             "Visual", "UIElement", "Panel", "StackPanel", "Border", "Canvas", "Grid",
             "LayoutManager", "TextBlock", "Control", "ContentControl", "Button", "CheckBox", "TextBox",
-            "ScrollViewer", "Form", "Application", "AppBuilder", "Dispatcher",
+            "ScrollViewer", "Form", "Application", "AppBuilder", "Dispatcher", "OverlayLayer",
             "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext", "SkiaRenderContext",
             "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32",
@@ -519,7 +525,7 @@ $testTargets = @(
         NeedObjs       = @(
             "Timer", "Form", "Application", "AppBuilder", "Dispatcher", "SkiaRenderContext",
             "ServiceCollection", "PlatformWindowFactory",
-            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl", "OverlayLayer",
             "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
             "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
@@ -538,6 +544,27 @@ $testTargets = @(
         IsSmoke        = $false
         NeedObjs       = @(
             "TextBox", "Control", "ContentControl", "UIElement", "Visual",
+            "StackPanel", "Panel", "Border", "TextBlock", "Form", "Application",
+            "AppBuilder", "Dispatcher", "ServiceCollection", "PlatformWindowFactory",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "SkiaRenderContext", "DisplayListRenderer",
+            "SoftwareRenderContext", "FontManager", "TextShaper", "BiDiAnalyzer", "OverlayLayer",
+            "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Popup"
+        Source         = "tests\popup_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "OverlayLayer", "Popup", "ToolTip", "MenuItem", "ContextMenu", "ComboBox",
+            "Button", "Control", "ContentControl", "UIElement", "Visual",
             "StackPanel", "Panel", "Border", "TextBlock", "Form", "Application",
             "AppBuilder", "Dispatcher", "ServiceCollection", "PlatformWindowFactory",
             "PlatformWindowGeneric", "PlatformWindowWin32", "SkiaRenderContext", "DisplayListRenderer",

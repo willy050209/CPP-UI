@@ -195,6 +195,12 @@ set(CPPUI_SOURCES
     src/controls/ListBox.cpp
     src/controls/Separator.cpp
     src/controls/Label.cpp
+    src/controls/OverlayLayer.cpp
+    src/controls/Popup.cpp
+    src/controls/ToolTip.cpp
+    src/controls/MenuItem.cpp
+    src/controls/ContextMenu.cpp
+    src/controls/ComboBox.cpp
     src/graphics/Pen.cpp
     src/graphics/Pens.cpp
     src/graphics/Brush.cpp
@@ -219,6 +225,7 @@ set(CPPUI_SOURCES
 
 if(WIN32)
     set(CPPUI_HAS_X11 0)
+    set(CPPUI_HAS_WAYLAND 0)
     list(APPEND CPPUI_SOURCES
         src/pal/win32/PlatformWindowWin32.cpp
         src/text/DirectWriteTextEngine.cpp
@@ -232,6 +239,23 @@ else()
             set(CPPUI_HAS_X11 1)
             message(STATUS "X11 detected: ${X11_LIBRARIES}")
             list(APPEND CPPUI_SOURCES src/pal/x11/PlatformWindowX11.cpp)
+        endif()
+    endif()
+
+    option(CPPUI_ENABLE_WAYLAND "Enable Wayland window backend on Linux" ON)
+    set(CPPUI_HAS_WAYLAND 0)
+    if(CPPUI_ENABLE_WAYLAND)
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(WAYLAND wayland-client wayland-cursor xkbcommon QUIET)
+            if(WAYLAND_FOUND)
+                set(CPPUI_HAS_WAYLAND 1)
+                message(STATUS "Wayland detected: ${WAYLAND_LIBRARIES}")
+                list(APPEND CPPUI_SOURCES
+                    src/pal/wayland/PlatformWindowWayland.cpp
+                    src/pal/wayland/protocol/xdg-shell-protocol.c
+                )
+            endif()
         endif()
     endif()
 endif()
@@ -258,6 +282,7 @@ target_link_libraries(cppui_core PUBLIC cppui_headers)
 target_compile_definitions(cppui_core PUBLIC 
     CPPUI_HAS_SKIA=${CPPUI_HAS_SKIA}
     CPPUI_HAS_X11=${CPPUI_HAS_X11}
+    CPPUI_HAS_WAYLAND=${CPPUI_HAS_WAYLAND}
 )
 
 if(Skia_FOUND)
@@ -282,6 +307,10 @@ else()
     if(CPPUI_HAS_X11)
         target_include_directories(cppui_core PUBLIC ${X11_INCLUDE_DIR})
         target_link_libraries(cppui_core PUBLIC ${X11_LIBRARIES})
+    endif()
+    if(CPPUI_HAS_WAYLAND)
+        target_include_directories(cppui_core PUBLIC ${WAYLAND_INCLUDE_DIRS})
+        target_link_libraries(cppui_core PUBLIC ${WAYLAND_LIBRARIES})
     endif()
 endif()
 

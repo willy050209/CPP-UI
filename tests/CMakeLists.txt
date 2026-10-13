@@ -127,6 +127,11 @@ add_executable(ime_test ime_test.cpp)
 target_link_libraries(ime_test PRIVATE cppui_core)
 add_test(NAME ImeTest COMMAND ime_test)
 
+# 彈出層 (OverlayLayer, Popup, ToolTip, ContextMenu, ComboBox) 單元測試
+add_executable(popup_test popup_test.cpp)
+target_link_libraries(popup_test PRIVATE cppui_core)
+add_test(NAME PopupTest COMMAND popup_test)
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
@@ -146,7 +151,7 @@ if(ASAN_DLL_DIR)
         InputEventsTest CoordinateTransformTest ControlsTest FluentDslTest
         PalCrossPlatformTest SkiaBackendTest IoCContainerTest MvvmTest
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
-        ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest
+        ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest PopupTest
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)
