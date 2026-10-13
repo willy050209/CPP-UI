@@ -50,6 +50,7 @@
 6. **跨平台 CRT 執行期函式庫統一 (Unified MSVC CRT & Clang) [Strict]**：
    - 全專案強制統一動態連結 CRT（Release 為 `/MD`，Debug 為 `/MDd`；CMake 變數 `set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")` 搭配 `CMP0091` 政策），嚴格杜絕不同模組混合使用 `/MT` 與 `/MD` 導致 `/FAILIFMISMATCH: "RuntimeLibrary"` 錯誤與跨堆積損毀。
    - 在 Windows 環境使用 Clang 工具鏈時，優先使用官方 `clang-cl` 前端；若使用 GNU 風格之 `clang++`，必須顯式注入 `-D_DLL` 以生成與動態 CRT 相容之標記。
+   - 在 Windows MSVC ABI（`cl.exe` 或 `clang-cl` 搭配 `lld-link` / `link.exe`）啟用 ASan 時，`/fsanitize=address` 僅為編譯器前端插樁選項，**嚴禁傳遞給連結器**（防止 `lld-link` 將旗標誤判為輸入檔案並拋出 `could not open '/fsanitize=address'` 錯誤）。針對 `clang-cl`，應透過動態解析注入 `clang_rt.asan_dynamic-<arch>.lib` 與 `/WHOLEARCHIVE:clang_rt.asan_dynamic_runtime_thunk-<arch>.lib`（動態 CRT 匹配），確保二進位檔正常鏈結。
 
 ## 6. 文件與註解規範 (Documentation Guidelines)
 1. **XML 註解限定**：**只有「類別 (Class)」與「函數/方法 (Method)」**必須使用 XML 格式的註解 (`///`) 說明：

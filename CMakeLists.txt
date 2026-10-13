@@ -68,24 +68,62 @@ if(CPPUI_ENABLE_ASAN)
         endif()
     elseif(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if(MSVC)
-            # clang-cl 驅動
+            # clang-cl 驅動程式搭配 MSVC 相容連結器 (lld-link / link.exe)
+            # 編譯端啟用 ASan 插樁，鏈結端僅傳遞 MSVC 合法連結參數 (嚴禁傳入 /fsanitize=address)
             add_compile_options(/fsanitize=address /Zi)
-            add_link_options(/fsanitize=address /INCREMENTAL:NO /DEBUG)
+            add_link_options(/INCREMENTAL:NO /DEBUG)
+
+            if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+                set(_CLANG_ARCH "x86_64")
+            else()
+                set(_CLANG_ARCH "i386")
+            endif()
+
+            execute_process(
+                COMMAND ${CMAKE_CXX_COMPILER} /clang:-print-file-name=clang_rt.asan_dynamic-${_CLANG_ARCH}.dll
+                OUTPUT_VARIABLE _CLANG_ASAN_DLL
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            execute_process(
+                COMMAND ${CMAKE_CXX_COMPILER} /clang:-print-file-name=clang_rt.asan_dynamic-${_CLANG_ARCH}.lib
+                OUTPUT_VARIABLE _CLANG_ASAN_LIB
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            execute_process(
+                COMMAND ${CMAKE_CXX_COMPILER} /clang:-print-file-name=clang_rt.asan_dynamic_runtime_thunk-${_CLANG_ARCH}.lib
+                OUTPUT_VARIABLE _CLANG_ASAN_THUNK_LIB
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+
+            if(EXISTS "${_CLANG_ASAN_DLL}")
+                set(ASAN_DLL "${_CLANG_ASAN_DLL}" CACHE INTERNAL "AddressSanitizer runtime DLL" FORCE)
+                get_filename_component(_CLANG_ASAN_DIR "${_CLANG_ASAN_DLL}" DIRECTORY)
+                set(ASAN_DLL_DIR "${_CLANG_ASAN_DIR}" CACHE INTERNAL "AddressSanitizer runtime DLL directory" FORCE)
+                message(STATUS "AddressSanitizer runtime DLL detected: ${ASAN_DLL}")
+            endif()
+
+            if(EXISTS "${_CLANG_ASAN_LIB}" AND EXISTS "${_CLANG_ASAN_THUNK_LIB}")
+                get_filename_component(_CLANG_LIB_DIR "${_CLANG_ASAN_LIB}" DIRECTORY)
+                link_directories("${_CLANG_LIB_DIR}")
+                link_libraries("clang_rt.asan_dynamic-${_CLANG_ARCH}.lib")
+                add_link_options("/WHOLEARCHIVE:clang_rt.asan_dynamic_runtime_thunk-${_CLANG_ARCH}.lib")
+                message(STATUS "AddressSanitizer runtime libraries linked: clang_rt.asan_dynamic-${_CLANG_ARCH}.lib, clang_rt.asan_dynamic_runtime_thunk-${_CLANG_ARCH}.lib")
+            endif()
         else()
-            # GNU clang++ 驅動
+            # GNU 風格 clang++ 驅動程式 (由 clang++ 前端統一調度編譯與鏈結)
             add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
             add_link_options(-fsanitize=address)
-        endif()
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=clang_rt.asan_dynamic-x86_64.dll
-            OUTPUT_VARIABLE _CLANG_ASAN_DLL
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        if(EXISTS "${_CLANG_ASAN_DLL}")
-            set(ASAN_DLL "${_CLANG_ASAN_DLL}" CACHE INTERNAL "AddressSanitizer runtime DLL" FORCE)
-            get_filename_component(_CLANG_ASAN_DIR "${_CLANG_ASAN_DLL}" DIRECTORY)
-            set(ASAN_DLL_DIR "${_CLANG_ASAN_DIR}" CACHE INTERNAL "AddressSanitizer runtime DLL directory" FORCE)
-            message(STATUS "AddressSanitizer runtime DLL detected: ${ASAN_DLL}")
+            execute_process(
+                COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=clang_rt.asan_dynamic-x86_64.dll
+                OUTPUT_VARIABLE _CLANG_ASAN_DLL
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            if(EXISTS "${_CLANG_ASAN_DLL}")
+                set(ASAN_DLL "${_CLANG_ASAN_DLL}" CACHE INTERNAL "AddressSanitizer runtime DLL" FORCE)
+                get_filename_component(_CLANG_ASAN_DIR "${_CLANG_ASAN_DLL}" DIRECTORY)
+                set(ASAN_DLL_DIR "${_CLANG_ASAN_DIR}" CACHE INTERNAL "AddressSanitizer runtime DLL directory" FORCE)
+                message(STATUS "AddressSanitizer runtime DLL detected: ${ASAN_DLL}")
+            endif()
         endif()
     elseif(MINGW)
         message(STATUS "MinGW GCC does not support AddressSanitizer on Windows; skipping ASan for MinGW.")

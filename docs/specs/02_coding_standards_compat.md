@@ -47,6 +47,7 @@ CPPUI 專案全面引入自行研發的 [`compat.hpp`](../../include/compat/comp
 ### 2.7 跨平台 CRT 執行期函式庫統一規範 (Unified MSVC CRT & Clang Compatibility) [Strict]
 - **動態 CRT 強制 (Dynamic CRT Unification)**：專案全域統一採用動態連結 C/C++ 執行期函式庫（Release 模式 `/MD`，Debug 模式 `/MDd`）。透過 CMake 3.15+ 規範之 `CMP0091` 政策與 `set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")` 強制全專案所有 targets 一致，防止跨模組 CRT 不匹配導致 `/FAILIFMISMATCH: "RuntimeLibrary"` 錯誤或跨堆積記憶體毀損（Heap Corruption）。
 - **Windows Clang 工具鏈規範 (Windows Clang Standard)**：在 Windows MSVC ABI 環境中，優先採用官方標準之 `clang-cl` 前端，以獲得與 MSVC 旗標（`/W4`、`/utf-8`、`/permissive-`、`/EHsc`）及 CMake CRT 抽象的原生相容性；若使用 GNU 風格的 `clang++`，必須顯式注入 `-D_DLL` 以確保生成的目標檔標記為 `MD_DynamicRelease`。
+- **AddressSanitizer 工具鏈旗標隔離 (ASan Compiler vs. Linker Flag Segregation)**：在 Windows MSVC ABI（`cl.exe` 或 `clang-cl` 搭配 `lld-link` / `link.exe`）啟用 ASan 時，`/fsanitize=address` 僅為編譯器前端插樁選項，**嚴禁傳遞給連結器**（防止 `lld-link` 將旗標誤判為輸入檔案並拋出 `could not open '/fsanitize=address'` 錯誤）。針對 `clang-cl`，應透過動態解析注入 `clang_rt.asan_dynamic-<arch>.lib` 與 `/WHOLEARCHIVE:clang_rt.asan_dynamic_runtime_thunk-<arch>.lib`（動態 CRT 匹配），確保二進位檔正常鏈結。
 
 ---
 
