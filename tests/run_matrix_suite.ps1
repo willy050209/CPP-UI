@@ -128,10 +128,18 @@ if ($hasMsvc) {
 }
 
 if ($CompilerFilter) {
-    $allLanes = $allLanes | Where-Object { $_.Compiler -like "*$CompilerFilter*" }
+    if ($CompilerFilter -match "[*?]") {
+        $allLanes = $allLanes | Where-Object { $_.Compiler -like $CompilerFilter -or $_.CompilerType -like $CompilerFilter }
+    } else {
+        $allLanes = $allLanes | Where-Object { $_.Compiler -eq $CompilerFilter -or $_.CompilerType -eq $CompilerFilter }
+    }
 }
 if ($StandardFilter) {
-    $allLanes = $allLanes | Where-Object { $_.Standard -like "*$StandardFilter*" }
+    if ($StandardFilter -match "[*?]") {
+        $allLanes = $allLanes | Where-Object { $_.Standard -like $StandardFilter }
+    } else {
+        $allLanes = $allLanes | Where-Object { $_.Standard -eq $StandardFilter }
+    }
 }
 
 if (@($allLanes).Count -eq 0) {
@@ -499,8 +507,8 @@ $testTargets = @(
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
             "Theme", "ThemeManager"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "comdlg32.lib", "shell32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lcomdlg32", "-lshell32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "comdlg32.lib", "shell32.lib", "uuid.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lcomdlg32", "-lshell32", "-luuid")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -703,11 +711,11 @@ $sbPhase2 = {
         if ($task.IsSmoke) {
             & $task.CompilerPath "-std=$($task.Standard)" -D_DLL `
                 -I "$rootPath\include" -I "$rootPath\include\compat" `
-                $testSrcAbs -o $testExe *>$task.CompileLog
+                $testSrcAbs -lucrt -lmsvcrt -o $testExe *>$task.CompileLog
         } else {
             & $task.CompilerPath "-std=$($task.Standard)" -O2 -D_DLL `
                 -I "$rootPath\include" -I "$rootPath\include\compat" `
-                $testSrcAbs $reqObjFiles $gnuLibs -o $testExe *>$task.CompileLog
+                $testSrcAbs $reqObjFiles $gnuLibs -lucrt -lmsvcrt -o $testExe *>$task.CompileLog
         }
         $compileOk = ($LASTEXITCODE -eq 0 -and (Test-Path $testExe))
     } elseif ($task.CompilerType -eq "gcc") {

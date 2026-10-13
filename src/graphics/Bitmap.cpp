@@ -21,7 +21,7 @@ struct Bitmap::Impl {
     PixelFormat                m_format{ PixelFormat::Format32bppArgb };
     std::vector<uint32_t>      m_pixels;
     bool                       m_isLocked{ false };
-    mutable std::shared_mutex  m_mutex;
+    mutable compat::shared_mutex  m_mutex;
 
     Impl(uint32_t width, uint32_t height, PixelFormat format)
         : m_width(width), m_height(height), m_format(format) {
@@ -74,7 +74,7 @@ Bitmap::~Bitmap() = default;
 Bitmap::Bitmap(const Bitmap& other)
     : std::enable_shared_from_this<Bitmap>(other) {
     if (other.m_impl) {
-        std::shared_lock<std::shared_mutex> lock(other.m_impl->m_mutex);
+        compat::shared_lock<compat::shared_mutex> lock(other.m_impl->m_mutex);
         m_impl = std::make_unique<Impl>(other.m_impl->m_width, other.m_impl->m_height, other.m_impl->m_format);
         m_impl->m_pixels = other.m_impl->m_pixels;
         m_impl->m_isLocked = other.m_impl->m_isLocked;
@@ -88,7 +88,7 @@ Bitmap::Bitmap(Bitmap&& other) noexcept = default;
 Bitmap& Bitmap::operator=(const Bitmap& other) {
     if (this != &other) {
         if (other.m_impl) {
-            std::shared_lock<std::shared_mutex> lockOther(other.m_impl->m_mutex);
+            compat::shared_lock<compat::shared_mutex> lockOther(other.m_impl->m_mutex);
             auto newImpl = std::make_unique<Impl>(other.m_impl->m_width, other.m_impl->m_height, other.m_impl->m_format);
             newImpl->m_pixels = other.m_impl->m_pixels;
             newImpl->m_isLocked = other.m_impl->m_isLocked;
@@ -122,7 +122,7 @@ core::Color Bitmap::GetPixel(uint32_t x, uint32_t y) const {
     if (!m_impl) {
         throw std::out_of_range("Bitmap is uninitialized.");
     }
-    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_impl->m_mutex);
     if (x >= m_impl->m_width || y >= m_impl->m_height) {
         throw std::out_of_range("Coordinates out of bitmap bounds.");
     }
@@ -134,7 +134,7 @@ void Bitmap::SetPixel(uint32_t x, uint32_t y, core::Color color) {
     if (!m_impl) {
         throw std::out_of_range("Bitmap is uninitialized.");
     }
-    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_impl->m_mutex);
     if (x >= m_impl->m_width || y >= m_impl->m_height) {
         throw std::out_of_range("Coordinates out of bitmap bounds.");
     }
@@ -143,20 +143,20 @@ void Bitmap::SetPixel(uint32_t x, uint32_t y, core::Color color) {
 
 void Bitmap::Clear(core::Color color) {
     if (!m_impl) return;
-    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_impl->m_mutex);
     uint32_t argb = color.ToArgb();
     std::fill(m_impl->m_pixels.begin(), m_impl->m_pixels.end(), argb);
 }
 
 compat::span<const uint32_t> Bitmap::GetPixelSpan() const {
     if (!m_impl) return {};
-    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_impl->m_mutex);
     return compat::span<const uint32_t>(m_impl->m_pixels.data(), m_impl->m_pixels.size());
 }
 
 compat::span<uint32_t> Bitmap::GetPixelSpanMut() {
     if (!m_impl) return {};
-    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_impl->m_mutex);
     return compat::span<uint32_t>(m_impl->m_pixels.data(), m_impl->m_pixels.size());
 }
 
@@ -164,14 +164,14 @@ void* Bitmap::LockBits(const core::Rect& rect, uint32_t flags) {
     (void)rect;
     (void)flags;
     if (!m_impl) return nullptr;
-    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_impl->m_mutex);
     m_impl->m_isLocked = true;
     return m_impl->m_pixels.data();
 }
 
 void Bitmap::UnlockBits() {
     if (!m_impl) return;
-    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_impl->m_mutex);
     m_impl->m_isLocked = false;
 }
 
@@ -179,7 +179,7 @@ std::shared_ptr<Bitmap> Bitmap::Clone() const {
     if (!m_impl) {
         throw std::invalid_argument("Cannot clone uninitialized bitmap.");
     }
-    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_impl->m_mutex);
     if (m_impl->m_width == 0 || m_impl->m_height == 0) {
         throw std::invalid_argument("Bitmap dimensions must be positive to clone.");
     }
@@ -192,7 +192,7 @@ std::shared_ptr<Bitmap> Bitmap::Clone(const core::Rect& rect, PixelFormat format
     if (!m_impl) {
         throw std::invalid_argument("Cannot clone uninitialized bitmap.");
     }
-    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_impl->m_mutex);
 
     int32_t rx = static_cast<int32_t>(rect.x);
     int32_t ry = static_cast<int32_t>(rect.y);
@@ -224,7 +224,7 @@ std::shared_ptr<Bitmap> Bitmap::Clone(const core::Rect& rect, PixelFormat format
 
 void Bitmap::RotateFlip(RotateFlipType rotateFlipType) {
     if (!m_impl) return;
-    std::unique_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_impl->m_mutex);
 
     bool flipX = false;
     bool flipY = false;
@@ -294,7 +294,7 @@ void Bitmap::RotateFlip(RotateFlipType rotateFlipType) {
 
 bool Bitmap::SaveAsBmp(compat::string_view filename) const {
     if (filename.empty() || !m_impl || m_impl->m_width == 0 || m_impl->m_height == 0) return false;
-    std::shared_lock<std::shared_mutex> lock(m_impl->m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_impl->m_mutex);
 
     std::ofstream out(std::string(filename.data(), filename.size()), std::ios::binary);
     if (!out) return false;

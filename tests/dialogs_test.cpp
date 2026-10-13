@@ -278,9 +278,9 @@ static void TestFileDialogFormBuiltIn() {
     compat::filesystem::path file2 = tempDir / "photo.png";
 
     {
-        std::ofstream ofs1(file1);
+        std::ofstream ofs1(file1.string());
         ofs1 << "Hello CPPUI File Dialog!";
-        std::ofstream ofs2(file2);
+        std::ofstream ofs2(file2.string());
         ofs2 << "Binary PNG Data";
     }
 
@@ -366,7 +366,7 @@ static void TestFolderNavigationAndClickSafety() {
     std::error_code ec;
     compat::filesystem::create_directories(subDir, ec);
 
-    std::ofstream(subDir / "nested.txt") << "Nested Content";
+    std::ofstream((subDir / "nested.txt").string()) << "Nested Content";
 
     FileDialogForm form(
         FileDialogFormMode::Open,

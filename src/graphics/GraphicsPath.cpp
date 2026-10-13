@@ -76,7 +76,7 @@ GraphicsPath::GraphicsPath(compat::span<const core::Point> points, FillMode fill
 }
 
 GraphicsPath::GraphicsPath(const GraphicsPath& other) {
-    std::shared_lock<std::shared_mutex> lock(other.m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(other.m_mutex);
     m_points       = other.m_points;
     m_types        = other.m_types;
     m_fillMode     = other.m_fillMode;
@@ -84,7 +84,7 @@ GraphicsPath::GraphicsPath(const GraphicsPath& other) {
 }
 
 GraphicsPath::GraphicsPath(GraphicsPath&& other) noexcept {
-    std::unique_lock<std::shared_mutex> lock(other.m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(other.m_mutex);
     m_points       = std::move(other.m_points);
     m_types        = std::move(other.m_types);
     m_fillMode     = other.m_fillMode;
@@ -93,8 +93,8 @@ GraphicsPath::GraphicsPath(GraphicsPath&& other) noexcept {
 
 GraphicsPath& GraphicsPath::operator=(const GraphicsPath& other) {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        compat::shared_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
 
         m_points       = other.m_points;
@@ -107,8 +107,8 @@ GraphicsPath& GraphicsPath::operator=(const GraphicsPath& other) {
 
 GraphicsPath& GraphicsPath::operator=(GraphicsPath&& other) noexcept {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::unique_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
 
         m_points       = std::move(other.m_points);
@@ -120,7 +120,7 @@ GraphicsPath& GraphicsPath::operator=(GraphicsPath&& other) noexcept {
 }
 
 void GraphicsPath::AddLine(core::Point p1, core::Point p2) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     if (!m_isFigureOpen || m_points.empty() || m_points.back() != p1) {
         m_points.push_back(p1);
         m_types.push_back(static_cast<uint8_t>(PathPointType::Start));
@@ -136,7 +136,7 @@ void GraphicsPath::AddLine(float x1, float y1, float x2, float y2) {
 
 void GraphicsPath::AddLines(compat::span<const core::Point> points) {
     if (points.size() < 2) return;
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     if (!m_isFigureOpen || m_points.empty() || m_points.back() != points[0]) {
         m_points.push_back(points[0]);
         m_types.push_back(static_cast<uint8_t>(PathPointType::Start));
@@ -150,7 +150,7 @@ void GraphicsPath::AddLines(compat::span<const core::Point> points) {
 
 void GraphicsPath::AddRectangle(const core::Rect& rect) {
     if (rect.IsEmpty()) return;
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_points.push_back(core::Point(rect.Left(), rect.Top()));
     m_types.push_back(static_cast<uint8_t>(PathPointType::Start));
 
@@ -173,7 +173,7 @@ void GraphicsPath::AddRoundedRectangle(const core::Rect& rect, float radius) {
         return;
     }
 
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     float k = r * KAPPA;
 
     // 起點在頂部邊緣右移 r 處
@@ -232,7 +232,7 @@ void GraphicsPath::AddRoundedRectangle(const core::Rect& rect, float radius) {
 
 void GraphicsPath::AddEllipse(const core::Rect& rect) {
     if (rect.IsEmpty()) return;
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
 
     float cx = rect.x + rect.width * 0.5f;
     float cy = rect.y + rect.height * 0.5f;
@@ -284,7 +284,7 @@ void GraphicsPath::AddEllipse(float x, float y, float width, float height) {
 
 void GraphicsPath::AddArc(const core::Rect& rect, float startAngle, float sweepAngle) {
     if (rect.IsEmpty() || sweepAngle == 0.0f) return;
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
 
     float cx = rect.x + rect.width * 0.5f;
     float cy = rect.y + rect.height * 0.5f;
@@ -328,7 +328,7 @@ void GraphicsPath::AddArc(const core::Rect& rect, float startAngle, float sweepA
 }
 
 void GraphicsPath::AddBezier(core::Point p1, core::Point c1, core::Point c2, core::Point p2) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     if (!m_isFigureOpen || m_points.empty() || m_points.back() != p1) {
         m_points.push_back(p1);
         m_types.push_back(static_cast<uint8_t>(PathPointType::Start));
@@ -364,7 +364,7 @@ void GraphicsPath::AddCurve(compat::span<const core::Point> points) {
 
 void GraphicsPath::AddPolygon(compat::span<const core::Point> points) {
     if (points.size() < 3) return;
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
 
     m_points.push_back(points[0]);
     m_types.push_back(static_cast<uint8_t>(PathPointType::Start));
@@ -380,8 +380,8 @@ void GraphicsPath::AddPolygon(compat::span<const core::Point> points) {
 }
 
 void GraphicsPath::AddPath(const GraphicsPath& path, bool connect) {
-    std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-    std::shared_lock<std::shared_mutex> lockOther(path.m_mutex, std::defer_lock);
+    std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+    compat::shared_lock<compat::shared_mutex> lockOther(path.m_mutex, std::defer_lock);
     std::lock(lockThis, lockOther);
 
     if (path.m_points.empty()) return;
@@ -398,7 +398,7 @@ void GraphicsPath::AddPath(const GraphicsPath& path, bool connect) {
 }
 
 void GraphicsPath::CloseFigure() {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     if (!m_types.empty()) {
         m_types.back() |= static_cast<uint8_t>(PathPointType::CloseSubpath);
         m_isFigureOpen = false;
@@ -406,7 +406,7 @@ void GraphicsPath::CloseFigure() {
 }
 
 void GraphicsPath::CloseAllFigures() {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     for (size_t i = 0; i < m_types.size(); ++i) {
         if (i + 1 == m_types.size() || (m_types[i + 1] & ~static_cast<uint8_t>(PathPointType::CloseSubpath)) == static_cast<uint8_t>(PathPointType::Start)) {
             m_types[i] |= static_cast<uint8_t>(PathPointType::CloseSubpath);
@@ -416,29 +416,29 @@ void GraphicsPath::CloseAllFigures() {
 }
 
 void GraphicsPath::StartFigure() {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_isFigureOpen = false;
 }
 
 void GraphicsPath::Reset() {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_points.clear();
     m_types.clear();
     m_isFigureOpen = false;
 }
 
 FillMode GraphicsPath::GetFillMode() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_fillMode;
 }
 
 void GraphicsPath::SetFillMode(FillMode mode) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_fillMode = mode;
 }
 
 core::Rect GraphicsPath::GetBounds() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     if (m_points.empty()) {
         return core::Rect(0.0f, 0.0f, 0.0f, 0.0f);
     }
@@ -458,22 +458,22 @@ core::Rect GraphicsPath::GetBounds() const {
 }
 
 size_t GraphicsPath::GetPointCount() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_points.size();
 }
 
 std::vector<core::Point> GraphicsPath::GetPathPoints() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_points;
 }
 
 std::vector<uint8_t> GraphicsPath::GetPathTypes() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_types;
 }
 
 std::vector<core::Point> GraphicsPath::Flatten(float flatness) const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     std::vector<core::Point> flatPoints;
     if (m_points.empty()) return flatPoints;
 
@@ -542,7 +542,7 @@ bool GraphicsPath::IsOutlineVisible(core::Point pt, const Pen& pen) const {
 }
 
 void GraphicsPath::Transform(float m11, float m12, float m21, float m22, float dx, float dy) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     for (auto& pt : m_points) {
         float nx = pt.x * m11 + pt.y * m21 + dx;
         float ny = pt.x * m12 + pt.y * m22 + dy;
@@ -552,7 +552,7 @@ void GraphicsPath::Transform(float m11, float m12, float m21, float m22, float d
 }
 
 GraphicsPath GraphicsPath::Clone() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     GraphicsPath copy;
     copy.m_points       = m_points;
     copy.m_types        = m_types;

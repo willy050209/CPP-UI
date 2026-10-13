@@ -242,7 +242,7 @@ private:
     std::vector<uint8_t>       m_types;
     FillMode                   m_fillMode{ FillMode::Alternate };
     bool                       m_isFigureOpen{ false };
-    mutable std::shared_mutex  m_mutex;
+    mutable compat::shared_mutex m_mutex;
 };
 
 } // namespace graphics

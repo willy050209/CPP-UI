@@ -34,7 +34,7 @@ Pen::Pen(const Brush& brush, float width)
 }
 
 Pen::Pen(const Pen& other) {
-    std::shared_lock<std::shared_mutex> lock(other.m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(other.m_mutex);
     m_color     = other.m_color;
     m_width     = other.m_width;
     m_dashStyle = other.m_dashStyle;
@@ -43,7 +43,7 @@ Pen::Pen(const Pen& other) {
 }
 
 Pen::Pen(Pen&& other) noexcept {
-    std::unique_lock<std::shared_mutex> lock(other.m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(other.m_mutex);
     m_color     = other.m_color;
     m_width     = other.m_width;
     m_dashStyle = other.m_dashStyle;
@@ -53,8 +53,8 @@ Pen::Pen(Pen&& other) noexcept {
 
 Pen& Pen::operator=(const Pen& other) {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        compat::shared_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
 
         m_color     = other.m_color;
@@ -68,8 +68,8 @@ Pen& Pen::operator=(const Pen& other) {
 
 Pen& Pen::operator=(Pen&& other) noexcept {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::unique_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
 
         m_color     = other.m_color;
@@ -82,17 +82,17 @@ Pen& Pen::operator=(Pen&& other) noexcept {
 }
 
 core::Color Pen::GetColor() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_color;
 }
 
 void Pen::SetColor(core::Color color) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_color = color;
 }
 
 float Pen::GetWidth() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_width;
 }
 
@@ -100,42 +100,42 @@ void Pen::SetWidth(float width) {
     if (width < 0.0f) {
         throw std::invalid_argument("Pen width cannot be negative.");
     }
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_width = width;
 }
 
 DashStyle Pen::GetDashStyle() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_dashStyle;
 }
 
 void Pen::SetDashStyle(DashStyle style) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_dashStyle = style;
 }
 
 LineCap Pen::GetLineCap() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_lineCap;
 }
 
 void Pen::SetLineCap(LineCap cap) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_lineCap = cap;
 }
 
 LineJoin Pen::GetLineJoin() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_lineJoin;
 }
 
 void Pen::SetLineJoin(LineJoin join) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_lineJoin = join;
 }
 
 Pen Pen::Clone() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     Pen result(m_color, m_width);
     result.SetDashStyle(m_dashStyle);
     result.SetLineCap(m_lineCap);

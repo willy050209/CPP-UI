@@ -19,19 +19,19 @@ SolidBrush::SolidBrush(core::Color color)
     : m_color(color) {}
 
 SolidBrush::SolidBrush(const SolidBrush& other) {
-    std::shared_lock<std::shared_mutex> lock(other.m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(other.m_mutex);
     m_color = other.m_color;
 }
 
 SolidBrush::SolidBrush(SolidBrush&& other) noexcept {
-    std::unique_lock<std::shared_mutex> lock(other.m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(other.m_mutex);
     m_color = other.m_color;
 }
 
 SolidBrush& SolidBrush::operator=(const SolidBrush& other) {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        compat::shared_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
         m_color = other.m_color;
     }
@@ -40,8 +40,8 @@ SolidBrush& SolidBrush::operator=(const SolidBrush& other) {
 
 SolidBrush& SolidBrush::operator=(SolidBrush&& other) noexcept {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::unique_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
         m_color = other.m_color;
     }
@@ -49,17 +49,17 @@ SolidBrush& SolidBrush::operator=(SolidBrush&& other) noexcept {
 }
 
 core::Color SolidBrush::GetColor() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_color;
 }
 
 void SolidBrush::SetColor(core::Color color) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_color = color;
 }
 
 std::unique_ptr<Brush> SolidBrush::Clone() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return std::make_unique<SolidBrush>(m_color);
 }
 
@@ -86,7 +86,7 @@ LinearGradientBrush::LinearGradientBrush(const core::Rect& rect, core::Color c1,
 }
 
 LinearGradientBrush::LinearGradientBrush(const LinearGradientBrush& other) {
-    std::shared_lock<std::shared_mutex> lock(other.m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(other.m_mutex);
     m_startPoint = other.m_startPoint;
     m_endPoint   = other.m_endPoint;
     m_startColor = other.m_startColor;
@@ -94,7 +94,7 @@ LinearGradientBrush::LinearGradientBrush(const LinearGradientBrush& other) {
 }
 
 LinearGradientBrush::LinearGradientBrush(LinearGradientBrush&& other) noexcept {
-    std::unique_lock<std::shared_mutex> lock(other.m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(other.m_mutex);
     m_startPoint = other.m_startPoint;
     m_endPoint   = other.m_endPoint;
     m_startColor = other.m_startColor;
@@ -103,8 +103,8 @@ LinearGradientBrush::LinearGradientBrush(LinearGradientBrush&& other) noexcept {
 
 LinearGradientBrush& LinearGradientBrush::operator=(const LinearGradientBrush& other) {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        compat::shared_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
         m_startPoint = other.m_startPoint;
         m_endPoint   = other.m_endPoint;
@@ -116,8 +116,8 @@ LinearGradientBrush& LinearGradientBrush::operator=(const LinearGradientBrush& o
 
 LinearGradientBrush& LinearGradientBrush::operator=(LinearGradientBrush&& other) noexcept {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::unique_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
         m_startPoint = other.m_startPoint;
         m_endPoint   = other.m_endPoint;
@@ -128,47 +128,47 @@ LinearGradientBrush& LinearGradientBrush::operator=(LinearGradientBrush&& other)
 }
 
 core::Point LinearGradientBrush::GetStartPoint() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_startPoint;
 }
 
 void LinearGradientBrush::SetStartPoint(core::Point p) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_startPoint = p;
 }
 
 core::Point LinearGradientBrush::GetEndPoint() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_endPoint;
 }
 
 void LinearGradientBrush::SetEndPoint(core::Point p) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_endPoint = p;
 }
 
 core::Color LinearGradientBrush::GetStartColor() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_startColor;
 }
 
 void LinearGradientBrush::SetStartColor(core::Color c) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_startColor = c;
 }
 
 core::Color LinearGradientBrush::GetEndColor() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_endColor;
 }
 
 void LinearGradientBrush::SetEndColor(core::Color c) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(m_mutex);
     m_endColor = c;
 }
 
 std::unique_ptr<Brush> LinearGradientBrush::Clone() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return std::make_unique<LinearGradientBrush>(m_startPoint, m_endPoint, m_startColor, m_endColor);
 }
 
@@ -178,7 +178,7 @@ std::unique_ptr<Brush> LinearGradientBrush::Clone() const {
 /// <param name="pt">二維空間座標點。</param>
 /// <returns>插值計算後之 Color。</returns>
 core::Color LinearGradientBrush::GetColorAt(core::Point pt) const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     float dx = m_endPoint.x - m_startPoint.x;
     float dy = m_endPoint.y - m_startPoint.y;
     float lenSq = dx * dx + dy * dy;
@@ -207,19 +207,19 @@ TextureBrush::TextureBrush(std::shared_ptr<Bitmap> image)
 }
 
 TextureBrush::TextureBrush(const TextureBrush& other) {
-    std::shared_lock<std::shared_mutex> lock(other.m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(other.m_mutex);
     m_image = other.m_image;
 }
 
 TextureBrush::TextureBrush(TextureBrush&& other) noexcept {
-    std::unique_lock<std::shared_mutex> lock(other.m_mutex);
+    std::unique_lock<compat::shared_mutex> lock(other.m_mutex);
     m_image = std::move(other.m_image);
 }
 
 TextureBrush& TextureBrush::operator=(const TextureBrush& other) {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::shared_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        compat::shared_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
         m_image = other.m_image;
     }
@@ -228,8 +228,8 @@ TextureBrush& TextureBrush::operator=(const TextureBrush& other) {
 
 TextureBrush& TextureBrush::operator=(TextureBrush&& other) noexcept {
     if (this != &other) {
-        std::unique_lock<std::shared_mutex> lockThis(m_mutex, std::defer_lock);
-        std::unique_lock<std::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockThis(m_mutex, std::defer_lock);
+        std::unique_lock<compat::shared_mutex> lockOther(other.m_mutex, std::defer_lock);
         std::lock(lockThis, lockOther);
         m_image = std::move(other.m_image);
     }
@@ -237,12 +237,12 @@ TextureBrush& TextureBrush::operator=(TextureBrush&& other) noexcept {
 }
 
 std::shared_ptr<Bitmap> TextureBrush::GetImage() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return m_image;
 }
 
 std::unique_ptr<Brush> TextureBrush::Clone() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    compat::shared_lock<compat::shared_mutex> lock(m_mutex);
     return std::make_unique<TextureBrush>(m_image);
 }
 

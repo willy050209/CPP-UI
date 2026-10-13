@@ -69,6 +69,7 @@ CPPUI 專案全面引入自行研發的 [`compat.hpp`](../../include/compat/comp
 | **錯誤返回** | C 風格錯誤代碼 / 拋出異常 | `compat::expected<T, E>` | 適用於可預期的管線失敗，不產生異常棧開銷。 |
 | **字串格式化** | `sprintf` / `std::stringstream` | `compat::format(...)` | 型別安全且高效的文字格式化。 |
 | **終端除錯輸出**| `printf` / `std::cout` | `compat::print(...)` / `compat::println(...)` | 跨平台 UTF-8 友善終端輸出。 |
+| **讀寫互斥鎖** | `std::shared_mutex` / `std::shared_timed_mutex` | `compat::shared_mutex` / `compat::shared_lock` | 跨標準多讀單寫互斥鎖，解決 C++14/libstdc++ 缺少 `std::shared_mutex` 缺陷並相容至 C++11。 |
 
 ### 3.2 現代化視圖 (Views) 優先契約
 1. **字串視圖優先**：

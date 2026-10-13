@@ -95,7 +95,7 @@ public:
 
 private:
     core::Color                m_color;
-    mutable std::shared_mutex  m_mutex;
+    mutable compat::shared_mutex m_mutex;
 };
 
 /// <summary>
@@ -197,7 +197,7 @@ private:
     core::Point                m_endPoint;
     core::Color                m_startColor;
     core::Color                m_endColor;
-    mutable std::shared_mutex  m_mutex;
+    mutable compat::shared_mutex m_mutex;
 };
 
 /// <summary>
@@ -250,7 +250,7 @@ public:
 
 private:
     std::shared_ptr<Bitmap>    m_image;
-    mutable std::shared_mutex  m_mutex;
+    mutable compat::shared_mutex m_mutex;
 };
 
 } // namespace graphics

@@ -140,7 +140,7 @@ private:
     DashStyle                  m_dashStyle{ DashStyle::Solid };
     LineCap                    m_lineCap{ LineCap::Flat };
     LineJoin                   m_lineJoin{ LineJoin::Miter };
-    mutable std::shared_mutex  m_mutex;
+    mutable compat::shared_mutex m_mutex;
 };
 
 } // namespace graphics

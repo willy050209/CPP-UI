@@ -43,6 +43,7 @@
    - 標頭檔常數強制使用 `COMPAT_INLINE_VAR constexpr`。
    - 微架構熱點使用 `COMPAT_ALWAYS_INLINE`；純查詢/計算方法標註 `COMPAT_NODISCARD`。
    - 嚴禁呼叫 `std::clamp`，一律使用 `compat::clamp`。
+   - 多執行緒讀寫鎖強制使用 `compat::shared_mutex` 與 `compat::shared_lock`（嚴禁直接使用 `std::shared_mutex`，防止 GCC libstdc++ C++14 未定義符號錯誤）。
 5. **現代 Pimpl 慣用法與深常數性 (Modern Pimpl & Deep Constness) [Strict]**：
    - **深常數性指標強制 (Deep Constness)**：凡公開介面類別（如複雜資源、多執行緒鎖、平台代碼、繪圖管線等）採用 Pimpl 模式時，**強制使用 `compat::propagate_const<std::unique_ptr<Impl>>`**。嚴格禁止使用原生 `std::unique_ptr<Impl>` 或裸指針，防止淺常數性（Shallow Constness）漏洞導致 `const` 成員方法能意外修改 `Impl` 狀態。
    - **完整型別與生命週期規範 (Complete Type in .cpp)**：解構子 `~ClassName()`、移動建構子與移動賦值運算子必須在 `.hpp` 中宣告，並在 `.cpp`（`Impl` 定義為完整型別的編譯單元）中使用 `= default` 或明確實作。嚴禁在標頭檔 inline 實作解構子，避免觸發不完整型別（Incomplete Type）刪除之未定義行為或編譯錯誤。
