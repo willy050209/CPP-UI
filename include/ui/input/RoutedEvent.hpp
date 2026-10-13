@@ -90,6 +90,7 @@ namespace StandardEvents {
 
     COMPAT_INLINE_VAR constexpr RoutedEvent GotFocus(15, "GotFocus", RoutingStrategy::Direct);
     COMPAT_INLINE_VAR constexpr RoutedEvent LostFocus(16, "LostFocus", RoutingStrategy::Direct);
+    COMPAT_INLINE_VAR constexpr RoutedEvent ImeComposition(17, "ImeComposition", RoutingStrategy::Bubble);
 } // namespace StandardEvents
 
 } // namespace input

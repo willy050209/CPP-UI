@@ -24,10 +24,12 @@ enum class RawEventType : uint16_t {
     MouseWheel,
     MouseEnter,
     MouseLeave,
-    // 鍵盤事件
+    // 鍵盤與輸入法事件
     KeyDown,
     KeyUp,
     TextInput,
+    ImeComposition,
+    ImeEndComposition,
     // 視窗生命週期事件
     WindowResize,
     WindowMove,
@@ -121,6 +123,15 @@ struct RawTextInputData {
 };
 
 /// <summary>
+/// 原始 IME 輸入法組字/定稿事件資料
+/// </summary>
+struct RawImeData {
+    char    text[128] = {};       // UTF-8 組字或定稿字串
+    int32_t cursorPosition = 0;   // 組字串內之游標字元偏移
+    bool    isResult = false;     // true 代表定稿確認，false 代表組字中
+};
+
+/// <summary>
 /// 原始視窗幾何與 DPI 變更事件資料
 /// </summary>
 struct RawWindowEventData {
@@ -142,6 +153,7 @@ struct RawInputEvent {
         RawMouseEventData  mouse;
         RawKeyEventData    key;
         RawTextInputData   text;
+        RawImeData         ime;
         RawWindowEventData window;
     };
 
@@ -406,6 +418,42 @@ struct RawInputEvent {
         RawInputEvent e;
         e.type = RawEventType::WindowClose;
         e.timestampMs = ts;
+        return e;
+    }
+
+    /// <summary>
+    /// 建立 IME 組字或定字事件。
+    /// </summary>
+    /// <param name="text">組字或定稿字串視圖。</param>
+    /// <param name="cursor">組字游標位置。</param>
+    /// <param name="isResult">是否為定稿確認字串。</param>
+    /// <param name="ts">時間戳 (毫秒)。</param>
+    /// <returns>RawInputEvent 實例。</returns>
+    COMPAT_NODISCARD static RawInputEvent MakeImeComposition(compat::string_view text, int32_t cursor, bool isResult, uint64_t ts = 0) noexcept {
+        RawInputEvent e;
+        e.type = RawEventType::ImeComposition;
+        e.timestampMs = ts;
+        e.ime = {};
+        const size_t copyLen = (text.size() < sizeof(e.ime.text) - 1) ? text.size() : sizeof(e.ime.text) - 1;
+        for (size_t i = 0; i < copyLen; ++i) {
+            e.ime.text[i] = text[i];
+        }
+        e.ime.text[copyLen] = '\0';
+        e.ime.cursorPosition = cursor;
+        e.ime.isResult = isResult;
+        return e;
+    }
+
+    /// <summary>
+    /// 建立 IME 結束組字事件。
+    /// </summary>
+    /// <param name="ts">時間戳 (毫秒)。</param>
+    /// <returns>RawInputEvent 實例。</returns>
+    COMPAT_NODISCARD static RawInputEvent MakeImeEndComposition(uint64_t ts = 0) noexcept {
+        RawInputEvent e;
+        e.type = RawEventType::ImeEndComposition;
+        e.timestampMs = ts;
+        e.ime = {};
         return e;
     }
 };

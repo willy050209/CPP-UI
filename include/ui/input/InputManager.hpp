@@ -128,6 +128,15 @@ public:
     /// <param name="textData">文字輸入原始資料。</param>
     void ProcessTextInput(core::UIElement& root, const pal::RawTextInputData& textData);
 
+    /// <summary>處理 IME 輸入法組字/定稿原始事件。</summary>
+    /// <param name="root">視覺樹根節點。</param>
+    /// <param name="imeData">IME 事件原始資料。</param>
+    void ProcessImeComposition(core::UIElement& root, const pal::RawImeData& imeData);
+
+    /// <summary>處理 IME 結束組字原始事件。</summary>
+    /// <param name="root">視覺樹根節點。</param>
+    void ProcessImeEndComposition(core::UIElement& root);
+
 private:
     void UpdateHover(core::UIElement* newHover, core::Point windowPos, pal::KeyModifiers mods);
 

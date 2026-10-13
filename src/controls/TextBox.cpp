@@ -5,6 +5,7 @@
 #include "ui/input/PointerEventArgs.hpp"
 #include "ui/theme/ThemeManager.hpp"
 #include "ui/theme/Theme.hpp"
+#include "ui/app/Form.hpp"
 #include <algorithm>
 
 namespace cppui {
@@ -49,7 +50,15 @@ TextBox::TextBox() {
             }
         }
 
+        // 若原先有未定稿組字，點擊重定游標時清空
+        if (!m_compositionText.empty()) {
+            m_compositionText.clear();
+            m_compositionCursor = 0;
+            m_isCompositionLayoutDirty = true;
+        }
+
         InvalidateVisual();
+        UpdateImeCompositionWindow();
         e.SetHandled(true);
     });
 
@@ -58,6 +67,35 @@ TextBox::TextBox() {
         if (inserted.empty()) return;
 
         InsertText(inserted);
+        e.SetHandled(true);
+    });
+
+    OnImeComposition([this](input::ImeCompositionEventArgs& e) {
+        if (m_isReadOnly) {
+            e.SetHandled(true);
+            return;
+        }
+
+        if (e.IsCommitted()) {
+            m_compositionText.clear();
+            m_compositionCursor = 0;
+            m_isCompositionLayoutDirty = true;
+            compat::string_view committedText = e.GetCompositionText();
+            if (!committedText.empty()) {
+                InsertText(committedText);
+            }
+            InvalidateLayout();
+            InvalidateMeasure();
+            InvalidateVisual();
+        } else {
+            compat::string_view comp = e.GetCompositionText();
+            m_compositionText = std::string(comp.data(), comp.size());
+            m_compositionCursor = e.GetCursorPosition();
+            m_isCompositionLayoutDirty = true;
+            InvalidateMeasure();
+            InvalidateVisual();
+        }
+        UpdateImeCompositionWindow();
         e.SetHandled(true);
     });
 
@@ -83,6 +121,7 @@ TextBox::TextBox() {
                 InvalidateMeasure();
                 InvalidateVisual();
                 RaiseTextChanged();
+                UpdateImeCompositionWindow();
             }
             e.SetHandled(true);
         } else if (vk == 0x2E) { // Delete
@@ -102,6 +141,7 @@ TextBox::TextBox() {
                 InvalidateMeasure();
                 InvalidateVisual();
                 RaiseTextChanged();
+                UpdateImeCompositionWindow();
             }
             e.SetHandled(true);
         } else if (vk == 0x25) { // Arrow Left
@@ -111,6 +151,7 @@ TextBox::TextBox() {
                     m_caretIndex--;
                 }
                 InvalidateVisual();
+                UpdateImeCompositionWindow();
             }
             e.SetHandled(true);
         } else if (vk == 0x27) { // Arrow Right
@@ -120,24 +161,34 @@ TextBox::TextBox() {
                     m_caretIndex++;
                 }
                 InvalidateVisual();
+                UpdateImeCompositionWindow();
             }
             e.SetHandled(true);
         } else if (vk == 0x24) { // Home
             m_caretIndex = 0;
             InvalidateVisual();
+            UpdateImeCompositionWindow();
             e.SetHandled(true);
         } else if (vk == 0x23) { // End
             m_caretIndex = m_text.size();
             InvalidateVisual();
+            UpdateImeCompositionWindow();
             e.SetHandled(true);
         }
     });
 
     OnGotFocus([this](input::FocusEventArgs&) {
         InvalidateVisual();
+        UpdateImeCompositionWindow();
     });
 
     OnLostFocus([this](input::FocusEventArgs&) {
+        if (!m_compositionText.empty()) {
+            m_compositionText.clear();
+            m_compositionCursor = 0;
+            m_isCompositionLayoutDirty = true;
+            InvalidateMeasure();
+        }
         InvalidateVisual();
     });
 }
@@ -154,6 +205,9 @@ void TextBox::SetText(compat::string_view text) {
     if (m_text != newText) {
         m_text = std::move(newText);
         m_caretIndex = m_text.size();
+        m_compositionText.clear();
+        m_compositionCursor = 0;
+        m_isCompositionLayoutDirty = true;
         m_selectionStart = (std::min)(m_selectionStart, m_text.size());
         m_selectionLength = (std::min)(m_selectionLength, m_text.size() - m_selectionStart);
         InvalidateLayout();
@@ -164,6 +218,7 @@ void TextBox::SetText(compat::string_view text) {
         if (m_textChangedHandler) {
             m_textChangedHandler(m_text);
         }
+        UpdateImeCompositionWindow();
     }
 }
 
@@ -183,6 +238,7 @@ void TextBox::InsertText(compat::string_view text) {
     InvalidateMeasure();
     InvalidateVisual();
     RaiseTextChanged();
+    UpdateImeCompositionWindow();
 }
 
 void TextBox::SetReadOnly(bool readOnly) noexcept {
@@ -203,14 +259,19 @@ void TextBox::SetMaxLength(size_t maxLen) {
         InvalidateMeasure();
         InvalidateVisual();
         RaiseTextChanged();
+        UpdateImeCompositionWindow();
     }
 }
 
 void TextBox::Clear() {
     SetText("");
     m_caretIndex = 0;
+    m_compositionText.clear();
+    m_compositionCursor = 0;
+    m_isCompositionLayoutDirty = true;
     m_selectionStart = 0;
     m_selectionLength = 0;
+    UpdateImeCompositionWindow();
 }
 
 void TextBox::SelectAll() {
@@ -261,6 +322,7 @@ void TextBox::SetPlaceholder(compat::string_view placeholder) {
 void TextBox::SetCaretIndex(size_t index) {
     m_caretIndex = (std::min)(index, m_text.size());
     InvalidateVisual();
+    UpdateImeCompositionWindow();
 }
 
 void TextBox::SetFontSize(float size) {
@@ -296,22 +358,32 @@ void TextBox::OnTextChanged(std::function<void(compat::string_view)> handler) {
 
 void TextBox::InvalidateLayout() {
     m_isLayoutDirty = true;
+    m_isCompositionLayoutDirty = true;
 }
 
 void TextBox::EnsureLayout() {
-    if (!m_isLayoutDirty) return;
+    if (!m_isLayoutDirty && !m_isCompositionLayoutDirty) return;
 
     std::string displayText = m_text;
     if (m_isPassword && !m_text.empty()) {
         displayText = std::string(m_text.size(), m_passwordChar);
     }
 
-    // 單行文字以超寬約束排版，防止自動折行
-    m_textLayout = text::TextLayoutEngine::Get().CreateLayout(displayText, m_font, 100000.0f);
-    if (!m_placeholder.empty()) {
-        m_placeholderLayout = text::TextLayoutEngine::Get().CreateLayout(m_placeholder, m_font, 100000.0f);
+    if (m_isLayoutDirty) {
+        // 單行文字以超寬約束排版，防止自動折行
+        m_textLayout = text::TextLayoutEngine::Get().CreateLayout(displayText, m_font, 100000.0f);
+        if (!m_placeholder.empty()) {
+            m_placeholderLayout = text::TextLayoutEngine::Get().CreateLayout(m_placeholder, m_font, 100000.0f);
+        }
+        m_isLayoutDirty = false;
     }
-    m_isLayoutDirty = false;
+
+    if (m_isCompositionLayoutDirty) {
+        if (!m_compositionText.empty()) {
+            m_compositionLayout = text::TextLayoutEngine::Get().CreateLayout(m_compositionText, m_font, 100000.0f);
+        }
+        m_isCompositionLayoutDirty = false;
+    }
 }
 
 void TextBox::RaiseTextChanged() {
@@ -322,6 +394,51 @@ void TextBox::RaiseTextChanged() {
 float TextBox::GetCaretXOffset() const {
     if (m_text.empty() || m_caretIndex == 0) return 0.0f;
     return m_textLayout.HitTestTextPosition(m_caretIndex).x;
+}
+
+core::Rect TextBox::GetCaretRect() const {
+    const_cast<TextBox*>(this)->EnsureLayout();
+    float left = m_padding.left + m_borderThickness.left;
+    float top = m_padding.top + m_borderThickness.top;
+    float innerH = (std::max)(0.0f, m_renderBounds.height - (m_padding.Vertical() + m_borderThickness.Vertical()));
+    float textY = top + (innerH - m_font.GetSize() * 1.25f) * 0.5f;
+    float caretH = m_font.GetSize() * 1.2f;
+
+    float caretX = left;
+    if (m_compositionText.empty()) {
+        caretX += GetCaretXOffset();
+    } else {
+        float textBeforeW = 0.0f;
+        if (!m_text.empty() && m_caretIndex > 0) {
+            textBeforeW = m_textLayout.HitTestTextPosition(m_caretIndex).x;
+        }
+        float compCursorOffset = 0.0f;
+        if (m_compositionCursor > 0 && !m_compositionText.empty()) {
+            compCursorOffset = m_compositionLayout.HitTestTextPosition(static_cast<size_t>(m_compositionCursor)).x;
+        }
+        caretX += textBeforeW + compCursorOffset;
+    }
+    return core::Rect(caretX, textY, 2.0f, caretH);
+}
+
+void TextBox::UpdateImeCompositionWindow() {
+    core::Visual* curr = GetVisualParent();
+    app::Form* form = nullptr;
+    while (curr) {
+        if (auto* f = dynamic_cast<app::Form*>(curr)) {
+            form = f;
+            break;
+        }
+        curr = curr->GetVisualParent();
+    }
+    if (!form || !form->GetPlatformWindow()) {
+        return;
+    }
+
+    core::Rect localCaret = GetCaretRect();
+    core::Point winTopLeft = TransformToAncestor(core::Point(localCaret.x, localCaret.y), form);
+    core::Rect winCaretRect(winTopLeft.x, winTopLeft.y, localCaret.width, localCaret.height);
+    form->GetPlatformWindow()->SetImeCompositionWindow(winCaretRect);
 }
 
 core::Size TextBox::MeasureOverride(core::Size availableSize) {
@@ -336,6 +453,11 @@ core::Size TextBox::MeasureOverride(core::Size availableSize) {
     } else if (!m_placeholder.empty()) {
         contentW = m_placeholderLayout.GetSize().width;
         contentH = (std::max)(contentH, m_placeholderLayout.GetSize().height);
+    }
+
+    if (!m_compositionText.empty()) {
+        contentW += m_compositionLayout.GetSize().width;
+        contentH = (std::max)(contentH, m_compositionLayout.GetSize().height);
     }
 
     // 提供標準單行輸入框預設最小寬高 (100x20)
@@ -382,19 +504,45 @@ void TextBox::OnRender(rendering::DrawingContext& dc) {
     float textY = top + (innerH - m_font.GetSize() * 1.25f) * 0.5f;
     core::Point textOrigin(left, textY);
 
-    if (m_text.empty()) {
+    if (m_text.empty() && m_compositionText.empty()) {
         if (!m_placeholder.empty()) {
             dc.DrawTextLayout(m_placeholderLayout, textOrigin, m_placeholderColor);
         }
-    } else {
+    } else if (m_compositionText.empty()) {
         dc.DrawTextLayout(m_textLayout, textOrigin, m_foreground);
+    } else {
+        // 組字渲染：分別繪製前置文字、組字串 (帶底線標記)、後置文字
+        std::string beforeText = m_text.substr(0, m_caretIndex);
+        std::string afterText = m_text.substr(m_caretIndex);
+
+        float xCursor = left;
+        if (!beforeText.empty()) {
+            auto beforeLayout = text::TextLayoutEngine::Get().CreateLayout(beforeText, m_font, 100000.0f);
+            dc.DrawTextLayout(beforeLayout, core::Point(xCursor, textY), m_foreground);
+            xCursor += beforeLayout.GetSize().width;
+        }
+
+        float compStart = xCursor;
+        dc.DrawTextLayout(m_compositionLayout, core::Point(xCursor, textY), m_foreground);
+        float compW = m_compositionLayout.GetSize().width;
+        float compEnd = compStart + compW;
+
+        // 繪製組字字串底線標記
+        float underlineY = textY + m_font.GetSize() * 1.2f;
+        dc.DrawLine(core::Point(compStart, underlineY), core::Point(compEnd, underlineY), m_focusBorderColor, 1.5f);
+
+        xCursor += compW;
+
+        if (!afterText.empty()) {
+            auto afterLayout = text::TextLayoutEngine::Get().CreateLayout(afterText, m_font, 100000.0f);
+            dc.DrawTextLayout(afterLayout, core::Point(xCursor, textY), m_foreground);
+        }
     }
 
     // 繪製游標 (獲焦時)
     if (IsFocused()) {
-        float caretX = textOrigin.x + GetCaretXOffset();
-        float caretH = m_font.GetSize() * 1.2f;
-        dc.DrawLine(core::Point(caretX, textY), core::Point(caretX, textY + caretH), m_caretColor, 1.5f);
+        core::Rect caret = GetCaretRect();
+        dc.DrawLine(core::Point(caret.x, caret.y), core::Point(caret.x, caret.y + caret.height), m_caretColor, 1.5f);
     }
 
     dc.PopClip();

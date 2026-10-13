@@ -83,6 +83,24 @@ public:
     void SetCaretIndex(size_t index);
 
     /// <summary>
+    /// 取得文字編輯輸入框內部游標或組字游標之邊界矩形 (相對於本元件局部座標)。
+    /// </summary>
+    /// <returns>游標局部矩形。</returns>
+    COMPAT_NODISCARD core::Rect GetCaretRect() const;
+
+    /// <summary>
+    /// 取得目前 IME 組字字串。
+    /// </summary>
+    /// <returns>組字字串視圖。</returns>
+    COMPAT_NODISCARD compat::string_view GetCompositionText() const noexcept { return m_compositionText; }
+
+    /// <summary>
+    /// 取得目前 IME 組字游標在組字串中的字元偏移量。
+    /// </summary>
+    /// <returns>組字游標字元偏移。</returns>
+    COMPAT_NODISCARD int32_t GetCompositionCursor() const noexcept { return m_compositionCursor; }
+
+    /// <summary>
     /// 取得字型大小。
     /// </summary>
     /// <returns>字型大小像素值。</returns>
@@ -231,6 +249,7 @@ private:
     void EnsureLayout();
     void RaiseTextChanged();
     float GetCaretXOffset() const;
+    void UpdateImeCompositionWindow();
 
     std::string          m_text;
     std::string          m_placeholder;
@@ -241,6 +260,11 @@ private:
     size_t               m_selectionLength = 0;
     bool                 m_isPassword = false;
     char                 m_passwordChar = '*';
+
+    std::string          m_compositionText;
+    int32_t              m_compositionCursor = 0;
+    text::TextLayout     m_compositionLayout;
+    bool                 m_isCompositionLayoutDirty = true;
 
     text::FontDescriptor m_font;
     core::Color          m_placeholderColor{ 130, 145, 165, 255 };

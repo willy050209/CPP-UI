@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <windowsx.h>
 #include <shellscalingapi.h>
+#include <imm.h>
 
 namespace cppui {
 namespace pal {
@@ -36,6 +37,15 @@ namespace {
         if (len <= 0) return L"";
         std::wstring result(len, L'\0');
         MultiByteToWideChar(CP_UTF8, 0, utf8Str.data(), static_cast<int32_t>(utf8Str.length()), &result[0], len);
+        return result;
+    }
+
+    std::string Utf16ToUtf8(compat::span<const wchar_t> wideStr) {
+        if (wideStr.empty()) return "";
+        int32_t len = WideCharToMultiByte(CP_UTF8, 0, wideStr.data(), static_cast<int32_t>(wideStr.size()), nullptr, 0, nullptr, nullptr);
+        if (len <= 0) return "";
+        std::string result(static_cast<size_t>(len), '\0');
+        WideCharToMultiByte(CP_UTF8, 0, wideStr.data(), static_cast<int32_t>(wideStr.size()), &result[0], len, nullptr, nullptr);
         return result;
     }
 } // namespace
@@ -223,6 +233,26 @@ void PlatformWindowWin32::PresentFramebuffer(compat::span<const uint32_t> pixelB
     ::ReleaseDC(m_hwnd, hdc);
 }
 
+void PlatformWindowWin32::SetImeCompositionWindow(const core::Rect& caretRect) {
+    if (!m_hwnd || m_isClosed) return;
+    HIMC hIMC = ImmGetContext(m_hwnd);
+    if (hIMC) {
+        COMPOSITIONFORM cf{};
+        cf.dwStyle = CFS_POINT;
+        cf.ptCurrentPos.x = static_cast<LONG>(caretRect.x * m_dpiScale);
+        cf.ptCurrentPos.y = static_cast<LONG>((caretRect.y + caretRect.height) * m_dpiScale);
+        ImmSetCompositionWindow(hIMC, &cf);
+
+        CANDIDATEFORM cdf{};
+        cdf.dwIndex = 0;
+        cdf.dwStyle = CFS_CANDIDATEPOS;
+        cdf.ptCurrentPos = cf.ptCurrentPos;
+        ImmSetCandidateWindow(hIMC, &cdf);
+
+        ImmReleaseContext(m_hwnd, hIMC);
+    }
+}
+
 void PlatformWindowWin32::UpdateDpiScale() {
     if (m_hwnd) {
         UINT dpi = GetDpiForWindow(m_hwnd);
@@ -379,6 +409,54 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             e.text.codepoint = static_cast<uint32_t>(wParam);
             DispatchEvent(e);
             return 0;
+        }
+
+        case WM_IME_SETCONTEXT: {
+            lParam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
+            return DefWindowProcW(m_hwnd, msg, wParam, lParam);
+        }
+
+        case WM_IME_STARTCOMPOSITION: {
+            return DefWindowProcW(m_hwnd, msg, wParam, lParam);
+        }
+
+        case WM_IME_COMPOSITION: {
+            HIMC hIMC = ImmGetContext(m_hwnd);
+            if (hIMC) {
+                if (lParam & GCS_RESULTSTR) {
+                    LONG reqBytes = ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, nullptr, 0);
+                    if (reqBytes > 0) {
+                        std::vector<wchar_t> wideBuf(static_cast<size_t>(reqBytes) / sizeof(wchar_t));
+                        ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, wideBuf.data(), static_cast<DWORD>(reqBytes));
+                        std::string utf8Result = Utf16ToUtf8(compat::span<const wchar_t>(wideBuf.data(), wideBuf.size()));
+                        DispatchEvent(RawInputEvent::MakeImeComposition(utf8Result, 0, true, ts));
+                    }
+                }
+                if (lParam & GCS_COMPSTR) {
+                    LONG reqBytes = ImmGetCompositionStringW(hIMC, GCS_COMPSTR, nullptr, 0);
+                    std::string utf8Comp;
+                    if (reqBytes > 0) {
+                        std::vector<wchar_t> wideBuf(static_cast<size_t>(reqBytes) / sizeof(wchar_t));
+                        ImmGetCompositionStringW(hIMC, GCS_COMPSTR, wideBuf.data(), static_cast<DWORD>(reqBytes));
+                        utf8Comp = Utf16ToUtf8(compat::span<const wchar_t>(wideBuf.data(), wideBuf.size()));
+                    }
+                    int32_t cursor = 0;
+                    if (lParam & GCS_CURSORPOS) {
+                        LONG cur = ImmGetCompositionStringW(hIMC, GCS_CURSORPOS, nullptr, 0);
+                        if (cur >= 0) {
+                            cursor = static_cast<int32_t>(cur);
+                        }
+                    }
+                    DispatchEvent(RawInputEvent::MakeImeComposition(utf8Comp, cursor, false, ts));
+                }
+                ImmReleaseContext(m_hwnd, hIMC);
+            }
+            return 0;
+        }
+
+        case WM_IME_ENDCOMPOSITION: {
+            DispatchEvent(RawInputEvent::MakeImeEndComposition(ts));
+            return DefWindowProcW(m_hwnd, msg, wParam, lParam);
         }
 
         case WM_SIZE: {

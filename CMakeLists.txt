@@ -136,11 +136,14 @@ endif()
 # -----------------------------------------------------------------------------
 # 核心公共標頭檔介面 (Interface Library)
 # -----------------------------------------------------------------------------
+include(GNUInstallDirs)
+
 add_library(cppui_headers INTERFACE)
 target_include_directories(cppui_headers INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/compat>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/compat>
 )
 
 # -----------------------------------------------------------------------------
@@ -271,6 +274,7 @@ if(WIN32)
         ole32
         shell32
         comdlg32
+        imm32
     )
 else()
     find_package(Threads REQUIRED)
@@ -282,10 +286,16 @@ else()
 endif()
 
 # -----------------------------------------------------------------------------
-# 測試與範例
+# 測試與範例 (頂層專案與 FetchContent 子專案隔離)
 # -----------------------------------------------------------------------------
-option(CPPUI_BUILD_TESTS "Build CPPUI unit and smoke tests" ON)
-option(CPPUI_BUILD_EXAMPLES "Build CPPUI example applications" ON)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(CPPUI_IS_TOP_LEVEL ON)
+else()
+    set(CPPUI_IS_TOP_LEVEL OFF)
+endif()
+
+option(CPPUI_BUILD_TESTS "Build CPPUI unit and smoke tests" ${CPPUI_IS_TOP_LEVEL})
+option(CPPUI_BUILD_EXAMPLES "Build CPPUI example applications" ${CPPUI_IS_TOP_LEVEL})
 
 if(CPPUI_BUILD_TESTS)
     enable_testing()
@@ -299,10 +309,11 @@ endif()
 # -----------------------------------------------------------------------------
 # 安裝與導出規則 (Installation and CMake Package Export)
 # -----------------------------------------------------------------------------
-include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
+# 安裝目標二進位與標頭檔
 install(TARGETS cppui_core cppui_headers
-    EXPORT CPPUIConfig
+    EXPORT CppUITargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -313,8 +324,37 @@ install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(EXPORT CPPUIConfig
-    FILE CPPUIConfig.cmake
-    NAMESPACE CPPUI::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/CPPUI
+# 導出 Targets 檔案
+set(CPPUI_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/CppUI")
+
+install(EXPORT CppUITargets
+    FILE CppUITargets.cmake
+    NAMESPACE CppUI::
+    DESTINATION "${CPPUI_CONFIG_INSTALL_DIR}"
 )
+
+# 生成並安裝 CppUIConfig.cmake 與 CppUIConfigVersion.cmake
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CppUIConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/CppUIConfig.cmake"
+    INSTALL_DESTINATION "${CPPUI_CONFIG_INSTALL_DIR}"
+)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/CppUIConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/CppUIConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/CppUIConfigVersion.cmake"
+    DESTINATION "${CPPUI_CONFIG_INSTALL_DIR}"
+)
+
+if(CPPUI_HAS_SKIA)
+    install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindSkia.cmake"
+        DESTINATION "${CPPUI_CONFIG_INSTALL_DIR}"
+    )
+endif()

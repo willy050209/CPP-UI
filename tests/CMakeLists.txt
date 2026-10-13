@@ -122,6 +122,11 @@ add_executable(timer_test timer_test.cpp)
 target_link_libraries(timer_test PRIVATE cppui_core)
 add_test(NAME TimerTest COMMAND timer_test)
 
+# 文字輸入法 (IME) 與組字管線單元測試
+add_executable(ime_test ime_test.cpp)
+target_link_libraries(ime_test PRIVATE cppui_core)
+add_test(NAME ImeTest COMMAND ime_test)
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
@@ -141,7 +146,7 @@ if(ASAN_DLL_DIR)
         InputEventsTest CoordinateTransformTest ControlsTest FluentDslTest
         PalCrossPlatformTest SkiaBackendTest IoCContainerTest MvvmTest
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
-        ThemeTest ImageProcessingTest DialogsTest TimerTest
+        ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)
@@ -150,4 +155,5 @@ if(ASAN_DLL_DIR)
         ENVIRONMENT "PATH=${ASAN_DLL_DIR};$ENV{PATH}"
     )
 endif()
+
 

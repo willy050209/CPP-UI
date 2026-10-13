@@ -131,6 +131,12 @@ public:
             PresentFramebuffer(compat::span<const uint32_t>(pixelBuffer, static_cast<size_t>(width) * height), width, height);
         }
     }
+
+    /// <summary>
+    /// 設定 IME 候選字窗與組字視窗之錨定矩形（以邏輯像素為單位，相對於視窗客戶區左上角）。
+    /// </summary>
+    /// <param name="caretRect">游標所在邊界矩形。</param>
+    virtual void SetImeCompositionWindow(const core::Rect& caretRect) { (void)caretRect; }
 };
 
 } // namespace pal

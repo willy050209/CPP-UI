@@ -58,6 +58,7 @@ public:
     }
 
     void PresentFramebuffer(compat::span<const uint32_t> pixelBuffer, uint32_t width, uint32_t height) override;
+    void SetImeCompositionWindow(const core::Rect& caretRect) override;
 
     HWND GetHwnd() const noexcept { return m_hwnd; }
     HDC  GetHdc() const noexcept { return m_hdc; }

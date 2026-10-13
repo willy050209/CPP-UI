@@ -353,8 +353,8 @@ $testTargets = @(
             "SoftwareRenderContext", "FontManager", "TextShaper", "BiDiAnalyzer",
             "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -393,8 +393,8 @@ $testTargets = @(
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
             "Theme", "ThemeManager"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -413,8 +413,8 @@ $testTargets = @(
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
             "Theme", "ThemeManager"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -448,8 +448,8 @@ $testTargets = @(
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
             "Theme", "ThemeManager"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -468,8 +468,8 @@ $testTargets = @(
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
             "Theme", "ThemeManager"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -507,8 +507,8 @@ $testTargets = @(
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
             "Theme", "ThemeManager"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "comdlg32.lib", "shell32.lib", "uuid.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lcomdlg32", "-lshell32", "-luuid")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "comdlg32.lib", "shell32.lib", "uuid.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lcomdlg32", "-lshell32", "-luuid", "-limm32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -527,8 +527,28 @@ $testTargets = @(
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
             "Theme", "ThemeManager"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Ime"
+        Source         = "tests\ime_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "TextBox", "Control", "ContentControl", "UIElement", "Visual",
+            "StackPanel", "Panel", "Border", "TextBlock", "Form", "Application",
+            "AppBuilder", "Dispatcher", "ServiceCollection", "PlatformWindowFactory",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "SkiaRenderContext", "DisplayListRenderer",
+            "SoftwareRenderContext", "FontManager", "TextShaper", "BiDiAnalyzer",
+            "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
         HasBench       = $false
         BenchRegex     = ""
     }

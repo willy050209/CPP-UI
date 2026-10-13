@@ -121,5 +121,60 @@ private:
     std::string m_text;
 };
 
+/// <summary>
+/// IME 輸入法組字/定稿事件參數 (ImeCompositionEventArgs)
+/// </summary>
+class ImeCompositionEventArgs : public RoutedEventArgs {
+public:
+    /// <summary>
+    /// 預設建構子。
+    /// </summary>
+    ImeCompositionEventArgs() = default;
+
+    /// <summary>
+    /// 建構 IME 組字事件參數。
+    /// </summary>
+    /// <param name="routedEvent">路由事件定義描述項常數引用。</param>
+    /// <param name="source">引發事件之來源 UI 元件指標。</param>
+    /// <param name="compositionText">組字或定稿之 UTF-8 文字視圖。</param>
+    /// <param name="cursorPosition">組字串內之游標位置。</param>
+    /// <param name="isCommitted">是否為已定稿確認文字 (true 代表定稿，false 代表組字中)。</param>
+    ImeCompositionEventArgs(
+        const RoutedEvent& routedEvent,
+        core::UIElement* source,
+        compat::string_view compositionText,
+        int32_t cursorPosition,
+        bool isCommitted
+    )
+        : RoutedEventArgs(routedEvent, source)
+        , m_compositionText(compositionText.data(), compositionText.size())
+        , m_cursorPosition(cursorPosition)
+        , m_isCommitted(isCommitted) {}
+
+    /// <summary>取得組字或定稿之文字視圖。</summary>
+    /// <returns>文字字串視圖。</returns>
+    COMPAT_NODISCARD compat::string_view GetCompositionText() const noexcept {
+        return compat::string_view(m_compositionText.data(), m_compositionText.size());
+    }
+
+    /// <summary>取得組字游標字元偏移位置。</summary>
+    /// <returns>游標字元索引。</returns>
+    COMPAT_NODISCARD int32_t GetCursorPosition() const noexcept {
+        return m_cursorPosition;
+    }
+
+    /// <summary>檢查該組字文字是否已定稿確認。</summary>
+    /// <returns>若已確認定稿傳回 true，否則為組字中傳回 false。</returns>
+    COMPAT_NODISCARD bool IsCommitted() const noexcept {
+        return m_isCommitted;
+    }
+
+private:
+    std::string m_compositionText;
+    int32_t     m_cursorPosition = 0;
+    bool        m_isCommitted = false;
+};
+
 } // namespace input
 } // namespace cppui
+

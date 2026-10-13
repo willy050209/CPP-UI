@@ -340,6 +340,10 @@ void UIElement::RaiseEventInternal(const input::RoutedEvent& routedEvent, input:
         if (auto* te = dynamic_cast<input::TextInputEventArgs*>(&e)) {
             OnTextInputCore(*te);
         }
+    } else if (id == input::StandardEvents::ImeComposition.GetId()) {
+        if (auto* ie = dynamic_cast<input::ImeCompositionEventArgs*>(&e)) {
+            OnImeCompositionCore(*ie);
+        }
     } else if (id == input::StandardEvents::GotFocus.GetId()) {
         if (auto* fe = dynamic_cast<input::FocusEventArgs*>(&e)) {
             OnGotFocusCore(*fe);
@@ -429,6 +433,14 @@ void UIElement::OnTextInput(TextInputEventHandler handler) {
     AddHandler(input::StandardEvents::TextInput, [handler](input::RoutedEventArgs& e) {
         if (auto* te = dynamic_cast<input::TextInputEventArgs*>(&e)) {
             handler(*te);
+        }
+    });
+}
+
+void UIElement::OnImeComposition(ImeCompositionEventHandler handler) {
+    AddHandler(input::StandardEvents::ImeComposition, [handler](input::RoutedEventArgs& e) {
+        if (auto* ie = dynamic_cast<input::ImeCompositionEventArgs*>(&e)) {
+            handler(*ie);
         }
     });
 }

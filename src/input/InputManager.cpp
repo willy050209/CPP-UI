@@ -212,6 +212,36 @@ void InputManager::ProcessTextInput(core::UIElement& root, const pal::RawTextInp
     route.DispatchBubble(StandardEvents::TextInput, args);
 }
 
+void InputManager::ProcessImeComposition(core::UIElement& root, const pal::RawImeData& imeData) {
+    core::UIElement* target = FocusManager::Get().GetFocusedElement();
+    if (!target) target = &root;
+
+    ImeCompositionEventArgs args(
+        StandardEvents::ImeComposition,
+        target,
+        compat::string_view(imeData.text),
+        imeData.cursorPosition,
+        imeData.isResult
+    );
+    EventRoute route(target);
+    route.DispatchBubble(StandardEvents::ImeComposition, args);
+}
+
+void InputManager::ProcessImeEndComposition(core::UIElement& root) {
+    core::UIElement* target = FocusManager::Get().GetFocusedElement();
+    if (!target) target = &root;
+
+    ImeCompositionEventArgs args(
+        StandardEvents::ImeComposition,
+        target,
+        compat::string_view(),
+        0,
+        false
+    );
+    EventRoute route(target);
+    route.DispatchBubble(StandardEvents::ImeComposition, args);
+}
+
 void InputManager::ProcessRawEvent(core::UIElement& root, const pal::RawInputEvent& rawEvent) {
     switch (rawEvent.type) {
     case pal::RawEventType::MouseMove:
@@ -234,6 +264,12 @@ void InputManager::ProcessRawEvent(core::UIElement& root, const pal::RawInputEve
         break;
     case pal::RawEventType::TextInput:
         ProcessTextInput(root, rawEvent.text);
+        break;
+    case pal::RawEventType::ImeComposition:
+        ProcessImeComposition(root, rawEvent.ime);
+        break;
+    case pal::RawEventType::ImeEndComposition:
+        ProcessImeEndComposition(root);
         break;
     case pal::RawEventType::WindowFocusLost:
         ResetState();

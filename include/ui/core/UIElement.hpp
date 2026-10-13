@@ -33,6 +33,7 @@ public:
     using PointerEventHandler   = std::function<void(input::PointerEventArgs&)>;
     using KeyEventHandler       = std::function<void(input::KeyEventArgs&)>;
     using TextInputEventHandler = std::function<void(input::TextInputEventArgs&)>;
+    using ImeCompositionEventHandler = std::function<void(input::ImeCompositionEventArgs&)>;
     using FocusEventHandler     = std::function<void(input::FocusEventArgs&)>;
 
     /// <summary>
@@ -361,6 +362,12 @@ public:
     void OnTextInput(TextInputEventHandler handler);
 
     /// <summary>
+    /// 註冊輸入法組字 (ImeComposition) 事件處理常式。
+    /// </summary>
+    /// <param name="handler">事件處理常式。</param>
+    void OnImeComposition(ImeCompositionEventHandler handler);
+
+    /// <summary>
     /// 註冊獲得焦點 (GotFocus) 事件處理常式。
     /// </summary>
     /// <param name="handler">事件處理常式。</param>
@@ -409,6 +416,10 @@ public:
     /// <summary>文字輸入虛擬處理點。</summary>
     /// <param name="e">事件參數。</param>
     virtual void OnTextInputCore(input::TextInputEventArgs& e) { (void)e; }
+
+    /// <summary>輸入法組字虛擬處理點。</summary>
+    /// <param name="e">事件參數。</param>
+    virtual void OnImeCompositionCore(input::ImeCompositionEventArgs& e) { (void)e; }
 
     /// <summary>獲得焦點虛擬處理點。</summary>
     /// <param name="e">事件參數。</param>
