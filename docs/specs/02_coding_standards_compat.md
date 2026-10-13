@@ -44,6 +44,10 @@ CPPUI 專案全面引入自行研發的 [`compat.hpp`](../../include/compat/comp
 - **完整型別與生命週期規範 (Complete Type in .cpp)**：解構子 `~ClassName()`、移動建構子與移動賦值運算子必須在 `.hpp` 中宣告，並在 `.cpp`（`Impl` 定義為完整型別的編譯單元）中使用 `= default` 或明確實作。嚴禁在標頭檔 inline 實作解構子，避免觸發不完整型別（Incomplete Type）刪除之未定義行為或編譯錯誤。
 - **編譯防火牆與 ABI 穩定性 (Compilation Firewall & ABI Stability)**：公開標頭檔嚴禁引入私有第三方、平台相依或巨型內部標頭檔（如 `<shared_mutex>`、渲染後端具體類別、Win32/X11 控制代碼等），所有內部成員變數與私有輔助方法一律封裝於 `.cpp` 中的 `Impl` 結構內。確保對外匯出類別的記憶體佈局與大小鎖定為單一指標（8 位元組），防止內部演進破壞 ABI 向下相容性。
 
+### 2.7 跨平台 CRT 執行期函式庫統一規範 (Unified MSVC CRT & Clang Compatibility) [Strict]
+- **動態 CRT 強制 (Dynamic CRT Unification)**：專案全域統一採用動態連結 C/C++ 執行期函式庫（Release 模式 `/MD`，Debug 模式 `/MDd`）。透過 CMake 3.15+ 規範之 `CMP0091` 政策與 `set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")` 強制全專案所有 targets 一致，防止跨模組 CRT 不匹配導致 `/FAILIFMISMATCH: "RuntimeLibrary"` 錯誤或跨堆積記憶體毀損（Heap Corruption）。
+- **Windows Clang 工具鏈規範 (Windows Clang Standard)**：在 Windows MSVC ABI 環境中，優先採用官方標準之 `clang-cl` 前端，以獲得與 MSVC 旗標（`/W4`、`/utf-8`、`/permissive-`、`/EHsc`）及 CMake CRT 抽象的原生相容性；若使用 GNU 風格的 `clang++`，必須顯式注入 `-D_DLL` 以確保生成的目標檔標記為 `MD_DynamicRelease`。
+
 ---
 
 ## 3. 強制性相容型別與現代化視圖使用規範 (Modern Views & Types)

@@ -1,3 +1,15 @@
+# 確保測試程式在任何建置模式 (包含 Release) 下均能維持 assert 契約驗證，並消除 NDEBUG 導致的 unused-variable 警告與 D9025 旗標覆蓋警告
+foreach(flag_var
+    CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    CMAKE_C_FLAGS_RELEASE
+    CMAKE_C_FLAGS_RELWITHDEBINFO
+)
+    if(DEFINED ${flag_var})
+        string(REGEX REPLACE "(^| )[-/]DNDEBUG($| )" " " ${flag_var} "${${flag_var}}")
+    endif()
+endforeach()
+
 # 基礎冒煙測試
 add_executable(smoke_test smoke_test.cpp)
 target_link_libraries(smoke_test PRIVATE cppui_headers)

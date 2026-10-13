@@ -27,7 +27,7 @@ jobs:
         run: ctest --test-dir build -C Release --output-on-failure --verbose
 
   clang-windows-build:
-    name: Clang++ (Windows 2022, C++20)
+    name: Clang-CL (Windows 2022, C++20)
     runs-on: windows-2022
     steps:
       - name: Checkout Repository
@@ -36,8 +36,8 @@ jobs:
       - name: Setup MSVC Developer Environment
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure CMake (Clang++ with Ninja)
-        run: cmake -B build -G "Ninja" -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+      - name: Configure CMake (Clang-CL with Ninja)
+        run: cmake -B build -G "Ninja" -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
 
       - name: Build All Targets
         run: cmake --build build

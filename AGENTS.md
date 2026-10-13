@@ -47,6 +47,9 @@
    - **深常數性指標強制 (Deep Constness)**：凡公開介面類別（如複雜資源、多執行緒鎖、平台代碼、繪圖管線等）採用 Pimpl 模式時，**強制使用 `compat::propagate_const<std::unique_ptr<Impl>>`**。嚴格禁止使用原生 `std::unique_ptr<Impl>` 或裸指針，防止淺常數性（Shallow Constness）漏洞導致 `const` 成員方法能意外修改 `Impl` 狀態。
    - **完整型別與生命週期規範 (Complete Type in .cpp)**：解構子 `~ClassName()`、移動建構子與移動賦值運算子必須在 `.hpp` 中宣告，並在 `.cpp`（`Impl` 定義為完整型別的編譯單元）中使用 `= default` 或明確實作。嚴禁在標頭檔 inline 實作解構子，避免觸發不完整型別（Incomplete Type）刪除之未定義行為或編譯錯誤。
    - **編譯防火牆與 ABI 穩定性 (Compilation Firewall & ABI Stability)**：公開標頭檔嚴禁引入私有第三方、平台相依或巨型內部標頭檔（如 `<shared_mutex>`、渲染後端具體類別、Win32/X11 控制代碼等），所有內部成員變數與私有輔助方法一律封裝於 `.cpp` 中的 `Impl` 結構內。確保對外匯出類別的記憶體佈局與大小鎖定為單一指標（8 位元組），防止內部演進破壞 ABI 向下相容性。
+6. **跨平台 CRT 執行期函式庫統一 (Unified MSVC CRT & Clang) [Strict]**：
+   - 全專案強制統一動態連結 CRT（Release 為 `/MD`，Debug 為 `/MDd`；CMake 變數 `set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")` 搭配 `CMP0091` 政策），嚴格杜絕不同模組混合使用 `/MT` 與 `/MD` 導致 `/FAILIFMISMATCH: "RuntimeLibrary"` 錯誤與跨堆積損毀。
+   - 在 Windows 環境使用 Clang 工具鏈時，優先使用官方 `clang-cl` 前端；若使用 GNU 風格之 `clang++`，必須顯式注入 `-D_DLL` 以生成與動態 CRT 相容之標記。
 
 ## 6. 文件與註解規範 (Documentation Guidelines)
 1. **XML 註解限定**：**只有「類別 (Class)」與「函數/方法 (Method)」**必須使用 XML 格式的註解 (`///`) 說明：

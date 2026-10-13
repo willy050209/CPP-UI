@@ -1,4 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
+
+# -----------------------------------------------------------------------------
+# C++ 執行期函式庫 (CRT) 政策與全域設定 [統一使用動態 CRT MultiThreadedDLL]
+# -----------------------------------------------------------------------------
+if(POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW)
+endif()
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+
 project(CPPUI VERSION 0.1.0 LANGUAGES CXX C)
 
 # -----------------------------------------------------------------------------
@@ -21,7 +30,11 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    add_compile_options(/W4 /utf-8 /permissive- /Zc:__cplusplus)
+    add_compile_options(/W4 /utf-8 /permissive- /Zc:__cplusplus /EHsc)
+elseif(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # GNU 風格 clang++ 於 Windows 鏈結 MSVC ABI 時，顯式定義 _DLL 避免 MT 標記衝突
+    add_compile_definitions(_DLL)
+    add_compile_options(-Wall -Wextra -Wpedantic)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -39,7 +52,7 @@ set(ASAN_DLL "" CACHE INTERNAL "AddressSanitizer runtime DLL")
 set(ASAN_DLL_DIR "" CACHE INTERNAL "AddressSanitizer runtime DLL directory")
 
 if(CPPUI_ENABLE_ASAN)
-    if(MSVC)
+    if(MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(/fsanitize=address /Zi)
         add_link_options(/INCREMENTAL:NO /DEBUG)
         get_filename_component(_MSVC_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
@@ -54,8 +67,15 @@ if(CPPUI_ENABLE_ASAN)
             message(STATUS "AddressSanitizer runtime DLL detected: ${ASAN_DLL}")
         endif()
     elseif(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-        add_link_options(-fsanitize=address)
+        if(MSVC)
+            # clang-cl 驅動
+            add_compile_options(/fsanitize=address /Zi)
+            add_link_options(/fsanitize=address /INCREMENTAL:NO /DEBUG)
+        else()
+            # GNU clang++ 驅動
+            add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+            add_link_options(-fsanitize=address)
+        endif()
         execute_process(
             COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=clang_rt.asan_dynamic-x86_64.dll
             OUTPUT_VARIABLE _CLANG_ASAN_DLL

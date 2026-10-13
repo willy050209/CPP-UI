@@ -589,7 +589,7 @@ $sbPhase1 = {
         return ($LASTEXITCODE -eq 0)
     } elseif ($task.Type -eq "clang") {
         $srcAbs = "$rootPath\$($task.SrcRel)"
-        & $task.CompilerPath -c "-std=$($task.Standard)" -O2 `
+        & $task.CompilerPath -c "-std=$($task.Standard)" -O2 -D_DLL `
             -I "$rootPath\include" -I "$rootPath\include\compat" $srcAbs -o $task.ObjFile *>$task.LogFile
         return ($LASTEXITCODE -eq 0)
     } elseif ($task.Type -eq "gcc") {
@@ -701,11 +701,11 @@ $sbPhase2 = {
         $compileOk = ($LASTEXITCODE -eq 0 -and (Test-Path $testExe))
     } elseif ($task.CompilerType -eq "clang") {
         if ($task.IsSmoke) {
-            & $task.CompilerPath "-std=$($task.Standard)" `
+            & $task.CompilerPath "-std=$($task.Standard)" -D_DLL `
                 -I "$rootPath\include" -I "$rootPath\include\compat" `
                 $testSrcAbs -o $testExe *>$task.CompileLog
         } else {
-            & $task.CompilerPath "-std=$($task.Standard)" -O2 `
+            & $task.CompilerPath "-std=$($task.Standard)" -O2 -D_DLL `
                 -I "$rootPath\include" -I "$rootPath\include\compat" `
                 $testSrcAbs $reqObjFiles $gnuLibs -o $testExe *>$task.CompileLog
         }
