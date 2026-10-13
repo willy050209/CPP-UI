@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "cppui",
+  "version-semver": "0.1.0",
+  "description": "Modern C++20 cross-platform UI framework with Skia & Software backends",
+  "homepage": "https://github.com/willy050209/CPP-UI",
+  "license": "MIT",
+  "dependencies": [],
+  "features": {
+    "skia": {
+      "description": "Enable Google Skia 2D vector drawing acceleration backend",
+      "dependencies": [ "skia" ]
+    },
+    "wayland": {
+      "description": "Enable native Wayland window platform backend on Linux",
+      "supports": "linux",
+      "dependencies": [ "wayland", "wayland-protocols" ]
+    },
+    "x11": {
+      "description": "Enable X11 window platform backend on Linux",
+      "supports": "linux",
+      "dependencies": [ "libx11" ]
+    }
+  }
+}

@@ -112,6 +112,36 @@ public:
     void SetItemHeight(float height);
 
     /// <summary>
+    /// 查詢是否啟用視區虛擬化排版 (Virtualization)。
+    /// </summary>
+    /// <returns>若啟用傳回 true。</returns>
+    COMPAT_NODISCARD bool IsVirtualizationEnabled() const noexcept { return m_virtualizationEnabled; }
+
+    /// <summary>
+    /// 設定是否啟用視區虛擬化排版。
+    /// </summary>
+    /// <param name="enable">true 啟用虛擬化 (支援 10 萬筆數據)，false 完整繪製。</param>
+    void SetVirtualizationEnabled(bool enable);
+
+    /// <summary>
+    /// 取得當前垂直滾動偏移量 (像素)。
+    /// </summary>
+    /// <returns>滾動偏移值。</returns>
+    COMPAT_NODISCARD float GetScrollOffset() const noexcept { return m_scrollOffset; }
+
+    /// <summary>
+    /// 設定垂直滾動偏移量。
+    /// </summary>
+    /// <param name="offset">滾動偏移值。</param>
+    void SetScrollOffset(float offset);
+
+    /// <summary>
+    /// 將指定索引之項目滾動至可視區域內。
+    /// </summary>
+    /// <param name="index">項目索引。</param>
+    void ScrollIntoView(int32_t index);
+
+    /// <summary>
     /// 註冊選取索引變更事件處理常式。
     /// </summary>
     /// <param name="handler">回呼常式，接收最新選取索引。</param>
@@ -143,6 +173,8 @@ private:
     std::vector<std::string> m_items;
     int32_t                  m_selectedIndex = -1;
     float                    m_itemHeight = 24.0f;
+    float                    m_scrollOffset = 0.0f;
+    bool                     m_virtualizationEnabled = true;
     core::Color              m_selectionColor;
     core::Color              m_selectionTextColor;
 };

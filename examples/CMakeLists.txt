@@ -92,4 +92,17 @@ add_executable(popup_gallery
 )
 target_link_libraries(popup_gallery PRIVATE cppui_core)
 
+# 11. UI 虛擬化與高階展示控制項範例 (ListBox 100k, TreeView, DataGrid, TextBox 剪貼簿)
+add_executable(virtualized_list_demo
+    virtualized_list_demo/main.cpp
+)
+target_link_libraries(virtualized_list_demo PRIVATE cppui_core)
+
+# 12. 視覺化診斷工具與 Visual Tree Inspector (DevTools) 展示範例
+add_executable(devtools_gallery
+    devtools_gallery/main.cpp
+)
+target_link_libraries(devtools_gallery PRIVATE cppui_core)
+
+
 

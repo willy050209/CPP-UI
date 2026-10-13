@@ -222,7 +222,15 @@ $frameworkSources = @(
     "src\dialogs\OpenFileDialog.cpp",
     "src\dialogs\SaveFileDialog.cpp",
     "src\dialogs\FileDialogForm.cpp",
-    "src\dialogs\Win32DialogService.cpp"
+    "src\dialogs\Win32DialogService.cpp",
+    "src\layout\VirtualizingStackPanel.cpp",
+    "src\controls\TreeView.cpp",
+    "src\controls\DataGrid.cpp",
+    "src\pal\Clipboard.cpp",
+    "src\pal\generic\ClipboardGeneric.cpp",
+    "src\pal\win32\ClipboardWin32.cpp",
+    "src\diagnostics\DirtyRectTracker.cpp",
+    "src\diagnostics\VisualTreeInspector.cpp"
 )
 
 $testTargets = @(
@@ -324,10 +332,11 @@ $testTargets = @(
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "OverlayLayer", "ContextMenu", "MenuItem",
+            "Clipboard", "ClipboardGeneric", "ClipboardWin32"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "shell32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lshell32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -343,10 +352,11 @@ $testTargets = @(
             "DirectWriteTextEngine", "DisplayListRenderer", "SoftwareRenderContext",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "OverlayLayer", "ContextMenu", "MenuItem",
+            "Clipboard", "ClipboardGeneric", "ClipboardWin32"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "shell32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lshell32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -397,7 +407,7 @@ $testTargets = @(
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "DirtyRectTracker"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
@@ -417,7 +427,7 @@ $testTargets = @(
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "DirtyRectTracker"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
@@ -452,7 +462,7 @@ $testTargets = @(
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "DirtyRectTracker"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
@@ -472,10 +482,11 @@ $testTargets = @(
             "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "ContextMenu", "MenuItem",
+            "Clipboard", "ClipboardGeneric", "ClipboardWin32", "DirtyRectTracker"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib", "shell32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32", "-lshell32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -489,10 +500,12 @@ $testTargets = @(
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
             "DisplayListRenderer", "SoftwareRenderContext", "TextLayout", "TextLayoutEngine",
             "TextShaper", "BiDiAnalyzer", "LineBreaker", "Bitmap",
-            "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath"
+            "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "OverlayLayer", "ContextMenu", "MenuItem",
+            "Clipboard", "ClipboardGeneric", "ClipboardWin32"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "shell32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lshell32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -511,7 +524,8 @@ $testTargets = @(
             "PlatformWindowFactory", "PlatformWindowGeneric", "PlatformWindowWin32",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "ServiceCollection",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath", "PictureBox",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "ContextMenu", "MenuItem",
+            "Clipboard", "ClipboardGeneric", "ClipboardWin32", "DirtyRectTracker"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "comdlg32.lib", "shell32.lib", "uuid.lib", "imm32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-lcomdlg32", "-lshell32", "-luuid", "-limm32")
@@ -531,7 +545,7 @@ $testTargets = @(
             "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
             "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "DirtyRectTracker"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
@@ -551,10 +565,11 @@ $testTargets = @(
             "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "ContextMenu", "MenuItem",
+            "Clipboard", "ClipboardGeneric", "ClipboardWin32", "DirtyRectTracker"
         )
-        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
-        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib", "shell32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32", "-lshell32")
         HasBench       = $false
         BenchRegex     = ""
     },
@@ -572,10 +587,97 @@ $testTargets = @(
             "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
             "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
             "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
-            "Theme", "ThemeManager"
+            "Theme", "ThemeManager", "DirtyRectTracker"
         )
         MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Clipboard"
+        Source         = "tests\clipboard_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Clipboard", "ClipboardGeneric", "ClipboardWin32", "TextBox", "Control",
+            "ContentControl", "UIElement", "Visual", "StackPanel", "Panel", "Border",
+            "TextBlock", "Form", "Application", "AppBuilder", "Dispatcher",
+            "ServiceCollection", "PlatformWindowFactory", "PlatformWindowGeneric",
+            "PlatformWindowWin32", "SkiaRenderContext", "DisplayListRenderer",
+            "SoftwareRenderContext", "FontManager", "TextShaper", "BiDiAnalyzer",
+            "LineBreaker", "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine",
+            "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager", "OverlayLayer", "ContextMenu", "MenuItem", "DirtyRectTracker"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib", "shell32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32", "-lshell32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Virtualization"
+        Source         = "tests\virtualization_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "VirtualizingStackPanel", "ListBox", "TextBlock", "Control", "ContentControl",
+            "UIElement", "Visual", "Panel", "StackPanel", "Border", "DisplayListRenderer",
+            "SoftwareRenderContext", "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker",
+            "TextLayout", "TextLayoutEngine", "DirectWriteTextEngine", "RoutedEvent", "EventRoute",
+            "FocusManager", "InputManager", "LayoutManager", "Bitmap", "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "TreeView"
+        Source         = "tests\treeview_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "TreeView", "Control", "ContentControl", "UIElement", "Visual", "Panel",
+            "StackPanel", "Border", "TextBlock", "DisplayListRenderer", "SoftwareRenderContext",
+            "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout",
+            "TextLayoutEngine", "DirectWriteTextEngine", "RoutedEvent", "EventRoute",
+            "FocusManager", "InputManager", "LayoutManager", "Bitmap", "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "DataGrid"
+        Source         = "tests\datagrid_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "DataGrid", "Control", "ContentControl", "UIElement", "Visual", "Panel",
+            "StackPanel", "Border", "TextBlock", "DisplayListRenderer", "SoftwareRenderContext",
+            "FontManager", "TextShaper", "BiDiAnalyzer", "LineBreaker", "TextLayout",
+            "TextLayoutEngine", "DirectWriteTextEngine", "RoutedEvent", "EventRoute",
+            "FocusManager", "InputManager", "LayoutManager", "Bitmap", "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
+        HasBench       = $false
+        BenchRegex     = ""
+    },
+    @{
+        Name           = "Diagnostics"
+        Source         = "tests\diagnostics_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "DirtyRectTracker", "VisualTreeInspector", "Button", "Control", "ContentControl",
+            "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
+            "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
+            "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager",
+            "LayoutManager", "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes",
+            "GraphicsPath", "Theme", "ThemeManager"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
         HasBench       = $false
         BenchRegex     = ""
     }
@@ -695,6 +797,29 @@ if ($p1Failed -gt 0) {
 }
 
 # =============================================================================
+# 3.5 Phase 1.5: 建立每條 Lane 的靜態函式庫 (libcppui_core.a / cppui_core.lib)
+# =============================================================================
+Write-Host "`n[Phase 1.5] Packing shared framework objects into static archive..."
+foreach ($lane in $allLanes) {
+    $laneObjDir = "$objBase\$($lane.LaneId)"
+    $allObjs = Get-ChildItem "$laneObjDir\*$($lane.ObjExt)" | ForEach-Object { $_.FullName }
+    if ($lane.CompilerType -eq "msvc") {
+        & lib.exe /nologo "/out:$laneObjDir\cppui_core.lib" $allObjs *>$null
+    } elseif ($lane.CompilerType -eq "gcc") {
+        $arPath = if (Test-Path "C:\msys64\ucrt64\bin\ar.exe") { "C:\msys64\ucrt64\bin\ar.exe" }
+                  elseif (Get-Command ar.exe -ErrorAction SilentlyContinue) { (Get-Command ar.exe).Source }
+                  else { "ar.exe" }
+        & $arPath rcs "$laneObjDir\libcppui_core.a" $allObjs *>$null
+    } elseif ($lane.CompilerType -eq "clang") {
+        $llvmArPath = if (Test-Path "C:\Program Files\LLVM\bin\llvm-ar.exe") { "C:\Program Files\LLVM\bin\llvm-ar.exe" }
+                      elseif (Get-Command llvm-ar.exe -ErrorAction SilentlyContinue) { (Get-Command llvm-ar.exe).Source }
+                      elseif (Test-Path "C:\msys64\ucrt64\bin\ar.exe") { "C:\msys64\ucrt64\bin\ar.exe" }
+                      else { "ar.exe" }
+        & $llvmArPath rcs "$laneObjDir\libcppui_core.a" $allObjs *>$null
+    }
+}
+
+# =============================================================================
 # 4. Phase 2: 平行鏈接與執行測試目標 (Parallel Link & Run 72 Tests)
 # =============================================================================
 Write-Host "`n[Phase 2] Linking and running test targets in parallel across $MaxConcurrency threads..."
@@ -735,9 +860,10 @@ $sbPhase2 = {
     param($task, $rootPath)
     $objExt     = $task.ObjExt
     $laneObjDir = $task.LaneObjDir
-    $reqObjFiles = @($task.NeedObjs | ForEach-Object { "$laneObjDir\$_$objExt" })
-    $msvcLibs    = @($task.MsvcLibs)
-    $gnuLibs     = @($task.GnuLibs)
+    $staticLibMsvc = "$laneObjDir\cppui_core.lib"
+    $defaultGnuSysLibs = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32", "-lshell32", "-lcomdlg32", "-luuid")
+    $defaultMsvcSysLibs = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib", "shell32.lib", "comdlg32.lib", "uuid.lib")
+
     $testSrcAbs  = "$rootPath\$($task.TargetSrc)"
     $testExe     = $task.TestExe
     $fwdObjDir   = "$laneObjDir/".Replace("\", "/")
@@ -751,7 +877,7 @@ $sbPhase2 = {
         } else {
             & $task.CompilerPath /nologo /O2 /EHsc /utf-8 "/std:$($task.Standard)" `
                 /I "$rootPath\include" /I "$rootPath\include\compat" `
-                $testSrcAbs $reqObjFiles $msvcLibs "/Fe:$testExe" "/Fo$fwdObjDir" *>$task.CompileLog
+                $testSrcAbs $staticLibMsvc $defaultMsvcSysLibs "/Fe:$testExe" "/Fo$fwdObjDir" *>$task.CompileLog
         }
         $compileOk = ($LASTEXITCODE -eq 0 -and (Test-Path $testExe))
     } elseif ($task.CompilerType -eq "clang") {
@@ -762,7 +888,7 @@ $sbPhase2 = {
         } else {
             & $task.CompilerPath "-std=$($task.Standard)" -O2 -D_DLL `
                 -I "$rootPath\include" -I "$rootPath\include\compat" `
-                $testSrcAbs $reqObjFiles $gnuLibs -lucrt -lmsvcrt -o $testExe *>$task.CompileLog
+                $testSrcAbs -L"$laneObjDir" -lcppui_core $defaultGnuSysLibs -lucrt -lmsvcrt -o $testExe *>$task.CompileLog
         }
         $compileOk = ($LASTEXITCODE -eq 0 -and (Test-Path $testExe))
     } elseif ($task.CompilerType -eq "gcc") {
@@ -773,7 +899,7 @@ $sbPhase2 = {
         } else {
             & $task.CompilerPath "-std=$($task.Standard)" -O2 -static `
                 -I "$rootPath\include" -I "$rootPath\include\compat" `
-                $testSrcAbs $reqObjFiles $gnuLibs -o $testExe *>$task.CompileLog
+                $testSrcAbs -L"$laneObjDir" -lcppui_core $defaultGnuSysLibs -o $testExe *>$task.CompileLog
         }
         $compileOk = ($LASTEXITCODE -eq 0 -and (Test-Path $testExe))
     }

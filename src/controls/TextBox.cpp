@@ -1,8 +1,10 @@
 #include "ui/controls/TextBox.hpp"
+#include "ui/controls/ContextMenu.hpp"
 #include "ui/text/TextLayoutEngine.hpp"
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/input/PointerEventArgs.hpp"
+#include "ui/pal/IClipboard.hpp"
 #include "ui/theme/ThemeManager.hpp"
 #include "ui/theme/Theme.hpp"
 #include "ui/app/Form.hpp"
@@ -102,6 +104,26 @@ TextBox::TextBox() {
     OnKeyDown([this](input::KeyEventArgs& e) {
         uint32_t vk = e.GetVirtualKey();
 
+        if (pal::HasModifier(e.GetModifiers(), pal::KeyModifiers::Control)) {
+            if (vk == 0x43 || vk == 'C' || vk == 'c') { // Ctrl+C
+                Copy();
+                e.SetHandled(true);
+                return;
+            } else if (vk == 0x58 || vk == 'X' || vk == 'x') { // Ctrl+X
+                Cut();
+                e.SetHandled(true);
+                return;
+            } else if (vk == 0x56 || vk == 'V' || vk == 'v') { // Ctrl+V
+                Paste();
+                e.SetHandled(true);
+                return;
+            } else if (vk == 0x41 || vk == 'A' || vk == 'a') { // Ctrl+A
+                SelectAll();
+                e.SetHandled(true);
+                return;
+            }
+        }
+
         if (vk == 0x08) { // Backspace
             if (m_isReadOnly) {
                 e.SetHandled(true);
@@ -191,6 +213,31 @@ TextBox::TextBox() {
         }
         InvalidateVisual();
     });
+
+    // 右鍵預設選單 (剪下、複製、貼上、全選)
+    auto ctxMenu = std::make_shared<ContextMenu>();
+    auto itemCut = std::make_shared<MenuItem>("剪下 (Cut)");
+    itemCut->SetInputGestureText("Ctrl+X");
+    itemCut->AddClickHandler([this](MenuItem&) { Cut(); });
+
+    auto itemCopy = std::make_shared<MenuItem>("複製 (Copy)");
+    itemCopy->SetInputGestureText("Ctrl+C");
+    itemCopy->AddClickHandler([this](MenuItem&) { Copy(); });
+
+    auto itemPaste = std::make_shared<MenuItem>("貼上 (Paste)");
+    itemPaste->SetInputGestureText("Ctrl+V");
+    itemPaste->AddClickHandler([this](MenuItem&) { Paste(); });
+
+    auto itemSelectAll = std::make_shared<MenuItem>("全選 (Select All)");
+    itemSelectAll->SetInputGestureText("Ctrl+A");
+    itemSelectAll->AddClickHandler([this](MenuItem&) { SelectAll(); });
+
+    ctxMenu->AddMenuItem(itemCut);
+    ctxMenu->AddMenuItem(itemCopy);
+    ctxMenu->AddMenuItem(itemPaste);
+    ctxMenu->AddMenuItem(itemSelectAll);
+
+    ContextMenuService::SetContextMenu(this, ctxMenu);
 }
 
 TextBox::TextBox(compat::string_view placeholder) : TextBox() {
@@ -291,6 +338,44 @@ std::string TextBox::GetSelectedText() const {
         return "";
     }
     return m_text.substr(m_selectionStart, m_selectionLength);
+}
+
+void TextBox::Copy() {
+    std::string sel = GetSelectedText();
+    if (!sel.empty()) {
+        pal::Clipboard::SetText(sel);
+    }
+}
+
+void TextBox::Cut() {
+    if (m_isReadOnly) return;
+    std::string sel = GetSelectedText();
+    if (!sel.empty()) {
+        pal::Clipboard::SetText(sel);
+        if (m_selectionLength > 0 && m_selectionStart < m_text.size()) {
+            m_text.erase(m_selectionStart, m_selectionLength);
+            m_caretIndex = m_selectionStart;
+            m_selectionLength = 0;
+            InvalidateLayout();
+            InvalidateMeasure();
+            InvalidateVisual();
+            RaiseTextChanged();
+            UpdateImeCompositionWindow();
+        }
+    }
+}
+
+void TextBox::Paste() {
+    if (m_isReadOnly) return;
+    std::string clipText = pal::Clipboard::GetText();
+    if (!clipText.empty()) {
+        if (m_selectionLength > 0 && m_selectionStart < m_text.size()) {
+            m_text.erase(m_selectionStart, m_selectionLength);
+            m_caretIndex = m_selectionStart;
+            m_selectionLength = 0;
+        }
+        InsertText(clipText);
+    }
 }
 
 void TextBox::SetIsPassword(bool isPassword) {

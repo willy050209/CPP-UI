@@ -45,7 +45,7 @@ void ListBox::InitializeHandlers() {
 
         core::Point pt = e.GetPosition(this);
         float topOffset = m_padding.top + m_borderThickness.top;
-        float relY = pt.y - topOffset;
+        float relY = pt.y - topOffset + m_scrollOffset;
 
         if (relY >= 0.0f) {
             int32_t idx = static_cast<int32_t>(relY / m_itemHeight);
@@ -56,6 +56,15 @@ void ListBox::InitializeHandlers() {
         e.SetHandled(true);
     });
 
+    OnPointerWheel([this](input::PointerEventArgs& e) {
+        if (!m_enabled) return;
+        float delta = e.GetWheelDeltaY();
+        if (delta != 0.0f) {
+            SetScrollOffset(m_scrollOffset - delta * 0.5f);
+            e.SetHandled(true);
+        }
+    });
+
     OnKeyDown([this](input::KeyEventArgs& e) {
         if (!m_enabled) return;
         uint32_t vk = e.GetVirtualKey();
@@ -63,27 +72,33 @@ void ListBox::InitializeHandlers() {
         if (vk == 0x26) { // VK_UP
             if (m_selectedIndex > 0) {
                 SetSelectedIndex(m_selectedIndex - 1);
+                ScrollIntoView(m_selectedIndex);
                 e.SetHandled(true);
             } else if (m_selectedIndex == -1 && !m_items.empty()) {
                 SetSelectedIndex(0);
+                ScrollIntoView(0);
                 e.SetHandled(true);
             }
         } else if (vk == 0x28) { // VK_DOWN
             if (m_selectedIndex + 1 < static_cast<int32_t>(m_items.size())) {
                 SetSelectedIndex(m_selectedIndex + 1);
+                ScrollIntoView(m_selectedIndex);
                 e.SetHandled(true);
             } else if (m_selectedIndex == -1 && !m_items.empty()) {
                 SetSelectedIndex(0);
+                ScrollIntoView(0);
                 e.SetHandled(true);
             }
         } else if (vk == 0x24) { // VK_HOME
             if (!m_items.empty()) {
                 SetSelectedIndex(0);
+                ScrollIntoView(0);
                 e.SetHandled(true);
             }
         } else if (vk == 0x23) { // VK_END
             if (!m_items.empty()) {
                 SetSelectedIndex(static_cast<int32_t>(m_items.size() - 1));
+                ScrollIntoView(m_selectedIndex);
                 e.SetHandled(true);
             }
         }
@@ -188,6 +203,37 @@ void ListBox::SetItemHeight(float height) {
     }
 }
 
+void ListBox::SetVirtualizationEnabled(bool enable) {
+    if (m_virtualizationEnabled != enable) {
+        m_virtualizationEnabled = enable;
+        InvalidateVisual();
+    }
+}
+
+void ListBox::SetScrollOffset(float offset) {
+    float contentH = (std::max)(0.0f, GetRenderBounds().height - (m_padding.Vertical() + m_borderThickness.Vertical()));
+    float maxScroll = (std::max)(0.0f, static_cast<float>(m_items.size()) * m_itemHeight - contentH);
+    float clamped = compat::clamp(offset, 0.0f, maxScroll);
+    if (m_scrollOffset != clamped) {
+        m_scrollOffset = clamped;
+        InvalidateVisual();
+    }
+}
+
+void ListBox::ScrollIntoView(int32_t index) {
+    if (index < 0 || index >= static_cast<int32_t>(m_items.size())) return;
+    float itemTop = static_cast<float>(index) * m_itemHeight;
+    float itemBottom = itemTop + m_itemHeight;
+    float viewH = GetRenderBounds().height - (m_padding.Vertical() + m_borderThickness.Vertical());
+    if (viewH <= 0.0f) viewH = 200.0f;
+
+    if (itemTop < m_scrollOffset) {
+        SetScrollOffset(itemTop);
+    } else if (itemBottom > m_scrollOffset + viewH) {
+        SetScrollOffset(itemBottom - viewH);
+    }
+}
+
 void ListBox::OnSelectedIndexChanged(std::function<void(int32_t)> handler) {
     AddHandler(SelectedIndexChangedEvent, [handler, this](input::RoutedEventArgs&) {
         if (handler) {
@@ -234,8 +280,19 @@ void ListBox::OnRender(rendering::DrawingContext& dc) {
 
     dc.PushClip(core::Rect(contentX, contentY, contentW, contentH));
 
-    for (size_t i = 0; i < m_items.size(); ++i) {
-        float itemY = contentY + static_cast<float>(i) * m_itemHeight;
+    float maxScroll = (std::max)(0.0f, static_cast<float>(m_items.size()) * m_itemHeight - contentH);
+    m_scrollOffset = compat::clamp(m_scrollOffset, 0.0f, maxScroll);
+
+    size_t first = 0;
+    size_t last = m_items.size();
+    if (m_virtualizationEnabled && m_itemHeight > 0.0f) {
+        first = static_cast<size_t>(m_scrollOffset / m_itemHeight);
+        size_t visibleCount = static_cast<size_t>(std::ceil(contentH / m_itemHeight)) + 2;
+        last = (std::min)(m_items.size(), first + visibleCount);
+    }
+
+    for (size_t i = first; i < last; ++i) {
+        float itemY = contentY + static_cast<float>(i) * m_itemHeight - m_scrollOffset;
         if (itemY + m_itemHeight < contentY || itemY > contentY + contentH) {
             continue;
         }

@@ -23,6 +23,18 @@ namespace core {
 namespace input {
 
 /// <summary>
+/// 輸入層與 DevTools 診斷工具解耦掛鉤介面。
+/// </summary>
+class IInputInspectorHook {
+public:
+    virtual ~IInputInspectorHook() = default;
+    COMPAT_NODISCARD virtual bool IsPickerActive() const noexcept = 0;
+    virtual void OnMouseMove(core::UIElement* hitUI) = 0;
+    virtual void OnMouseDown(core::UIElement* hitUI) = 0;
+    virtual void OnF12Pressed(core::UIElement& root) = 0;
+};
+
+/// <summary>
 /// 輸入管理中樞
 /// 負責將來自 PAL (Platform Abstraction Layer) 的 RawInputEvent 轉譯並派發為樹狀路由事件，
 /// 同時管理指標懸停 (Hover Tracking) 與指標捕獲 (Pointer Capture)。
@@ -152,12 +164,21 @@ public:
     /// <param name="root">視覺樹根節點。</param>
     void ProcessImeEndComposition(core::UIElement& root);
 
+    /// <summary>註冊 DevTools 診斷掛鉤介面。</summary>
+    /// <param name="hook">診斷掛鉤指標。</param>
+    void SetInspectorHook(IInputInspectorHook* hook) noexcept { m_inspectorHook = hook; }
+
+    /// <summary>取得當前 DevTools 診斷掛鉤介面。</summary>
+    /// <returns>診斷掛鉤指標。</returns>
+    COMPAT_NODISCARD IInputInspectorHook* GetInspectorHook() const noexcept { return m_inspectorHook; }
+
 private:
     void UpdateHover(core::UIElement* newHover, core::Point windowPos, pal::KeyModifiers mods);
 
     core::UIElement* m_hoveredElement = nullptr;
     core::UIElement* m_capturedElement = nullptr;
     std::vector<ILightDismissable*> m_openPopups;
+    IInputInspectorHook* m_inspectorHook = nullptr;
 };
 
 } // namespace input

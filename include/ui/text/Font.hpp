@@ -210,5 +210,8 @@ private:
     FontStretch m_stretch = FontStretch::Normal;
 };
 
+/// <summary>字型規格類別別名 (Font -> FontDescriptor)。</summary>
+using Font = FontDescriptor;
+
 } // namespace text
 } // namespace cppui

@@ -196,6 +196,21 @@ public:
     COMPAT_NODISCARD std::string GetSelectedText() const;
 
     /// <summary>
+    /// 將選取文字複製至剪貼簿 (Copy)。
+    /// </summary>
+    void Copy();
+
+    /// <summary>
+    /// 剪下選取文字至剪貼簿 (Cut)。
+    /// </summary>
+    void Cut();
+
+    /// <summary>
+    /// 自剪貼簿貼上文字至當前游標處 (Paste)。
+    /// </summary>
+    void Paste();
+
+    /// <summary>
     /// 檢查是否啟用密碼隱藏遮罩模式。
     /// </summary>
     /// <returns>若啟用密碼遮罩傳回 true，否則傳回 false。</returns>

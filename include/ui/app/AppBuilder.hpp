@@ -14,6 +14,7 @@
 #include "Form.hpp"
 #include "PlatformBackend.hpp"
 #include "ui/ioc/ServiceCollection.hpp"
+#include "ui/diagnostics/DiagnosticsOptions.hpp"
 
 namespace cppui {
 namespace app {
@@ -130,6 +131,13 @@ public:
     AppBuilder& UseSkia() noexcept;
 
     /// <summary>
+    /// 配置全域執行期診斷選項 (Dirty Rect 高亮、FPS 計數器、Visual Tree Inspector)。
+    /// </summary>
+    /// <param name="options">診斷選項結構。</param>
+    /// <returns>AppBuilder 引用支援鏈式調用。</returns>
+    AppBuilder& WithDiagnostics(const diagnostics::DiagnosticsOptions& options) noexcept;
+
+    /// <summary>
     /// 構建應用程式宿主。
     /// </summary>
     /// <returns>AppHost 實例。</returns>
@@ -138,6 +146,7 @@ public:
 private:
     ioc::ServiceCollection m_services;
     PlatformBackend m_backend{PlatformBackend::Win32};
+    diagnostics::DiagnosticsOptions m_diagnosticsOptions;
 };
 
 } // namespace app

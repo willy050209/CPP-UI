@@ -182,6 +182,12 @@ public:
     /// <returns>渲染邊界矩形。</returns>
     COMPAT_NODISCARD Rect GetRenderBounds() const noexcept { return m_renderBounds; }
 
+    /// <summary>
+    /// 取得實際佈局尺寸 (ActualSize)。
+    /// </summary>
+    /// <returns>實際尺寸。</returns>
+    COMPAT_NODISCARD Size GetActualSize() const noexcept { return m_renderBounds.GetSize(); }
+
     // --- 髒標記狀態與控制 ---
 
     /// <summary>

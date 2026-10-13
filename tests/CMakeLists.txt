@@ -132,6 +132,31 @@ add_executable(popup_test popup_test.cpp)
 target_link_libraries(popup_test PRIVATE cppui_core)
 add_test(NAME PopupTest COMMAND popup_test)
 
+# 系統原生剪貼簿 (IClipboard, ClipboardWin32, ClipboardGeneric, TextBox 整合) 單元測試
+add_executable(clipboard_test clipboard_test.cpp)
+target_link_libraries(clipboard_test PRIVATE cppui_core)
+add_test(NAME ClipboardTest COMMAND clipboard_test)
+
+# UI 虛擬化 (VirtualizingStackPanel, ListBox 虛擬化) 單元測試
+add_executable(virtualization_test virtualization_test.cpp)
+target_link_libraries(virtualization_test PRIVATE cppui_core)
+add_test(NAME VirtualizationTest COMMAND virtualization_test)
+
+# 樹狀檢視 (TreeView, TreeViewItem, 延遲載入) 單元測試
+add_executable(treeview_test treeview_test.cpp)
+target_link_libraries(treeview_test PRIVATE cppui_core)
+add_test(NAME TreeViewTest COMMAND treeview_test)
+
+# 表格控制項 (DataGrid, Auto/Pixel/Star 欄寬, 排序, 斑馬線) 單元測試
+add_executable(datagrid_test datagrid_test.cpp)
+target_link_libraries(datagrid_test PRIVATE cppui_core)
+add_test(NAME DataGridTest COMMAND datagrid_test)
+
+# 診斷與 DevTools (DirtyRectTracker, VisualTreeInspector) 單元測試
+add_executable(diagnostics_test diagnostics_test.cpp)
+target_link_libraries(diagnostics_test PRIVATE cppui_core)
+add_test(NAME DiagnosticsTest COMMAND diagnostics_test)
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
@@ -152,6 +177,7 @@ if(ASAN_DLL_DIR)
         PalCrossPlatformTest SkiaBackendTest IoCContainerTest MvvmTest
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
         ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest PopupTest
+        ClipboardTest VirtualizationTest TreeViewTest DataGridTest DiagnosticsTest
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)

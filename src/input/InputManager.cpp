@@ -84,6 +84,11 @@ void InputManager::ProcessMouseMove(core::UIElement& root, const pal::RawMouseEv
     core::Visual* hitVisual = root.HitTest(mouseData.position);
     auto* hitUI = dynamic_cast<core::UIElement*>(hitVisual);
 
+    if (m_inspectorHook && m_inspectorHook->IsPickerActive()) {
+        m_inspectorHook->OnMouseMove(hitUI);
+        root.InvalidateVisual();
+    }
+
     UpdateHover(hitUI, mouseData.position, mods);
 
     core::UIElement* target = m_capturedElement ? m_capturedElement : hitUI;
@@ -106,6 +111,11 @@ void InputManager::ProcessMouseMove(core::UIElement& root, const pal::RawMouseEv
 void InputManager::ProcessMouseDown(core::UIElement& root, const pal::RawMouseEventData& mouseData, pal::KeyModifiers mods) {
     core::Visual* hitVisual = root.HitTest(mouseData.position);
     auto* hitUI = dynamic_cast<core::UIElement*>(hitVisual);
+
+    if (m_inspectorHook && m_inspectorHook->IsPickerActive()) {
+        m_inspectorHook->OnMouseDown(hitUI ? hitUI : &root);
+        root.InvalidateVisual();
+    }
 
     // Light-Dismiss: 若存在開啟且未鎖定常開的浮層，且點擊落於該浮層及其目標之外，則自動收合
     if (!m_openPopups.empty()) {
@@ -204,6 +214,12 @@ void InputManager::ProcessKeyDown(core::UIElement& root, const pal::RawKeyEventD
             topmost->SetIsOpen(false);
             return; // 優先消費 ESC 鍵關閉浮層
         }
+    }
+
+    // 檢查 F12 鍵切換 DevTools Visual Tree Inspector (VK_F12 = 0x77)
+    if (keyData.virtualKey == 0x77 && m_inspectorHook) {
+        m_inspectorHook->OnF12Pressed(root);
+        return;
     }
 
     // 檢查 Tab / Shift+Tab 鍵盤焦點導航 (VK_TAB = 0x09)

@@ -6,6 +6,7 @@
 
 #include "ui/app/AppBuilder.hpp"
 #include "ui/app/Application.hpp"
+#include "ui/diagnostics/DirtyRectTracker.hpp"
 #include <stdexcept>
 #include <utility>
 
@@ -42,8 +43,14 @@ AppBuilder& AppBuilder::UseSkia() noexcept {
     return *this;
 }
 
+AppBuilder& AppBuilder::WithDiagnostics(const diagnostics::DiagnosticsOptions& options) noexcept {
+    m_diagnosticsOptions = options;
+    return *this;
+}
+
 AppHost AppBuilder::Build() {
     Application::SetPlatformBackend(m_backend);
+    diagnostics::DirtyRectTracker::Get().SetOptions(m_diagnosticsOptions);
     auto provider = m_services.BuildServiceProvider();
     return AppHost(provider);
 }

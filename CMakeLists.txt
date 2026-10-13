@@ -201,6 +201,13 @@ set(CPPUI_SOURCES
     src/controls/MenuItem.cpp
     src/controls/ContextMenu.cpp
     src/controls/ComboBox.cpp
+    src/controls/TreeView.cpp
+    src/controls/DataGrid.cpp
+    src/layout/VirtualizingStackPanel.cpp
+    src/pal/Clipboard.cpp
+    src/pal/generic/ClipboardGeneric.cpp
+    src/diagnostics/DirtyRectTracker.cpp
+    src/diagnostics/VisualTreeInspector.cpp
     src/graphics/Pen.cpp
     src/graphics/Pens.cpp
     src/graphics/Brush.cpp
@@ -228,6 +235,7 @@ if(WIN32)
     set(CPPUI_HAS_WAYLAND 0)
     list(APPEND CPPUI_SOURCES
         src/pal/win32/PlatformWindowWin32.cpp
+        src/pal/win32/ClipboardWin32.cpp
         src/text/DirectWriteTextEngine.cpp
     )
 else()
@@ -387,3 +395,23 @@ if(CPPUI_HAS_SKIA)
         DESTINATION "${CPPUI_CONFIG_INSTALL_DIR}"
     )
 endif()
+
+# -----------------------------------------------------------------------------
+# CPack 多平台二進位封裝 (Binary Packaging)
+# -----------------------------------------------------------------------------
+set(CPACK_PACKAGE_NAME "CppUI")
+set(CPACK_PACKAGE_VENDOR "CPPUI Team")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Modern C++20 Cross-Platform UI Framework")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "CppUI")
+
+if(WIN32)
+    set(CPACK_GENERATOR "ZIP;7Z")
+else()
+    set(CPACK_GENERATOR "TGZ;DEB")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "CPPUI Team")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+endif()
+
+include(CPack)
+
