@@ -102,29 +102,29 @@ TextBox::TextBox() {
     });
 
     OnKeyDown([this](input::KeyEventArgs& e) {
-        uint32_t vk = e.GetVirtualKey();
+        input::Key key = e.GetKey();
 
-        if (pal::HasModifier(e.GetModifiers(), pal::KeyModifiers::Control)) {
-            if (vk == 0x43 || vk == 'C' || vk == 'c') { // Ctrl+C
+        if (e.HasControl()) {
+            if (key == input::Key::C) { // Ctrl+C
                 Copy();
                 e.SetHandled(true);
                 return;
-            } else if (vk == 0x58 || vk == 'X' || vk == 'x') { // Ctrl+X
+            } else if (key == input::Key::X) { // Ctrl+X
                 Cut();
                 e.SetHandled(true);
                 return;
-            } else if (vk == 0x56 || vk == 'V' || vk == 'v') { // Ctrl+V
+            } else if (key == input::Key::V) { // Ctrl+V
                 Paste();
                 e.SetHandled(true);
                 return;
-            } else if (vk == 0x41 || vk == 'A' || vk == 'a') { // Ctrl+A
+            } else if (key == input::Key::A) { // Ctrl+A
                 SelectAll();
                 e.SetHandled(true);
                 return;
             }
         }
 
-        if (vk == 0x08) { // Backspace
+        if (key == input::Key::Backspace) { // Backspace
             if (m_isReadOnly) {
                 e.SetHandled(true);
                 return;
@@ -146,7 +146,7 @@ TextBox::TextBox() {
                 UpdateImeCompositionWindow();
             }
             e.SetHandled(true);
-        } else if (vk == 0x2E) { // Delete
+        } else if (key == input::Key::Delete) { // Delete
             if (m_isReadOnly) {
                 e.SetHandled(true);
                 return;
@@ -166,7 +166,7 @@ TextBox::TextBox() {
                 UpdateImeCompositionWindow();
             }
             e.SetHandled(true);
-        } else if (vk == 0x25) { // Arrow Left
+        } else if (key == input::Key::Left) { // Arrow Left
             if (m_caretIndex > 0) {
                 m_caretIndex--;
                 while (m_caretIndex > 0 && (static_cast<uint8_t>(m_text[m_caretIndex]) & 0xC0) == 0x80) {
@@ -176,7 +176,7 @@ TextBox::TextBox() {
                 UpdateImeCompositionWindow();
             }
             e.SetHandled(true);
-        } else if (vk == 0x27) { // Arrow Right
+        } else if (key == input::Key::Right) { // Arrow Right
             if (m_caretIndex < m_text.size()) {
                 m_caretIndex++;
                 while (m_caretIndex < m_text.size() && (static_cast<uint8_t>(m_text[m_caretIndex]) & 0xC0) == 0x80) {
@@ -186,12 +186,12 @@ TextBox::TextBox() {
                 UpdateImeCompositionWindow();
             }
             e.SetHandled(true);
-        } else if (vk == 0x24) { // Home
+        } else if (key == input::Key::Home) { // Home
             m_caretIndex = 0;
             InvalidateVisual();
             UpdateImeCompositionWindow();
             e.SetHandled(true);
-        } else if (vk == 0x23) { // End
+        } else if (key == input::Key::End) { // End
             m_caretIndex = m_text.size();
             InvalidateVisual();
             UpdateImeCompositionWindow();

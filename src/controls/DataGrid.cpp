@@ -89,9 +89,9 @@ void DataGrid::InitializeHandlers() {
 
     OnKeyDown([this](input::KeyEventArgs& e) {
         if (!m_enabled || m_rows.empty()) return;
-        uint32_t vk = e.GetVirtualKey();
+        input::Key key = e.GetKey();
 
-        if (vk == 0x26) { // VK_UP
+        if (key == input::Key::Up) { // Up
             if (m_selectedIndex > 0) {
                 SetSelectedIndex(m_selectedIndex - 1);
                 e.SetHandled(true);
@@ -99,7 +99,7 @@ void DataGrid::InitializeHandlers() {
                 SetSelectedIndex(0);
                 e.SetHandled(true);
             }
-        } else if (vk == 0x28) { // VK_DOWN
+        } else if (key == input::Key::Down) { // Down
             if (m_selectedIndex + 1 < static_cast<int32_t>(m_rows.size())) {
                 SetSelectedIndex(m_selectedIndex + 1);
                 e.SetHandled(true);

@@ -142,7 +142,7 @@ void TreeView::InitializeHandlers() {
 
     OnPointerWheel([this](input::PointerEventArgs& e) {
         if (!m_enabled) return;
-        float delta = e.GetWheelDeltaY();
+        float delta = static_cast<float>(e.GetWheelDeltaY());
         if (delta != 0.0f) {
             SetScrollOffset(m_scrollOffset - delta * 0.5f);
             e.SetHandled(true);
@@ -151,7 +151,7 @@ void TreeView::InitializeHandlers() {
 
     OnKeyDown([this](input::KeyEventArgs& e) {
         if (!m_enabled) return;
-        uint32_t vk = e.GetVirtualKey();
+        input::Key key = e.GetKey();
         auto flat = GetFlattenedVisibleItems();
         if (flat.empty()) return;
 
@@ -163,7 +163,7 @@ void TreeView::InitializeHandlers() {
             }
         }
 
-        if (vk == 0x26) { // VK_UP
+        if (key == input::Key::Up) { // Up
             if (currentIndex > 0) {
                 SetSelectedItem(flat[static_cast<size_t>(currentIndex - 1)].item);
                 e.SetHandled(true);
@@ -171,7 +171,7 @@ void TreeView::InitializeHandlers() {
                 SetSelectedItem(flat[0].item);
                 e.SetHandled(true);
             }
-        } else if (vk == 0x28) { // VK_DOWN
+        } else if (key == input::Key::Down) { // Down
             if (currentIndex + 1 < static_cast<int32_t>(flat.size())) {
                 SetSelectedItem(flat[static_cast<size_t>(currentIndex + 1)].item);
                 e.SetHandled(true);
@@ -179,7 +179,7 @@ void TreeView::InitializeHandlers() {
                 SetSelectedItem(flat[0].item);
                 e.SetHandled(true);
             }
-        } else if (vk == 0x27) { // VK_RIGHT
+        } else if (key == input::Key::Right) { // Right
             if (m_selectedItem) {
                 if (!m_selectedItem->IsExpanded() && (m_selectedItem->HasChildren() || m_selectedItem->HasExpandingHandler())) {
                     m_selectedItem->SetExpanded(true);
@@ -190,7 +190,7 @@ void TreeView::InitializeHandlers() {
                     e.SetHandled(true);
                 }
             }
-        } else if (vk == 0x25) { // VK_LEFT
+        } else if (key == input::Key::Left) { // Left
             if (m_selectedItem) {
                 if (m_selectedItem->IsExpanded()) {
                     m_selectedItem->SetExpanded(false);

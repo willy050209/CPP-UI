@@ -680,6 +680,16 @@ $testTargets = @(
         GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32")
         HasBench       = $false
         BenchRegex     = ""
+    },
+    @{
+        Name           = "Key"
+        Source         = "tests\key_test.cpp"
+        IsSmoke        = $true
+        NeedObjs       = @()
+        MsvcLibs       = @()
+        GnuLibs        = @()
+        HasBench       = $false
+        BenchRegex     = ""
     }
 )
 

@@ -157,6 +157,11 @@ add_executable(diagnostics_test diagnostics_test.cpp)
 target_link_libraries(diagnostics_test PRIVATE cppui_core)
 add_test(NAME DiagnosticsTest COMMAND diagnostics_test)
 
+# 鍵盤碼 (Key 列舉、分類工具與轉換) 單元測試
+add_executable(key_test key_test.cpp)
+target_link_libraries(key_test PRIVATE cppui_headers)
+add_test(NAME KeyTest COMMAND key_test)
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
@@ -178,6 +183,7 @@ if(ASAN_DLL_DIR)
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
         ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest PopupTest
         ClipboardTest VirtualizationTest TreeViewTest DataGridTest DiagnosticsTest
+        KeyTest
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)

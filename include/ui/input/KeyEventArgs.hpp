@@ -9,6 +9,7 @@
 #include "compat/compat.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 #include "ui/input/RoutedEventArgs.hpp"
+#include "ui/input/Key.hpp"
 
 namespace cppui {
 namespace input {
@@ -22,6 +23,30 @@ public:
     /// 預設建構子。
     /// </summary>
     KeyEventArgs() = default;
+
+    /// <summary>
+    /// 建構強型別按鍵事件參數。
+    /// </summary>
+    /// <param name="routedEvent">路由事件定義描述項常數引用。</param>
+    /// <param name="source">引發事件之來源 UI 元件指標。</param>
+    /// <param name="key">強型別按鍵碼。</param>
+    /// <param name="scanCode">硬體掃描碼，預設為 0。</param>
+    /// <param name="isRepeat">是否為長按重複觸發，預設為 false。</param>
+    /// <param name="modifiers">當前按下的鍵盤修飾鍵組合。</param>
+    KeyEventArgs(
+        const RoutedEvent& routedEvent,
+        core::UIElement* source,
+        Key key,
+        uint32_t scanCode = 0,
+        bool isRepeat = false,
+        pal::KeyModifiers modifiers = pal::KeyModifiers::None
+    ) noexcept
+        : RoutedEventArgs(routedEvent, source)
+        , m_key(key)
+        , m_virtualKey(static_cast<uint32_t>(key))
+        , m_scanCode(scanCode)
+        , m_isRepeat(isRepeat)
+        , m_modifiers(modifiers) {}
 
     /// <summary>
     /// 建構完整的按鍵事件參數。
@@ -41,10 +66,15 @@ public:
         pal::KeyModifiers modifiers = pal::KeyModifiers::None
     ) noexcept
         : RoutedEventArgs(routedEvent, source)
+        , m_key(static_cast<Key>(virtualKey))
         , m_virtualKey(virtualKey)
         , m_scanCode(scanCode)
         , m_isRepeat(isRepeat)
         , m_modifiers(modifiers) {}
+
+    /// <summary>取得強型別按鍵碼。</summary>
+    /// <returns>Key 列舉值。</returns>
+    COMPAT_NODISCARD Key GetKey() const noexcept { return m_key; }
 
     /// <summary>取得虛擬鍵碼。</summary>
     /// <returns>虛擬鍵碼整數值。</returns>
@@ -75,6 +105,7 @@ public:
     COMPAT_NODISCARD bool HasAlt() const noexcept { return pal::HasModifier(m_modifiers, pal::KeyModifiers::Alt); }
 
 private:
+    Key               m_key = Key::None;
     uint32_t          m_virtualKey = 0;
     uint32_t          m_scanCode = 0;
     bool              m_isRepeat = false;

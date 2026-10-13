@@ -73,13 +73,13 @@ int main() {
             assert(e.mouse.button == RawMouseButton::Left);
         } else if (e.type == RawEventType::KeyDown) {
             keyFired = true;
-            assert(e.key.virtualKey == 65); // 'A'
+            assert(e.key.virtualKey == static_cast<uint32_t>(input::Key::A));
         }
     });
 
     Point pt(120.0f, 240.0f);
     genericWin->InjectEvent(RawInputEvent::MakeMouseDown(pt, pt, RawMouseButton::Left, 1, KeyModifiers::None, 100));
-    genericWin->InjectEvent(RawInputEvent::MakeKeyDown(65, 0, KeyModifiers::None, 110));
+    genericWin->InjectEvent(RawInputEvent::MakeKeyDown(input::Key::A, 0, KeyModifiers::None, 110));
 
     window->PollEvents();
     assert(mouseFired);

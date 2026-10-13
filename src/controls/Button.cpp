@@ -93,8 +93,8 @@ Button::Button() {
 
     OnKeyDown([this](input::KeyEventArgs& e) {
         if (!m_enabled) return;
-        // Space (0x20) 或 Return (0x0D) 觸發點擊
-        if (e.GetVirtualKey() == 0x20 || e.GetVirtualKey() == 0x0D) {
+        // Space 或 Return/Enter 觸發點擊
+        if (e.GetKey() == input::Key::Space || e.GetKey() == input::Key::Enter) {
             std::shared_ptr<Button> self;
             try {
                 self = std::dynamic_pointer_cast<Button>(shared_from_this());

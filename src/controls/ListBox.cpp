@@ -58,7 +58,7 @@ void ListBox::InitializeHandlers() {
 
     OnPointerWheel([this](input::PointerEventArgs& e) {
         if (!m_enabled) return;
-        float delta = e.GetWheelDeltaY();
+        float delta = static_cast<float>(e.GetWheelDeltaY());
         if (delta != 0.0f) {
             SetScrollOffset(m_scrollOffset - delta * 0.5f);
             e.SetHandled(true);
@@ -67,9 +67,9 @@ void ListBox::InitializeHandlers() {
 
     OnKeyDown([this](input::KeyEventArgs& e) {
         if (!m_enabled) return;
-        uint32_t vk = e.GetVirtualKey();
+        input::Key key = e.GetKey();
 
-        if (vk == 0x26) { // VK_UP
+        if (key == input::Key::Up) { // Up
             if (m_selectedIndex > 0) {
                 SetSelectedIndex(m_selectedIndex - 1);
                 ScrollIntoView(m_selectedIndex);
@@ -79,7 +79,7 @@ void ListBox::InitializeHandlers() {
                 ScrollIntoView(0);
                 e.SetHandled(true);
             }
-        } else if (vk == 0x28) { // VK_DOWN
+        } else if (key == input::Key::Down) { // Down
             if (m_selectedIndex + 1 < static_cast<int32_t>(m_items.size())) {
                 SetSelectedIndex(m_selectedIndex + 1);
                 ScrollIntoView(m_selectedIndex);
@@ -89,13 +89,13 @@ void ListBox::InitializeHandlers() {
                 ScrollIntoView(0);
                 e.SetHandled(true);
             }
-        } else if (vk == 0x24) { // VK_HOME
+        } else if (key == input::Key::Home) { // Home
             if (!m_items.empty()) {
                 SetSelectedIndex(0);
                 ScrollIntoView(0);
                 e.SetHandled(true);
             }
-        } else if (vk == 0x23) { // VK_END
+        } else if (key == input::Key::End) { // End
             if (!m_items.empty()) {
                 SetSelectedIndex(static_cast<int32_t>(m_items.size() - 1));
                 ScrollIntoView(m_selectedIndex);

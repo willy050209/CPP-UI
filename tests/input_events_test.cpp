@@ -381,7 +381,8 @@ int main() {
 
         inputTarget->OnKeyDown([&](KeyEventArgs& e) {
             keyDownReceived = true;
-            assert(e.GetVirtualKey() == 0x41); // 'A'
+            assert(e.GetKey() == Key::A);
+            assert(e.GetVirtualKey() == static_cast<uint32_t>(Key::A));
             (void)e;
         });
 
@@ -401,10 +402,8 @@ int main() {
         assert(clickPressed);
         assert(FocusManager::Get().GetFocusedElement() == inputTarget.get());
 
-        // 2. 注入 KeyDown ('A')
-        pal::RawInputEvent evKey;
-        evKey.type = pal::RawEventType::KeyDown;
-        evKey.key.virtualKey = 0x41;
+        // 2. 注入 KeyDown (Key::A)
+        pal::RawInputEvent evKey = pal::RawInputEvent::MakeKeyDown(Key::A, 0, pal::KeyModifiers::None);
         InputManager::Get().ProcessRawEvent(*root, evKey);
         assert(keyDownReceived);
 

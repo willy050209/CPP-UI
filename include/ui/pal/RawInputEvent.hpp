@@ -8,6 +8,7 @@
 #include <cstdint>
 #include "compat/compat.hpp"
 #include "ui/core/Geometry.hpp"
+#include "ui/input/Key.hpp"
 
 namespace cppui {
 namespace pal {
@@ -393,6 +394,18 @@ struct RawInputEvent {
     }
 
     /// <summary>
+    /// 建立強型別鍵盤按鍵按下事件。
+    /// </summary>
+    /// <param name="key">強型別按鍵碼。</param>
+    /// <param name="scanCode">平台掃描碼。</param>
+    /// <param name="mods">修飾鍵狀態。</param>
+    /// <param name="ts">事件時間戳 (毫秒)。</param>
+    /// <returns>RawInputEvent 實例。</returns>
+    COMPAT_NODISCARD static RawInputEvent MakeKeyDown(input::Key key, uint32_t scanCode, KeyModifiers mods, uint64_t ts = 0) noexcept {
+        return MakeKeyDown(static_cast<uint32_t>(key), scanCode, mods, ts);
+    }
+
+    /// <summary>
     /// 建立鍵盤按鍵放開事件。
     /// </summary>
     /// <param name="virtualKey">虛擬鍵碼 (VK_*)。</param>
@@ -407,6 +420,18 @@ struct RawInputEvent {
         e.timestampMs = ts;
         e.key = { virtualKey, scanCode, false };
         return e;
+    }
+
+    /// <summary>
+    /// 建立強型別鍵盤按鍵放開事件。
+    /// </summary>
+    /// <param name="key">強型別按鍵碼。</param>
+    /// <param name="scanCode">平台掃描碼。</param>
+    /// <param name="mods">修飾鍵狀態。</param>
+    /// <param name="ts">事件時間戳 (毫秒)。</param>
+    /// <returns>RawInputEvent 實例。</returns>
+    COMPAT_NODISCARD static RawInputEvent MakeKeyUp(input::Key key, uint32_t scanCode, KeyModifiers mods, uint64_t ts = 0) noexcept {
+        return MakeKeyUp(static_cast<uint32_t>(key), scanCode, mods, ts);
     }
 
     /// <summary>

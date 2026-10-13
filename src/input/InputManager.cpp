@@ -207,8 +207,10 @@ void InputManager::ProcessMouseWheel(core::UIElement& root, const pal::RawMouseE
 }
 
 void InputManager::ProcessKeyDown(core::UIElement& root, const pal::RawKeyEventData& keyData, pal::KeyModifiers mods) {
-    // 檢查 Escape 鍵關閉頂層 Popup (VK_ESCAPE = 0x1B)
-    if (keyData.virtualKey == 0x1B && !m_openPopups.empty()) {
+    Key key = static_cast<Key>(keyData.virtualKey);
+
+    // 檢查 Escape 鍵關閉頂層 Popup
+    if (key == Key::Escape && !m_openPopups.empty()) {
         auto* topmost = m_openPopups.back();
         if (topmost) {
             topmost->SetIsOpen(false);
@@ -216,14 +218,14 @@ void InputManager::ProcessKeyDown(core::UIElement& root, const pal::RawKeyEventD
         }
     }
 
-    // 檢查 F12 鍵切換 DevTools Visual Tree Inspector (VK_F12 = 0x77)
-    if (keyData.virtualKey == 0x77 && m_inspectorHook) {
+    // 檢查 F12 鍵切換 DevTools Visual Tree Inspector (支援標準 0x7B 與相容 0x77)
+    if ((key == Key::F12 || keyData.virtualKey == 0x77) && m_inspectorHook) {
         m_inspectorHook->OnF12Pressed(root);
         return;
     }
 
-    // 檢查 Tab / Shift+Tab 鍵盤焦點導航 (VK_TAB = 0x09)
-    if (keyData.virtualKey == 0x09) {
+    // 檢查 Tab / Shift+Tab 鍵盤焦點導航
+    if (key == Key::Tab) {
         bool shiftPressed = pal::HasModifier(mods, pal::KeyModifiers::Shift);
         FocusManager::Get().MoveFocus(&root, !shiftPressed);
     }

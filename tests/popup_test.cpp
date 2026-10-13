@@ -154,9 +154,9 @@ static void TestLightDismissEscapeKey() {
     popup->SetIsOpen(true);
     assert(popup->IsOpen());
 
-    // 模擬按下 ESC 鍵 (0x1B)
+    // 模擬按下 ESC 鍵
     pal::RawKeyEventData keyData;
-    keyData.virtualKey = 0x1B;
+    keyData.virtualKey = static_cast<uint32_t>(input::Key::Escape);
     keyData.scanCode = 1;
     keyData.isRepeat = false;
     input::InputManager::Get().ProcessKeyDown(*form, keyData, pal::KeyModifiers::None);

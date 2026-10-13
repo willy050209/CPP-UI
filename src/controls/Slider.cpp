@@ -75,23 +75,23 @@ void Slider::InitializeHandlers() {
 
     OnKeyDown([this](input::KeyEventArgs& e) {
         if (!m_enabled) return;
-        uint32_t vk = e.GetVirtualKey();
-        if (vk == 0x25 || vk == 0x28) { // Left, Down
+        input::Key key = e.GetKey();
+        if (key == input::Key::Left || key == input::Key::Down) {
             SetValue(m_value - m_smallChange);
             e.SetHandled(true);
-        } else if (vk == 0x27 || vk == 0x26) { // Right, Up
+        } else if (key == input::Key::Right || key == input::Key::Up) {
             SetValue(m_value + m_smallChange);
             e.SetHandled(true);
-        } else if (vk == 0x21) { // PageUp
+        } else if (key == input::Key::PageUp) {
             SetValue(m_value + m_largeChange);
             e.SetHandled(true);
-        } else if (vk == 0x22) { // PageDown
+        } else if (key == input::Key::PageDown) {
             SetValue(m_value - m_largeChange);
             e.SetHandled(true);
-        } else if (vk == 0x24) { // Home
+        } else if (key == input::Key::Home) {
             SetValue(m_minimum);
             e.SetHandled(true);
-        } else if (vk == 0x23) { // End
+        } else if (key == input::Key::End) {
             SetValue(m_maximum);
             e.SetHandled(true);
         }
