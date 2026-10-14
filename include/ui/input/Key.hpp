@@ -11,6 +11,11 @@
 namespace cppui {
 namespace input {
 
+// 防禦性清除 X11 等第三方 C API 標頭可能帶來的巨集污染
+#ifdef None
+#undef None
+#endif
+
 /// <summary>
 /// 鍵盤按鍵碼強型別列舉 (Key)
 /// 底層型別為 uint32_t，數值對齊工業標準虛擬鍵碼 (Virtual-Key Codes)。
@@ -159,6 +164,29 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline Key FromVirtualKey(uint32_t vk) noex
 COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline uint32_t ToVirtualKey(Key key) noexcept {
     return static_cast<uint32_t>(key);
 }
+
+// 防禦性清除 X11 Xutil.h 鍵盤判定巨集污染
+#ifdef IsModifierKey
+#undef IsModifierKey
+#endif
+#ifdef IsFunctionKey
+#undef IsFunctionKey
+#endif
+#ifdef IsKeypadKey
+#undef IsKeypadKey
+#endif
+#ifdef IsPrivateKeypadKey
+#undef IsPrivateKeypadKey
+#endif
+#ifdef IsCursorKey
+#undef IsCursorKey
+#endif
+#ifdef IsPFKey
+#undef IsPFKey
+#endif
+#ifdef IsMiscFunctionKey
+#undef IsMiscFunctionKey
+#endif
 
 /// <summary>
 /// 判斷指定之按鍵是否為修飾鍵 (Shift, Control, Alt, Windows)。

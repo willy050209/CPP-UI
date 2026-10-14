@@ -13,6 +13,20 @@
 namespace cppui {
 namespace pal {
 
+// 防禦性清除 X11 / Win32 等第三方 C API 標頭可能帶來的巨集污染
+#ifdef None
+#undef None
+#endif
+#ifdef Status
+#undef Status
+#endif
+#ifdef Bool
+#undef Bool
+#endif
+#ifdef Success
+#undef Success
+#endif
+
 /// <summary>
 /// 原始事件類型列舉
 /// </summary>

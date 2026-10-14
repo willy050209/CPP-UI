@@ -14,12 +14,16 @@
 #include <memory>
 #include <vector>
 
+#include "compat/compat.hpp"
+#include "ui/pal/IPlatformWindow.hpp"
+#include "ui/core/CoordinateTransform.hpp"
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/Xresource.h>
 
-// 清除 X11 巨集污染，避免影響 C++ 列舉型別 (如 RawEventType::None)
+// 清除 X11 巨集污染，避免影響 C++ 型別、列舉與輔助函式 (如 Key::None, IsModifierKey, IsFunctionKey 等)
 #ifdef None
 #undef None
 #endif
@@ -35,10 +39,33 @@
 #ifdef Always
 #undef Always
 #endif
-
-#include "compat/compat.hpp"
-#include "ui/pal/IPlatformWindow.hpp"
-#include "ui/core/CoordinateTransform.hpp"
+#ifdef IsModifierKey
+#undef IsModifierKey
+#endif
+#ifdef IsFunctionKey
+#undef IsFunctionKey
+#endif
+#ifdef IsKeypadKey
+#undef IsKeypadKey
+#endif
+#ifdef IsPrivateKeypadKey
+#undef IsPrivateKeypadKey
+#endif
+#ifdef IsCursorKey
+#undef IsCursorKey
+#endif
+#ifdef IsPFKey
+#undef IsPFKey
+#endif
+#ifdef IsMiscFunctionKey
+#undef IsMiscFunctionKey
+#endif
+#ifdef Font
+#undef Font
+#endif
+#ifdef Cursor
+#undef Cursor
+#endif
 
 namespace cppui {
 namespace pal {

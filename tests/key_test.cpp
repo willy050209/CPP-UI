@@ -154,12 +154,65 @@ static void TestKeyEventArgsKeyFidelity() {
     std::cout << "[PASS] TestKeyEventArgsKeyFidelity" << std::endl;
 }
 
+static void TestX11MacroSanitization() {
+    // 模擬 X11 <X11/Xutil.h> 與 <X11/X.h> 的巨集污染情境
+    #define None 0L
+    #define Status int
+    #define Bool int
+    #define Success 0
+    #define Always 2
+    #define IsModifierKey(keysym) (keysym == 0)
+    #define IsFunctionKey(keysym) (keysym == 0)
+    #define IsKeypadKey(keysym) (keysym == 0)
+    #define IsCursorKey(keysym) (keysym == 0)
+
+    // 防護性解除定義（與 PlatformWindowX11.hpp 及 Key.hpp 防護邏輯相符）
+    #ifdef None
+    #undef None
+    #endif
+    #ifdef Status
+    #undef Status
+    #endif
+    #ifdef Bool
+    #undef Bool
+    #endif
+    #ifdef Success
+    #undef Success
+    #endif
+    #ifdef Always
+    #undef Always
+    #endif
+    #ifdef IsModifierKey
+    #undef IsModifierKey
+    #endif
+    #ifdef IsFunctionKey
+    #undef IsFunctionKey
+    #endif
+    #ifdef IsKeypadKey
+    #undef IsKeypadKey
+    #endif
+    #ifdef IsCursorKey
+    #undef IsCursorKey
+    #endif
+
+    // 驗證在模擬 X11 巨集環境下，CPPUI 列舉與按鍵判定工具函式仍可正確編譯與執行
+    assert(Key::None == static_cast<Key>(0));
+    assert(IsModifierKey(Key::Shift));
+    assert(!IsModifierKey(Key::A));
+    assert(IsFunctionKey(Key::F1));
+    assert(!IsFunctionKey(Key::Enter));
+    assert(IsArrowKey(Key::Up));
+
+    std::cout << "[PASS] TestX11MacroSanitization" << std::endl;
+}
+
 int main() {
     std::cout << "Running Key & Keyboard Codes Unit Tests..." << std::endl;
     TestKeyEnumValues();
     TestKeyClassifiers();
     TestKeyToString();
     TestKeyEventArgsKeyFidelity();
+    TestX11MacroSanitization();
     std::cout << "All Key Unit Tests PASSED Successfully!" << std::endl;
     return 0;
 }
