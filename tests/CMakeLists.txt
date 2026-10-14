@@ -162,6 +162,11 @@ add_executable(key_test key_test.cpp)
 target_link_libraries(key_test PRIVATE cppui_headers)
 add_test(NAME KeyTest COMMAND key_test)
 
+# 視窗自動適配內容尺寸 (Form AutoSize & SizeToContent) 單元測試
+add_executable(autosize_test autosize_test.cpp)
+target_link_libraries(autosize_test PRIVATE cppui_core)
+add_test(NAME AutoSizeTest COMMAND autosize_test)
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
@@ -183,7 +188,7 @@ if(ASAN_DLL_DIR)
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
         ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest PopupTest
         ClipboardTest VirtualizationTest TreeViewTest DataGridTest DiagnosticsTest
-        KeyTest
+        KeyTest AutoSizeTest
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)

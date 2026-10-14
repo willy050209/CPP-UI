@@ -43,6 +43,24 @@ enum class WindowState {
 };
 
 /// <summary>
+/// 視窗內容自適應模式 (對標 WPF SizeToContent)。
+/// </summary>
+enum class SizeToContent : uint32_t {
+    Manual = 0,         // 固定視窗尺寸，由 SetWidth/SetHeight 或 SetFormSize 指定
+    Width = 1,          // 寬度依內容自適應，高度保持手動
+    Height = 2,         // 高度依內容自適應，寬度保持手動
+    WidthAndHeight = 3  // 寬度與高度皆依內容自適應 (AutoSize)
+};
+
+/// <summary>
+/// 視窗自適應縮放約束模式 (對標 WinForms AutoSizeMode)。
+/// </summary>
+enum class AutoSizeMode : uint32_t {
+    GrowAndShrink = 0, // 可隨內容增大或縮小
+    GrowOnly = 1       // 僅可隨內容增大，不小於初始指定之尺寸
+};
+
+/// <summary>
 /// 視窗即將關閉事件參數 (FormClosingEventArgs)
 /// 允許透過設定 Cancel = true 取消關閉操作。
 /// </summary>

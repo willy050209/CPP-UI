@@ -14,6 +14,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace cppui {
@@ -76,6 +77,82 @@ public:
     /// <param name="width">寬度像素。</param>
     /// <param name="height">高度像素。</param>
     void SetFormSize(uint32_t width, uint32_t height);
+
+    /// <summary>
+    /// 設定表單約束寬度 (像素值)。同步更新表單與原生視窗寬度。
+    /// </summary>
+    /// <param name="width">寬度像素值。</param>
+    void SetWidth(float width);
+
+    /// <summary>
+    /// 設定表單約束高度 (像素值)。同步更新表單與原生視窗高度。
+    /// </summary>
+    /// <param name="height">高度像素值。</param>
+    void SetHeight(float height);
+
+    /// <summary>
+    /// 檢查是否啟用內容自適應 (AutoSize)。
+    /// 等價於 GetSizeToContent() == SizeToContent::WidthAndHeight。
+    /// </summary>
+    /// <returns>若啟用自適應回傳 true，否則回傳 false。</returns>
+    COMPAT_NODISCARD bool GetAutoSize() const noexcept;
+
+    /// <summary>
+    /// 設定是否啟用內容自適應 (AutoSize)。
+    /// 若為 true，將 SizeToContent 設為 WidthAndHeight；若為 false 設為 Manual。
+    /// </summary>
+    /// <param name="autoSize">是否啟用。</param>
+    void SetAutoSize(bool autoSize);
+
+    /// <summary>
+    /// 取得視窗內容自適應模式 (SizeToContent)。
+    /// </summary>
+    /// <returns>SizeToContent 列舉值。</returns>
+    COMPAT_NODISCARD SizeToContent GetSizeToContent() const noexcept { return m_sizeToContent; }
+
+    /// <summary>
+    /// 設定視窗內容自適應模式。
+    /// </summary>
+    /// <param name="mode">SizeToContent 列舉值。</param>
+    void SetSizeToContent(SizeToContent mode);
+
+    /// <summary>
+    /// 取得自適應縮放約束模式 (AutoSizeMode)。
+    /// </summary>
+    /// <returns>AutoSizeMode 列舉值。</returns>
+    COMPAT_NODISCARD AutoSizeMode GetAutoSizeMode() const noexcept { return m_autoSizeMode; }
+
+    /// <summary>
+    /// 設定自適應縮放約束模式。
+    /// </summary>
+    /// <param name="mode">AutoSizeMode 列舉值。</param>
+    void SetAutoSizeMode(AutoSizeMode mode) noexcept;
+
+    /// <summary>
+    /// 依據內部元件樹期望尺寸執行自適應度量並重設視窗大小。
+    /// </summary>
+    void FitContentSize();
+
+    /// <summary>
+    /// 設定子內容元件並於啟用 AutoSize 時自動重整視窗尺寸。
+    /// </summary>
+    /// <param name="content">子元件智慧指標。</param>
+    void SetContent(std::shared_ptr<core::UIElement> content);
+
+    /// <summary>
+    /// 設定子內容元件 (由 unique_ptr 轉移所有權)。
+    /// </summary>
+    /// <param name="content">子元件唯一擁有權智慧指標。</param>
+    template <typename T, typename = typename std::enable_if<std::is_base_of<core::UIElement, T>::value>::type>
+    void SetContent(std::unique_ptr<T> content) {
+        SetContent(std::shared_ptr<core::UIElement>(std::move(content)));
+    }
+
+    /// <summary>
+    /// 設定純文字內容並於啟用 AutoSize 時自動重整視窗尺寸。
+    /// </summary>
+    /// <param name="text">字串內容視圖。</param>
+    void SetContent(compat::string_view text);
 
     /// <summary>
     /// 取得視窗初始啟動位置模式。
@@ -249,6 +326,9 @@ private:
     FormStartPosition m_startPosition = FormStartPosition::CenterScreen;
     WindowState m_windowState = WindowState::Normal;
     DialogResult m_dialogResult = DialogResult::None;
+    SizeToContent m_sizeToContent = SizeToContent::Manual;
+    AutoSizeMode m_autoSizeMode = AutoSizeMode::GrowAndShrink;
+    bool m_isFittingContent = false;
 
     bool m_isLoaded = false;
     bool m_isShown = false;

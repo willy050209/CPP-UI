@@ -37,6 +37,8 @@ public:
     PopupGalleryForm() {
         SetTitle("CPPUI 彈出層與浮動控制項展示 (Popup & Floating Controls Gallery)");
         SetFormSize(820, 680);
+        SetAutoSize(true);
+        SetAutoSizeMode(cppui::app::AutoSizeMode::GrowOnly);
         SetStartPosition(cppui::app::FormStartPosition::CenterScreen);
 
         BuildUI();

@@ -690,6 +690,26 @@ $testTargets = @(
         GnuLibs        = @()
         HasBench       = $false
         BenchRegex     = ""
+    },
+    @{
+        Name           = "AutoSize"
+        Source         = "tests\autosize_test.cpp"
+        IsSmoke        = $false
+        NeedObjs       = @(
+            "Form", "Application", "AppBuilder", "Dispatcher", "SkiaRenderContext",
+            "ServiceCollection", "PlatformWindowFactory",
+            "PlatformWindowGeneric", "PlatformWindowWin32", "Button", "Control", "ContentControl", "OverlayLayer",
+            "UIElement", "Visual", "StackPanel", "Panel", "Border", "TextBlock",
+            "DisplayListRenderer", "SoftwareRenderContext", "FontManager", "TextShaper",
+            "BiDiAnalyzer", "LineBreaker", "TextLayout", "TextLayoutEngine",
+            "DirectWriteTextEngine", "RoutedEvent", "EventRoute", "FocusManager", "InputManager", "LayoutManager",
+            "Bitmap", "Graphics", "Pen", "Pens", "Brush", "Brushes", "GraphicsPath",
+            "Theme", "ThemeManager", "DirtyRectTracker"
+        )
+        MsvcLibs       = @("dwrite.lib", "gdi32.lib", "user32.lib", "ole32.lib", "imm32.lib")
+        GnuLibs        = @("-ldwrite", "-lgdi32", "-luser32", "-lole32", "-limm32")
+        HasBench       = $false
+        BenchRegex     = ""
     }
 )
 

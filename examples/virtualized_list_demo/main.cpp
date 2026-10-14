@@ -22,8 +22,10 @@ class VirtualizedDemoForm : public app::Form {
 public:
     VirtualizedDemoForm() {
         SetTitle("CppUI P2 Showcase: Virtualization, Controls & Clipboard");
-        SetWidth(900.0f);
+        SetWidth(920.0f);
         SetHeight(650.0f);
+        SetAutoSize(true);
+        SetAutoSizeMode(app::AutoSizeMode::GrowOnly);
 
         auto rootPanel = std::make_shared<StackPanel>();
         rootPanel->SetOrientation(Orientation::Vertical);

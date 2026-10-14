@@ -15,6 +15,7 @@ Add-Type -AssemblyName System.Drawing
 
 $winApiCode = @'
 using System;
+using System.Text;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -41,6 +42,9 @@ public class WinCap {
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
     public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -60,9 +64,17 @@ public class WinCap {
             uint windowPid;
             GetWindowThreadProcessId(hWnd, out windowPid);
             if (windowPid == pid && IsWindowVisible(hWnd)) {
+                StringBuilder cls = new StringBuilder(256);
+                GetClassName(hWnd, cls, 256);
+                string className = cls.ToString();
+
                 RECT r;
                 if (GetWindowRect(hWnd, out r)) {
-                    if (r.Right - r.Left > 100 && r.Bottom - r.Top > 100) {
+                    int w = r.Right - r.Left;
+                    int h = r.Bottom - r.Top;
+
+                    // 優先匹配 CPPUI 原生視窗類別，或面積大於 150x150 之可見視窗（避開 47x47 IME 隱藏視窗）
+                    if (className.Contains("CPPUI") || (w > 150 && h > 150 && !className.Contains("UAC") && !className.Contains("IME"))) {
                         found = hWnd;
                         return false;
                     }
@@ -118,15 +130,11 @@ if ($ArgumentList) {
 }
 Start-Sleep -Seconds $WaitSeconds
 
-$handle = $proc.MainWindowHandle
+$handle = [WinCap]::FindWindowByProcessId([uint32]$proc.Id)
 $retry = 0
-while ($handle -eq [IntPtr]::Zero -and $retry -lt 15) {
-    Start-Sleep -Milliseconds 300
-    $proc.Refresh()
-    $handle = $proc.MainWindowHandle
-    if ($handle -eq [IntPtr]::Zero) {
-        $handle = [WinCap]::FindWindowByProcessId([uint32]$proc.Id)
-    }
+while ($handle -eq [IntPtr]::Zero -and $retry -lt 20) {
+    Start-Sleep -Milliseconds 250
+    $handle = [WinCap]::FindWindowByProcessId([uint32]$proc.Id)
     $retry++
 }
 
@@ -135,7 +143,8 @@ if ($handle -ne [IntPtr]::Zero) {
     Start-Sleep -Milliseconds 500
     $success = [WinCap]::Capture($handle, $OutputPath)
     if ($success) {
-        Write-Host "Window captured successfully: $OutputPath"
+        $fileSize = (Get-Item $OutputPath).Length
+        Write-Host "Window captured successfully: $OutputPath ($fileSize bytes)"
     } else {
         Write-Error "BitBlt failed to capture window."
     }

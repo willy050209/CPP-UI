@@ -21,8 +21,10 @@ class DevToolsDemoForm : public app::Form {
 public:
     DevToolsDemoForm() {
         SetTitle("CppUI DevTools Gallery [Press F12 to inspect]");
-        SetWidth(700.0f);
-        SetHeight(500.0f);
+        SetWidth(720.0f);
+        SetHeight(520.0f);
+        SetAutoSize(true);
+        SetAutoSizeMode(app::AutoSizeMode::GrowOnly);
 
         auto rootPanel = std::make_shared<StackPanel>();
         rootPanel->SetOrientation(Orientation::Vertical);

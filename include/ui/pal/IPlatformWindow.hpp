@@ -25,6 +25,7 @@ struct WindowDesc {
     bool resizable = true;
     bool visible = true;
     bool decorated = true;
+    bool centerScreen = true;
 };
 
 /// <summary>

@@ -26,6 +26,8 @@ public:
     DialogGalleryForm() {
         SetTitle("CPPUI 對話框展示庫 (Dialog Gallery)");
         SetFormSize(820, 620);
+        SetAutoSize(true);
+        SetAutoSizeMode(cppui::app::AutoSizeMode::GrowOnly);
         SetStartPosition(cppui::app::FormStartPosition::CenterScreen);
 
         BuildUI();

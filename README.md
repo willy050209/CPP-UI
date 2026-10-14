@@ -127,26 +127,29 @@ int main() {
 
 ## 📁 範例專案索引 (Examples Gallery)
 
-專案提供 16 個完整的模組化範例程式，涵蓋從基礎視窗到高階架構的各項功能：
+專案提供 19 個完整的模組化範例程式，涵蓋從基礎視窗到高階架構的各項功能（詳見 [📖 **範例專案全覽手冊**](examples/README.md)）：
 
-| 範例目錄 | 名稱 | 涵蓋技術重點 |
-| :--- | :--- | :--- |
-| [`examples/hello_world/`](examples/hello_world/) | Hello World 極簡起步 | `Application::Run`、`Form`、Fluent DSL 基礎視窗 |
-| [`examples/bmi_calculator/`](examples/bmi_calculator/) | BMI 健康指數計算機 | 卡片式深色主題、輸入校驗、數值解析與色彩視覺反饋 |
-| [`examples/graphics_drawing_demo/`](examples/graphics_drawing_demo/) | 2D 向量繪圖與影像濾鏡 | GDI+ 風格 `Graphics`、幾何路徑、影像縮放與灰階濾鏡處理 |
-| [`examples/drawing_cardioid_example/`](examples/drawing_cardioid_example/) | 心臟線動畫與自訂繪圖 | 數學幾何運算、`DrawingContext` 畫布自繪與雙緩衝重繪 |
-| [`examples/dialog_gallery/`](examples/dialog_gallery/) | 對話方塊與檔案選取器展示 | MessageBox、OpenFileDialog、SaveFileDialog 與深淺主題切換 |
-| [`examples/mvvm_example/`](examples/mvvm_example/) | 現代 MVVM 計數器 | `ViewModelBase`、`RelayCommand` 雙向綁定與狀態分離 |
-| [`examples/ioc_example/`](examples/ioc_example/) | 依賴注入 (IoC) 購物車訂單 | `ServiceCollection` 依賴注入、服務介面解耦與業務表單 |
-| [`examples/async_events_example/`](examples/async_events_example/) | 非同步調度與計時器 | `Dispatcher` 跨執行緒安全派送、`Timer` 低延遲背景工作 |
-| [`examples/platform_skia_example/`](examples/platform_skia_example/) | Skia 雙引擎切換展示 | Skia GPU 與 Software 渲染引擎動態熱切換驗證 |
-| [`examples/m1_window_demo/`](examples/m1_window_demo/) | M1 平台抽象視窗範例 | 底層 PAL 原生視窗建立與事件循環 |
-| [`examples/m2_displaylist_demo/`](examples/m2_displaylist_demo/) | M2 DisplayList 錄製範例 | 二進位命令串流與高速 Arena 記憶體重播 |
-| [`examples/m3_text_demo/`](examples/m3_text_demo/) | M3 文字塑形與多行排版 | HarfBuzz 塑形、BiDi 雙向分析與 CJK 斷詞展示 |
-| [`examples/m4_layout_demo/`](examples/m4_layout_demo/) | M4 佈局排版管線展示 | StackPanel, Border, Canvas 雙階段排版求解 |
-| [`examples/m5_input_demo/`](examples/m5_input_demo/) | M5 路由事件與焦點管理 | Tunneling/Bubbling 路由、鍵盤 TabIndex 焦點尋路 |
-| [`examples/m6_fluent_rad_demo/`](examples/m6_fluent_rad_demo/) | M6 宣告式 RAD 綜合範例 | Fluent Builder DSL 與 Signals 響應式資料流 |
-| [`examples/m7_mvvm_app_demo/`](examples/m7_mvvm_app_demo/) | M7 高階桌面架構整合範例 | Form 生命週期狀態機、關閉攔截與 IoC 整合驗證 |
+| 範例目錄 | 名稱 | 涵蓋技術重點 | 專屬說明文件 |
+| :--- | :--- | :--- | :--- |
+| [`examples/hello_world/`](examples/hello_world/) | Hello World 極簡起步 | `Application::Run`、`Form`、Fluent DSL 基礎視窗 | [📄 說明文檔](examples/hello_world/README.md) |
+| [`examples/bmi_calculator/`](examples/bmi_calculator/) | BMI 健康指數計算機 | 卡片式深色主題、輸入校驗、數值解析與色彩視覺反饋 | [📄 說明文檔](examples/bmi_calculator/README.md) |
+| [`examples/graphics_drawing_demo/`](examples/graphics_drawing_demo/) | 2D 向量繪圖與影像濾鏡 | GDI+ 風格 `Graphics`、幾何路徑、影像縮放與灰階濾鏡處理 | [📄 說明文檔](examples/graphics_drawing_demo/README.md) |
+| [`examples/drawing_cardioid_example/`](examples/drawing_cardioid_example/) | 心臟線動畫與自訂繪圖 | 數學幾何運算、`DrawingContext` 畫布自繪與雙緩衝重繪 | [📄 說明文檔](examples/drawing_cardioid_example/README.md) |
+| [`examples/dialog_gallery/`](examples/dialog_gallery/) | 對話方塊與檔案選取器展示 | MessageBox、OpenFileDialog、SaveFileDialog 與雙後端派送 | [📄 說明文檔](examples/dialog_gallery/README.md) |
+| [`examples/popup_gallery/`](examples/popup_gallery/) | 彈出層與浮動控制項展示庫 | `OverlayLayer`、ToolTip、ContextMenu、ComboBox 與 Auto-Flip | [📄 說明文檔](examples/popup_gallery/README.md) |
+| [`examples/virtualized_list_demo/`](examples/virtualized_list_demo/) | UI 虛擬化與高階展示控制項 | `ListBox` 100k 筆資料虛擬化、`TreeView`、`DataGrid`、原生剪貼簿 | [📄 說明文檔](examples/virtualized_list_demo/README.md) |
+| [`examples/devtools_gallery/`](examples/devtools_gallery/) | 視覺化診斷工具 (DevTools) | F12 Visual Tree 檢視器、Element Picker 吸管拾取、Dirty Rect 高亮 | [📄 說明文檔](examples/devtools_gallery/README.md) |
+| [`examples/mvvm_example/`](examples/mvvm_example/) | 現代 MVVM 計數器 | `ViewModelBase`、`RelayCommand` 雙向綁定與狀態分離 | [📄 說明文檔](examples/mvvm_example/README.md) |
+| [`examples/ioc_example/`](examples/ioc_example/) | 依賴注入 (IoC) 購物車訂單 | `ServiceCollection` 依賴注入、服務介面解耦與業務表單 | [📄 說明文檔](examples/ioc_example/README.md) |
+| [`examples/async_events_example/`](examples/async_events_example/) | 非同步調度與計時器 | `Dispatcher` 跨執行緒安全派送、`Timer` 低延遲背景工作 | [📄 說明文檔](examples/async_events_example/README.md) |
+| [`examples/platform_skia_example/`](examples/platform_skia_example/) | Skia 雙引擎切換展示 | Skia GPU 與 Software 渲染引擎動態熱切換驗證 | [📄 說明文檔](examples/platform_skia_example/README.md) |
+| [`examples/m1_window_demo/`](examples/m1_window_demo/) | M1 平台抽象視窗範例 | 底層 PAL 原生視窗建立與事件循環 | [📄 說明文檔](examples/m1_window_demo/README.md) |
+| [`examples/m2_displaylist_demo/`](examples/m2_displaylist_demo/) | M2 DisplayList 錄製範例 | 二進位命令串流與高速 Arena 記憶體重播 | [📄 說明文檔](examples/m2_displaylist_demo/README.md) |
+| [`examples/m3_text_demo/`](examples/m3_text_demo/) | M3 文字塑形與多行排版 | HarfBuzz 塑形、BiDi 雙向分析與 CJK 斷詞展示 | [📄 說明文檔](examples/m3_text_demo/README.md) |
+| [`examples/m4_layout_demo/`](examples/m4_layout_demo/) | M4 佈局排版管線展示 | StackPanel, Border, Canvas 雙階段排版求解 | [📄 說明文檔](examples/m4_layout_demo/README.md) |
+| [`examples/m5_input_demo/`](examples/m5_input_demo/) | M5 路由事件與焦點管理 | Tunneling/Bubbling 路由、鍵盤 TabIndex 焦點尋路 | [📄 說明文檔](examples/m5_input_demo/README.md) |
+| [`examples/m6_fluent_rad_demo/`](examples/m6_fluent_rad_demo/) | M6 宣告式 RAD 綜合範例 | Fluent Builder DSL 與 Signals 響應式資料流 | [📄 說明文檔](examples/m6_fluent_rad_demo/README.md) |
+| [`examples/m7_mvvm_app_demo/`](examples/m7_mvvm_app_demo/) | M7 高階桌面架構整合範例 | Form 生命週期狀態機、關閉攔截與 IoC 整合驗證 | [📄 說明文檔](examples/m7_mvvm_app_demo/README.md) |
 
 ---
 
@@ -191,10 +194,10 @@ cmake --build build --config Release
 
 ### 2. 執行單元測試套件 (CTest)
 
-專案包含 21 組高覆蓋率自動化單元測試，全面驗證平台抽象、佈局排版、雙引擎渲染、路由事件、MVVM/IoC 與對話框管線：
+專案包含 30 組高覆蓋率自動化單元測試，全面驗證平台抽象、佈局排版、雙引擎渲染、路由事件、MVVM/IoC、對話框、鍵盤碼、虛擬化與自適應 (AutoSize) 管線：
 
 ```bash
-# 執行 CTest 自動化測試 (21/21 PASS)
+# 執行 CTest 自動化測試 (30/30 PASS)
 ctest --test-dir build -C Release --output-on-failure
 ```
 

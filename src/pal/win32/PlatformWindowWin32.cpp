@@ -85,6 +85,15 @@ PlatformWindowWin32::PlatformWindowWin32(const WindowDesc& desc)
     int32_t windowWidth = rc.right - rc.left;
     int32_t windowHeight = rc.bottom - rc.top;
 
+    int32_t posX = CW_USEDEFAULT;
+    int32_t posY = CW_USEDEFAULT;
+    if (desc.centerScreen) {
+        int32_t screenW = GetSystemMetrics(SM_CXSCREEN);
+        int32_t screenH = GetSystemMetrics(SM_CYSCREEN);
+        posX = (std::max)(0, (screenW - windowWidth) / 2);
+        posY = (std::max)(0, (screenH - windowHeight) / 2);
+    }
+
     std::wstring wideTitle = Utf8ToUtf16(desc.title);
 
     m_hwnd = CreateWindowExW(
@@ -92,7 +101,7 @@ PlatformWindowWin32::PlatformWindowWin32(const WindowDesc& desc)
         WINDOW_CLASS_NAME,
         wideTitle.c_str(),
         style,
-        CW_USEDEFAULT, CW_USEDEFAULT,
+        posX, posY,
         windowWidth, windowHeight,
         nullptr,
         nullptr,
@@ -161,7 +170,8 @@ void PlatformWindowWin32::SetSize(uint32_t width, uint32_t height) {
 
     RECT rc = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
     DWORD style = static_cast<DWORD>(GetWindowLongPtrW(m_hwnd, GWL_STYLE));
-    AdjustWindowRectEx(&rc, style, FALSE, 0);
+    DWORD exStyle = static_cast<DWORD>(GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE));
+    AdjustWindowRectEx(&rc, style, FALSE, exStyle);
 
     SetWindowPos(m_hwnd, nullptr, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
                  SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
