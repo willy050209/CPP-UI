@@ -6,7 +6,7 @@
 
 ## 概述
 
-`cppui::controls` 命名空間收納 CPPUI 跨平台現代桌面 GUI 控制項庫。所有控制項均繼承自 `core::UIElement`，並遵循雙階段排版管線（Measure / Arrange）與 Direct2D/DirectWrite 純量繪圖模型。
+`cppui::controls` 命名空間收納 CPPUI 跨平台現代桌面 GUI 控制項庫。所有控制項均繼承自 `core::UIElement`，並遵循雙階段排版管線（Measure / Arrange）與向量繪圖模型。
 
 ---
 
@@ -25,6 +25,15 @@
 | [`ProgressBar`](../classes/controls_progressbar.md) | `ProgressBar.hpp` | 進度指示條控制項，支援水平/垂直方向、Min/Max/Value 範圍與步進推進。 |
 | [`Slider`](../classes/controls_slider.md) | `Slider.hpp` | 數值滑桿控制項，支援滑塊拖曳、軌道點選跳轉與方向鍵步進微調。 |
 | [`ListBox`](../classes/controls_listbox.md) | `ListBox.hpp` | 清單方塊控制項，支援項目增刪、單選索引與鍵盤/滑鼠巡覽。 |
+| [`ComboBox`](../classes/controls_combobox.md) | `ComboBox.hpp` | 下拉清單選單控制項，支援下拉浮層、智慧翻轉與選取事件。 |
+| [`ContextMenu`](../classes/controls_contextmenu.md) | `ContextMenu.hpp` | 右鍵上下文快顯選單控制項，支援次級子選單與 Light-Dismiss。 |
+| [`MenuItem`](../classes/controls_menuitem.md) | `MenuItem.hpp` | 選單項目，支援標題、快捷鍵手勢、MVVM 命令綁定與次選單。 |
+| [`DataGrid`](../classes/controls_datagrid.md) | `DataGrid.hpp` | 多欄資料表格控制項，支援 Auto/Pixel/Star 欄寬、排序與斑馬線列。 |
+| [`TreeView`](../classes/controls_treeview.md) | `TreeView.hpp` | 階層樹狀檢視控制項，支援展開/折疊、階層縮排與延遲載入。 |
+| [`Popup`](../classes/controls_popup.md) | `Popup.hpp` | 視窗頂層懸浮彈出容器，支援多種停靠定位模式與 Light-Dismiss。 |
+| [`OverlayLayer`](../classes/controls_overlaylayer.md) | `OverlayLayer.hpp` | 視窗頂層懸浮面板容器，承載浮層並支援非阻礙點擊穿透。 |
+| [`ToolTip`](../classes/controls_tooltip.md) | `ToolTip.hpp` | 懸停提示氣泡控制項，展示輔助說明內容。 |
+| [`ToolTipService`](../classes/controls_tooltipservice.md) | `ToolTipService.hpp` | 懸停提示全域服務，為任意元素掛載 ToolTip 提示。 |
 | [`Separator`](../classes/controls_separator.md) | `Separator.hpp` | 分隔線控制項，支援水平或垂直分隔線繪製與厚度樣式調整。 |
 | [`PictureBox`](../classes/controls_picturebox.md) | `PictureBox.hpp` | 圖片展示控制項，支援 5 種尺寸縮放模式、路徑載入與 Bitmap 繫結。 |
 | [`ScrollViewer`](../classes/controls_scrollviewer.md) | `ScrollViewer.hpp` | 捲動視區容器，支援滾輪、拖曳滑塊、邊界剪裁與自動捲軸呈現。 |
@@ -37,4 +46,6 @@
 | :--- | :--- | :--- |
 | `CheckState` | `CheckBox.hpp` | 核取狀態 (`Unchecked`, `Checked`, `Indeterminate`)。 |
 | `ScrollBarVisibility` | `ScrollViewer.hpp` | 捲軸顯示策略 (`Disabled`, `Auto`, `Hidden`, `Visible`)。 |
-
+| `PlacementMode` | `Popup.hpp` | 浮層停靠定位模式 (`Bottom`, `Top`, `Left`, `Right`, `Mouse`, `Custom`)。 |
+| `DataGridLengthUnit` | `DataGrid.hpp` | 表格欄寬長度單位 (`Auto`, `Pixel`, `Star`)。 |
+| `DataGridSortDirection` | `DataGrid.hpp` | 表格欄位排序方向 (`None`, `Ascending`, `Descending`)。 |

@@ -21,9 +21,11 @@ CPPUI 追求極致的跨平台性與高內聚架構。UI 邏輯、佈局系統�
 | 型別 (Type) | 類別形態 | 簡介與職責 |
 | :--- | :--- | :--- |
 | [`IPlatformWindow`](../classes/pal_iplatformwindow.md) | 純虛擬抽象介面 | 跨平台原生視窗的抽象介面，定義視窗操作、DPI 查詢與事件派發合約。 |
-| [`PlatformWindowFactory`](../classes/pal_platformwindowfactory.md) | 工廠類別 | 根據編譯期與執行期作業系統環境建立最佳原生視窗實例（Windows 實例化 Win32，Linux 實例化 X11 或 Generic）。 |
+| [`PlatformWindowFactory`](../classes/pal_platformwindowfactory.md) | 工廠類別 | 根據編譯期與執行期作業系統環境建立最佳原生視窗實例（Windows 實例化 Win32，Linux 實例化 X11 或 Wayland 或 Generic）。 |
 | [`PlatformWindowX11`](../classes/pal_platformwindowx11.md) | 實體實作類別 | Linux X11 / WSLg 原生實體視窗實作，支援 Xlib 事件循環、雙緩衝 XPutImage 繪圖與 Self-pipe 異步喚醒。 |
+| [`PlatformWindowWayland`](../classes/pal_platformwindowwayland.md) | 實體實作類別 | Linux Wayland 現代原生視窗實作，支援 xdg-shell 協議、wl_shm 共享記憶體雙緩衝與 xkbcommon 鍵盤輸入。 |
 | [`PlatformWindowGeneric`](../classes/pal_platformwindowgeneric.md) | 實體實作類別 | 跨平台純記憶體通用虛擬視窗，專為 Headless CI、離線繪圖與單元測試設計。 |
+| [`IClipboard`](../classes/pal_iclipboard.md) | 抽象介面與門面 | 原生系統剪貼簿抽象介面與全域靜態門面 `Clipboard`，支援純文字跨進程複製貼上與記憶體備援。 |
 | [`RunLoop`](../classes/pal_runloop.md) | 實體控制類別 | 主執行緒低延遲事件循環，負責協調原生訊息處理與畫面刷新回呼 (`RenderCallback`)。 |
 
 ---

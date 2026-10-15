@@ -24,4 +24,12 @@ endif()
 # Import targets
 include("${CMAKE_CURRENT_LIST_DIR}/CppUITargets.cmake")
 
+# 確保提供標準目標別名 CppUI::CppUI
+if(TARGET CppUI::cppui_core AND NOT TARGET CppUI::CppUI)
+    add_library(CppUI::CppUI INTERFACE IMPORTED)
+    set_target_properties(CppUI::CppUI PROPERTIES
+        INTERFACE_LINK_LIBRARIES CppUI::cppui_core
+    )
+endif()
+
 check_required_components(CppUI)

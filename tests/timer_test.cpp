@@ -14,7 +14,6 @@
 
 #include "compat/Compat.hpp"
 #include "ui/app/Timer.hpp"
-#include "ui/controls/Timer.hpp"
 #include "ui/app/Application.hpp"
 
 #define TEST_ASSERT(cond) do { \

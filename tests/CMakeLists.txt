@@ -177,6 +177,11 @@ add_executable(reliability_stability_test reliability_stability_test.cpp)
 target_link_libraries(reliability_stability_test PRIVATE cppui_core)
 add_test(NAME ReliabilityStabilityTest COMMAND reliability_stability_test)
 
+# 便利性與開發者體驗 (頂層聚合標頭 ui/CppUI.hpp 與子系統完備性) 單元測試
+add_executable(usability_integration_test usability_integration_test.cpp)
+target_link_libraries(usability_integration_test PRIVATE cppui_core)
+add_test(NAME UsabilityIntegrationTest COMMAND usability_integration_test)
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
@@ -198,7 +203,7 @@ if(ASAN_DLL_DIR)
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
         ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest PopupTest
         ClipboardTest VirtualizationTest TreeViewTest DataGridTest DiagnosticsTest
-        KeyTest AutoSizeTest SecuritySafetyTest ReliabilityStabilityTest
+        KeyTest AutoSizeTest SecuritySafetyTest ReliabilityStabilityTest UsabilityIntegrationTest
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)
