@@ -6,7 +6,7 @@
 #pragma once
 
 #include <functional>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/Button.hpp"
 
 namespace cppui {

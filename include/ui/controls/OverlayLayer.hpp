@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/layout/Panel.hpp"
 
 namespace cppui {

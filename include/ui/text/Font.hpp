@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <string>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 namespace text {

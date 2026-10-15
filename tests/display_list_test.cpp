@@ -6,7 +6,7 @@
 #include <cassert>
 #include <chrono>
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/rendering/LinearArena.hpp"
 #include "ui/rendering/DrawOp.hpp"

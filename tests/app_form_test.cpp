@@ -3,7 +3,7 @@
  * @brief Application & Form 生命週期、事件迴圈、後端切換與契約例外單元測試
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/app/AppBuilder.hpp"

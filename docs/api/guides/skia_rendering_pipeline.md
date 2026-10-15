@@ -88,7 +88,7 @@ cmake.exe --build build --config Release
 ## 5. 程式碼使用範例
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "src/rendering/backend/SkiaRenderContext.hpp"
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/rendering/DisplayListRenderer.hpp"

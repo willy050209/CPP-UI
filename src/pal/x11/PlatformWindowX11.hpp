@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 #include "ui/core/CoordinateTransform.hpp"
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "IServiceProvider.hpp"
 #include <functional>
 #include <memory>

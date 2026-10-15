@@ -162,7 +162,7 @@ static AppBuilder CreateBuilder();
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/app/Form.hpp"
 

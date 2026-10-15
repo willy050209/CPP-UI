@@ -12,7 +12,7 @@
 #include <functional>
 #include <mutex>
 #include <condition_variable>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 
 namespace cppui {

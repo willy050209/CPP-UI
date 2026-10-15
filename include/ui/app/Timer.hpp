@@ -8,7 +8,8 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
+#include "ui/core/LifetimeToken.hpp"
 
 namespace cppui {
 namespace app {
@@ -124,6 +125,15 @@ public:
     /// <param name="handler">回呼常式，不可為空。</param>
     /// <exception cref="std::invalid_argument">當 handler 為空時擲出。</exception>
     void AddTickHandler(TickHandler handler);
+
+    /// <summary>
+    /// 註冊受生命週期權杖保護之無參數 Tick 事件處理常式。
+    /// 當目標物件解構時，回呼常式自動失效不予觸發。
+    /// </summary>
+    /// <param name="token">生命週期權杖。</param>
+    /// <param name="handler">回呼常式，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 handler 為空時擲出。</exception>
+    void AddTickHandler(core::LifetimeToken token, TickHandler handler);
 
     /// <summary>
     /// 註冊接收 Timer 引用之 Tick 事件處理常式。

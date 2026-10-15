@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/Control.hpp"
 #include "ui/layout/LayoutTypes.hpp"
 

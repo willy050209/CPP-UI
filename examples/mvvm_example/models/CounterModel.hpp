@@ -6,7 +6,7 @@
 #pragma once
 
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 /// <summary>
 /// 計數器領域模型 (Domain Model)

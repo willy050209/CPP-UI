@@ -6,7 +6,7 @@
 #pragma once
 
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 
 namespace cppui {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 class ILogger {
 public:

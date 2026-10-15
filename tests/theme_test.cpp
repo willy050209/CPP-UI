@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 #include <stdexcept>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/theme/ThemeTypes.hpp"
 #include "ui/theme/ColorTokens.hpp"
 #include "ui/theme/TypographyTokens.hpp"

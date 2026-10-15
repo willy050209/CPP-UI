@@ -7,7 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/layout/VirtualizingStackPanel.hpp"
 #include "ui/controls/ListBox.hpp"
 #include "ui/controls/TextBlock.hpp"

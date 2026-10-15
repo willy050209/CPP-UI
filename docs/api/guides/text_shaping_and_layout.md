@@ -27,7 +27,7 @@ graph LR
 ```cpp
 #include "ui/text/FontManager.hpp"
 #include "ui/text/TextLayoutEngine.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 using namespace cppui::text;
 using namespace cppui::core;
@@ -117,7 +117,7 @@ void Paint(DrawingContext& dc, const TextLayout& layout, const FontDescriptor& f
 ```cpp
 #include "ui/text/FontManager.hpp"
 #include "ui/text/TextLayoutEngine.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 using namespace cppui::text;
 
@@ -146,7 +146,7 @@ void LoadCustomFontExample() {
 
 ```cpp
 #include "ui/text/FontManager.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 using namespace cppui::text;
 

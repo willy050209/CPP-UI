@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/FormEventArgs.hpp"
 #include "ui/dialogs/DialogCommon.hpp"
 #include <cstdint>

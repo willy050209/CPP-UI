@@ -3,7 +3,7 @@
  * @brief MVVM 架構（ViewModelBase、RelayCommand、DataContext 繼承、執行緒自動封送）單元測試
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/mvvm/ViewModelBase.hpp"
 #include "ui/mvvm/ICommand.hpp"
 #include "ui/mvvm/RelayCommand.hpp"

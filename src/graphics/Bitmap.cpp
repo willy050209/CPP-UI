@@ -37,19 +37,32 @@ struct Bitmap::Impl {
     }
 };
 
-Bitmap::Bitmap(uint32_t width, uint32_t height, PixelFormat format) {
+namespace {
+
+static void ValidateDimensions(uint32_t width, uint32_t height) {
     if (width == 0 || height == 0) {
         throw std::invalid_argument("Bitmap dimensions must be positive.");
     }
+    if (width > Bitmap::MAX_DIMENSION || height > Bitmap::MAX_DIMENSION) {
+        throw std::invalid_argument("Bitmap dimension exceeds maximum allowed dimension (" + compat::to_string(Bitmap::MAX_DIMENSION) + ").");
+    }
+    uint64_t totalPixels = static_cast<uint64_t>(width) * height;
+    if (totalPixels > Bitmap::MAX_PIXELS) {
+        throw std::invalid_argument("Bitmap total pixel count exceeds maximum memory limit.");
+    }
+}
+
+} // anonymous namespace
+
+Bitmap::Bitmap(uint32_t width, uint32_t height, PixelFormat format) {
+    ValidateDimensions(width, height);
     m_impl = std::make_unique<Impl>(width, height, format);
 }
 
 Bitmap::Bitmap(uint32_t width, uint32_t height, compat::span<const uint32_t> pixels, PixelFormat format) {
-    if (width == 0 || height == 0) {
-        throw std::invalid_argument("Bitmap dimensions must be positive.");
-    }
-    size_t required = static_cast<size_t>(width) * height;
-    if (pixels.size() < required) {
+    ValidateDimensions(width, height);
+    uint64_t required = static_cast<uint64_t>(width) * height;
+    if (pixels.size() < static_cast<size_t>(required)) {
         throw std::invalid_argument("Provided pixel buffer size is smaller than image dimensions.");
     }
     m_impl = std::make_unique<Impl>(width, height, pixels, format);
@@ -299,7 +312,11 @@ bool Bitmap::SaveAsBmp(compat::string_view filename) const {
     std::ofstream out(std::string(filename.data(), filename.size()), std::ios::binary);
     if (!out) return false;
 
-    const uint32_t imageSize = m_impl->m_width * m_impl->m_height * 4;
+    const uint64_t imageSize64 = static_cast<uint64_t>(m_impl->m_width) * m_impl->m_height * 4ULL;
+    if (imageSize64 > 0xFFFFFFFFULL - 54ULL) {
+        return false;
+    }
+    const uint32_t imageSize = static_cast<uint32_t>(imageSize64);
     const uint32_t fileSize = 54 + imageSize;
 
     uint8_t fileHeader[14] = {

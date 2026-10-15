@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/Control.hpp"
 #include "ui/input/RoutedEvent.hpp"
 

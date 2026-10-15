@@ -1,6 +1,6 @@
-﻿# 視圖適配器與惰性管道 (compat::views)
+# 視圖適配器與惰性管道 (compat::views)
 
-定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
+定義於標頭檔 [`include/compat/Compat.hpp`](../../../include/compat/Compat.hpp)。  
 所屬命名空間：`compat::views`。
 
 ---
@@ -23,7 +23,7 @@
 所有的視圖適配器均支援管道運算子：
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void ProcessNumbers() {
     using namespace compat::views;
@@ -102,7 +102,7 @@ void ProcessNumbers() {
 
 ### 範例 1：使用 `views::iota` 動態生成網格佈局座標
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 
 void GenerateGridCells() {
@@ -125,7 +125,7 @@ void GenerateGridCells() {
 
 ### 範例 2：ISO C++26 `views::concat` 串接多個圖元緩衝區
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include <vector>
 
 void ProcessAllBuffers() {

@@ -5,7 +5,7 @@
 
 #include <cassert>
 #include <iostream>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/input/Key.hpp"
 #include "ui/input/KeyEventArgs.hpp"
 

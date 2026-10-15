@@ -43,7 +43,7 @@ CPPUI 追求極致的跨平台性與高內聚架構。UI 邏輯、佈局系統�
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
 #include "ui/pal/RunLoop.hpp"
 

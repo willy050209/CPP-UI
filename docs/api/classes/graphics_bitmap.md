@@ -163,7 +163,7 @@ void RotateFlip(RotateFlipType rotateFlipType);
 ```cpp
 #include "ui/graphics/Bitmap.hpp"
 #include "ui/graphics/Colors.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 std::shared_ptr<cppui::graphics::Bitmap> CreateCheckerboard(uint32_t size) {
     auto bmp = std::make_shared<cppui::graphics::Bitmap>(size, size);

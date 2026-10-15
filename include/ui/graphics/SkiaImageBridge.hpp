@@ -6,7 +6,7 @@
 #pragma once
 
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/graphics/Bitmap.hpp"
 
 namespace cppui {

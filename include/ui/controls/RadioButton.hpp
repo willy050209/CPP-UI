@@ -7,7 +7,7 @@
 
 #include <functional>
 #include <string>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/Button.hpp"
 
 namespace cppui {

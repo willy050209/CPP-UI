@@ -89,7 +89,7 @@ public:
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/ioc/ServiceCollection.hpp"
 
 class IRepository {

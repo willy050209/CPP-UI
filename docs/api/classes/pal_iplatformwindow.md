@@ -160,7 +160,7 @@ virtual void PresentFramebuffer(const uint32_t* pixels, uint32_t width, uint32_t
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
 
 void ExampleWindow() {

@@ -3,7 +3,7 @@
  * @brief 視窗自動適配內容尺寸 (Form AutoSize & SizeToContent) 單元測試套件
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/app/FormEventArgs.hpp"
 #include "ui/controls/Button.hpp"

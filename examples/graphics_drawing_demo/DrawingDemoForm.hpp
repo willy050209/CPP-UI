@@ -8,7 +8,7 @@
 
 #include <memory>
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/controls/PictureBox.hpp"
 #include "ui/controls/Label.hpp"

@@ -51,7 +51,7 @@
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/input/RoutedEvent.hpp"
 #include "ui/input/PointerEventArgs.hpp"
 #include "ui/core/UIElement.hpp"

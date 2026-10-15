@@ -4,7 +4,7 @@
  */
 
 #include "ui/app/Application.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "CardioidForm.hpp"
 
 int main() {

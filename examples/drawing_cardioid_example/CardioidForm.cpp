@@ -7,7 +7,7 @@
 #include "ui/graphics/Graphics.hpp"
 #include "ui/graphics/Colors.hpp"
 #include "ui/dsl/Fluent.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include <cmath>
 
 namespace drawing_cardioid_example {

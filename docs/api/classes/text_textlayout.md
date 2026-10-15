@@ -76,7 +76,7 @@ class TextLayout;
 ```cpp
 #include "ui/text/TextLayoutEngine.hpp"
 #include "ui/text/FontManager.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 using namespace cppui::text;
 using namespace cppui::core;

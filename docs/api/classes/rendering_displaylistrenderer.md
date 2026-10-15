@@ -81,7 +81,7 @@ RenderStats Render(const DisplayList& displayList, IRenderTarget* target);
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/rendering/DisplayListRenderer.hpp"
 #include "src/rendering/backend/SoftwareRenderContext.hpp"

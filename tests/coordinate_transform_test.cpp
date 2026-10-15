@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/CoordinateTransform.hpp"
 
 namespace {

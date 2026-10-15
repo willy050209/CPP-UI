@@ -47,7 +47,7 @@ CPPUI 採用類似 Chromium / Skia / Flutter 的 **DisplayList 命令緩衝區�
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/rendering/DrawingContext.hpp"
 #include "ui/rendering/DisplayListRenderer.hpp"

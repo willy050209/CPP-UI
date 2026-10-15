@@ -5,7 +5,7 @@
  *        佈局生命週期、文字協定、字型環境繼承、GDI+ 繪圖互操作與 Fluent DSL。
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/controls/Control.hpp"
 #include "ui/controls/Button.hpp"

@@ -6,7 +6,7 @@
 #include "AsyncEventForm.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/dsl/Fluent.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include <chrono>
 #include <sstream>
 
@@ -168,7 +168,8 @@ void AsyncEventForm::StartBackgroundTask() {
     m_status          = "背景工作進行中...";
     m_logOutput       = "[事件] 已從 UI 主執行緒派生背景 Worker 執行緒。";
 
-    m_workerThread = std::make_unique<std::thread>([this]() {
+    auto token = GetLifetimeToken();
+    m_workerThread = std::make_unique<std::thread>([this, token]() {
         std::stringstream ss;
         ss << std::this_thread::get_id();
         std::string workerTid = ss.str();
@@ -185,8 +186,8 @@ void AsyncEventForm::StartBackgroundTask() {
             // 模擬工作負荷
             std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
-            // 透過 Application::Post 封送回 UI 執行緒
-            cppui::app::Application::Post([this, step, workerTid]() {
+            // 透過 Application::Post 封送回 UI 執行緒 (受 LifetimeToken 保護)
+            cppui::app::Application::Post(token, [this, step, workerTid]() {
                 m_progress = step;
                 m_status   = "背景計算進度中... (" + compat::to_string(step) + "%)";
                 m_threadInfo = "Worker TID: " + workerTid + " | UI 調度親和性: PASS (已於主執行緒執行)";
@@ -197,7 +198,7 @@ void AsyncEventForm::StartBackgroundTask() {
         }
 
         const bool wasCancelled = m_cancelRequested.load();
-        cppui::app::Application::Post([this, wasCancelled]() {
+        cppui::app::Application::Post(token, [this, wasCancelled]() {
             m_workerRunning = false;
             if (wasCancelled) {
                 m_status    = "任務已由使用者手動取消。";
@@ -224,11 +225,12 @@ void AsyncEventForm::StopBackgroundTask() {
 void AsyncEventForm::FireOneShotEvent() {
     m_eventCounter++;
     const uint32_t currentEventId = m_eventCounter;
+    auto token = GetLifetimeToken();
 
-    // 啟動暫時性背景執行緒投遞單次事件
-    std::thread([this, currentEventId]() {
+    // 啟動暫時性背景執行緒投遞單次事件 (受 LifetimeToken 保護，視窗關閉時任務自動略過，杜絕 UAF)
+    std::thread([this, token, currentEventId]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        cppui::app::Application::Post([this, currentEventId]() {
+        cppui::app::Application::Post(token, [this, currentEventId]() {
             m_status    = "已接收單次背景事件 #" + compat::to_string(currentEventId);
             m_logOutput = "[OneShot] 單次背景事件 #" + compat::to_string(currentEventId) + " 已由主執行緒消費處理！";
         });

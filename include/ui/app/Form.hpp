@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "FormEventArgs.hpp"
 #include "ui/controls/ContentControl.hpp"
 #include "ui/core/CoordinateTransform.hpp"

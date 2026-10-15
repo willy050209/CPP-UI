@@ -5,7 +5,7 @@
 
 #include <cassert>
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 #include "ui/rendering/backend/IRenderContext.hpp"
 #include "../src/rendering/backend/SoftwareRenderContext.hpp"

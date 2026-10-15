@@ -3,7 +3,7 @@
  * @brief 影像處理演算法、可分離定點數卷積、多核心視窗切分、灰階、二值化、模糊與邊緣偵測單元測試
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/graphics/Bitmap.hpp"
 #include "ui/graphics/ParallelOptions.hpp"
 #include "ui/graphics/PixelOps.hpp"

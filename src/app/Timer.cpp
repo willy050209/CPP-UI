@@ -376,6 +376,17 @@ void Timer::AddTickHandler(TickHandler handler) {
     });
 }
 
+void Timer::AddTickHandler(core::LifetimeToken token, TickHandler handler) {
+    if (!handler) {
+        throw std::invalid_argument("Timer::AddTickHandler: handler cannot be empty.");
+    }
+    AddTickHandler([token, h = std::move(handler)]() {
+        if (token.IsAlive()) {
+            h();
+        }
+    });
+}
+
 void Timer::AddTickHandler(TickWithSenderHandler handler) {
     if (!handler) {
         throw std::invalid_argument("Timer::AddTickHandler: handler cannot be empty.");

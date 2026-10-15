@@ -4,7 +4,7 @@
  */
 
 #include "SoftwareRenderContext.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "../../text/TextLayoutImpl.hpp"
 #include "../../text/FallbackFontMetrics.hpp"
 #include <cstdint>

@@ -6,7 +6,7 @@
 #include "SkiaDemoForm.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/dsl/Fluent.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace platform_skia_example {
 

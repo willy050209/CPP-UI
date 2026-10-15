@@ -9,7 +9,7 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/ContentControl.hpp"
 #include "ui/app/FormEventArgs.hpp"
 #include "ui/input/RoutedEvent.hpp"

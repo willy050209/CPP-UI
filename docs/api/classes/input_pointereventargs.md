@@ -75,7 +75,7 @@ using PointerEventHandler = std::function<void(PointerEventArgs&)>;
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/input/PointerEventArgs.hpp"
 #include "ui/core/UIElement.hpp"
 

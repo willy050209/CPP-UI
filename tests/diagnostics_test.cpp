@@ -6,7 +6,7 @@
 #include <cassert>
 #include <iostream>
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/diagnostics/DiagnosticsOptions.hpp"
 #include "ui/diagnostics/DirtyRectTracker.hpp"
 #include "ui/diagnostics/VisualTreeInspector.hpp"

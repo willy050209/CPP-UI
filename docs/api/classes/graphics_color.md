@@ -130,7 +130,7 @@ bool operator!=(const Color& other) const noexcept;
 
 ```cpp
 #include "ui/core/Geometry.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void ColorBasicsExample() {
     using cppui::core::Color;
@@ -154,7 +154,7 @@ void ColorBasicsExample() {
 
 ```cpp
 #include "ui/core/Geometry.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 // 依據背景色彩明度自動決定前景色應為黑色或白色 (提升易讀性)
 cppui::core::Color GetContrastingTextColor(cppui::core::Color background) {

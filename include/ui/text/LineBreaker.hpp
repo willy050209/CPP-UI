@@ -8,7 +8,7 @@
 
 #include <vector>
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 namespace text {

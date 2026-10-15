@@ -8,7 +8,7 @@
 
 #include <stdexcept>
 #include <string>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 namespace core {

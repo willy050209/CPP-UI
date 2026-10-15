@@ -7,7 +7,7 @@
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
 #include "ui/pal/PlatformWindowGeneric.hpp"

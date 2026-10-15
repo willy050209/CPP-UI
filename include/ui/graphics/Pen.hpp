@@ -7,7 +7,7 @@
 
 #include <shared_mutex>
 #include <mutex>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/graphics/GraphicsTypes.hpp"
 

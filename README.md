@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![C++ Standard](https://img.shields.io/badge/C%2B%2B-14%20%7C%2017%20%7C%2020%20%7C%2023-blue.svg)](include/compat/compat.hpp)
+[![C++ Standard](https://img.shields.io/badge/C%2B%2B-14%20%7C%2017%20%7C%2020%20%7C%2023-blue.svg)](include/compat/Compat.hpp)
 [![CTest Suite](https://img.shields.io/badge/CTest-21%2F21%20Passing%20(100%25)-success.svg)](tests/)
 [![Compiler Warnings](https://img.shields.io/badge/Compiler%20Warnings-0%20Errors%20%2F%200%20Warnings-brightgreen.svg)](docs/specs/02_coding_standards_compat.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -43,7 +43,7 @@ CPPUI 專案具備完整開箱即用的現代深淺主題、高分屏 DPI 自動
 #include <ui/dsl/Fluent.hpp>
 #include <ui/controls/Button.hpp>
 #include <ui/controls/TextBlock.hpp>
-#include <compat/compat.hpp>
+#include <compat/Compat.hpp>
 
 int main() {
     using namespace cppui::dsl;
@@ -121,7 +121,7 @@ int main() {
 
 ### 10. 全編譯器零警告與全面向下相容 (Zero-Warnings & compat.hpp)
 - 在 MSVC (`/W4`)、GCC (`-Wall -Wextra -Wpedantic`)、Clang 下維持 **0 Warnings / 0 Errors**。
-- 單標頭檔 [`compat.hpp`](include/compat/compat.hpp) 提供 `string_view`, `span`, `expected`, `ranges`, `format`, `print` 等現代 C++ 標準墊片，保證 C++14/17/20/23 跨標準相容。
+- 單標頭檔 [`compat.hpp`](include/compat/Compat.hpp) 提供 `string_view`, `span`, `expected`, `ranges`, `format`, `print` 等現代 C++ 標準墊片，保證 C++14/17/20/23 跨標準相容。
 
 ---
 

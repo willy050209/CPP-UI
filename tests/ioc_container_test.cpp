@@ -3,7 +3,7 @@
  * @brief IoC 控制反轉容器之生命週期 (Transient/Singleton)、依賴解析與執行緒安全單元測試
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/ioc/IServiceProvider.hpp"
 #include "ui/ioc/ServiceCollection.hpp"
 #include <cassert>

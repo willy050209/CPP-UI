@@ -61,7 +61,7 @@ class FontManager;
 
 ```cpp
 #include "ui/text/FontManager.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 using namespace cppui::text;
 

@@ -114,7 +114,7 @@ struct RawWindowEventData {
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 
 void HandleEvent(const cppui::pal::RawInputEvent& e) {

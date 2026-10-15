@@ -7,7 +7,7 @@
 #include "ui/graphics/PixelOps.hpp"
 #include "ui/graphics/Convolution.hpp"
 #include "ui/graphics/SkiaImageBridge.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include <cmath>
 #include <cstring>
 #include <algorithm>
@@ -137,7 +137,7 @@ void ImageFilters::Threshold(Bitmap& bmp, uint8_t threshold, ThresholdType type,
 uint8_t ImageFilters::ComputeOtsuThreshold(const Bitmap& bmp) {
     const uint32_t width = bmp.GetWidth();
     const uint32_t height = bmp.GetHeight();
-    const uint32_t total = width * height;
+    const uint64_t total = static_cast<uint64_t>(width) * height;
     if (total == 0) return 128;
 
     uint32_t hist[256] = { 0 };
@@ -156,14 +156,14 @@ uint8_t ImageFilters::ComputeOtsuThreshold(const Bitmap& bmp) {
     }
 
     float sumB = 0.0f;
-    uint32_t wB = 0;
+    uint64_t wB = 0;
     float maxVariance = 0.0f;
     uint8_t bestThreshold = 0;
 
     for (int32_t t = 0; t < 256; ++t) {
         wB += hist[t];
         if (wB == 0) continue;
-        uint32_t wF = total - wB;
+        uint64_t wF = total - wB;
         if (wF == 0) break;
 
         sumB += static_cast<float>(t) * static_cast<float>(hist[t]);

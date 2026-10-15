@@ -10,7 +10,7 @@
 #include <thread>
 #include <atomic>
 #include <type_traits>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/graphics/Bitmap.hpp"
 #include "ui/graphics/ParallelOptions.hpp"
 #include "ui/core/Geometry.hpp"
@@ -20,38 +20,79 @@ namespace graphics {
 
 namespace detail {
 
+template <size_t N>
+struct priority_tag : priority_tag<N - 1> {};
+
+template <>
+struct priority_tag<0> {};
+
+template <typename Dest>
+COMPAT_ALWAYS_INLINE static typename std::enable_if<!std::is_const<Dest>::value>::type
+AssignColorToPixel(Dest& dest, uint32_t val) {
+    dest = val;
+}
+
+template <typename Dest>
+COMPAT_ALWAYS_INLINE static typename std::enable_if<std::is_const<Dest>::value>::type
+AssignColorToPixel(Dest&, uint32_t) {
+    // 唯讀目的端：空操作
+}
+
+// InvokePixelOp 重載鏈 (由優先權由高至低比對)
+template <typename F, typename P>
+COMPAT_ALWAYS_INLINE static auto InvokePixelOpImpl(F&& f, uint32_t /*x*/, uint32_t /*y*/, P& pixel, priority_tag<4>)
+    -> decltype(f(pixel), void()) {
+    f(pixel);
+}
+
+template <typename F, typename P>
+COMPAT_ALWAYS_INLINE static auto InvokePixelOpImpl(F&& f, uint32_t x, uint32_t y, P& pixel, priority_tag<3>)
+    -> decltype(f(x, y, pixel), void()) {
+    f(x, y, pixel);
+}
+
+template <typename F, typename P>
+COMPAT_ALWAYS_INLINE static auto InvokePixelOpImpl(F&& f, uint32_t x, uint32_t y, P& pixel, priority_tag<2>)
+    -> decltype(f(x, y, std::declval<core::Color&>()), void()) {
+    core::Color c = core::Color::FromArgb(pixel);
+    f(x, y, c);
+    AssignColorToPixel(pixel, c.ToArgb());
+}
+
+template <typename F, typename P>
+COMPAT_ALWAYS_INLINE static auto InvokePixelOpImpl(F&& f, uint32_t x, uint32_t y, P& pixel, priority_tag<1>)
+    -> decltype(f(x, y, std::declval<const core::Color&>()), void()) {
+    core::Color c = core::Color::FromArgb(pixel);
+    f(x, y, c);
+}
+
 template <typename F, typename P>
 COMPAT_ALWAYS_INLINE static void InvokePixelOp(F&& f, uint32_t x, uint32_t y, P& pixel) {
-    if constexpr (std::is_invocable_v<F, P&>) {
-        f(pixel);
-    } else if constexpr (std::is_invocable_v<F, uint32_t, uint32_t, P&>) {
-        f(x, y, pixel);
-    } else if constexpr (std::is_invocable_v<F, uint32_t, uint32_t, core::Color&>) {
-        core::Color c = core::Color::FromArgb(pixel);
-        f(x, y, c);
-        if constexpr (!std::is_const_v<P>) {
-            pixel = c.ToArgb();
-        }
-    } else if constexpr (std::is_invocable_v<F, uint32_t, uint32_t, const core::Color&>) {
-        core::Color c = core::Color::FromArgb(pixel);
-        f(x, y, c);
-    } else {
-        static_assert(std::is_invocable_v<F, P&>, "Incompatible functor signature for PixelOps");
-    }
+    InvokePixelOpImpl(std::forward<F>(f), x, y, pixel, priority_tag<4>{});
+}
+
+// InvokePred 重載鏈
+template <typename Pred, typename P>
+COMPAT_ALWAYS_INLINE static auto InvokePredImpl(Pred&& pred, uint32_t /*x*/, uint32_t /*y*/, const P& pixel, priority_tag<3>)
+    -> decltype(bool(pred(pixel))) {
+    return static_cast<bool>(pred(pixel));
+}
+
+template <typename Pred, typename P>
+COMPAT_ALWAYS_INLINE static auto InvokePredImpl(Pred&& pred, uint32_t x, uint32_t y, const P& pixel, priority_tag<2>)
+    -> decltype(bool(pred(x, y, pixel))) {
+    return static_cast<bool>(pred(x, y, pixel));
+}
+
+template <typename Pred, typename P>
+COMPAT_ALWAYS_INLINE static auto InvokePredImpl(Pred&& pred, uint32_t x, uint32_t y, const P& pixel, priority_tag<1>)
+    -> decltype(bool(pred(x, y, core::Color::FromArgb(pixel)))) {
+    return static_cast<bool>(pred(x, y, core::Color::FromArgb(pixel)));
 }
 
 template <typename Pred, typename P>
 COMPAT_ALWAYS_INLINE static bool InvokePred(Pred&& pred, uint32_t x, uint32_t y, const P& pixel) {
-    if constexpr (std::is_invocable_v<Pred, const P&>) {
-        return pred(pixel);
-    } else if constexpr (std::is_invocable_v<Pred, uint32_t, uint32_t, const P&>) {
-        return pred(x, y, pixel);
-    } else if constexpr (std::is_invocable_v<Pred, uint32_t, uint32_t, const core::Color&>) {
-        return pred(x, y, core::Color::FromArgb(pixel));
-    } else {
-        static_assert(std::is_invocable_v<Pred, const P&>, "Incompatible predicate signature for PixelOps");
-        return false;
-    }
+    return InvokePredImpl(std::forward<Pred>(pred), x, y, pixel, priority_tag<3>{});
 }
 
 template <typename P, typename F>
@@ -98,6 +139,7 @@ public:
         if (width == 0 || height == 0) return;
 
         auto span = bmp.GetPixelSpanMut();
+        if (span.size() < static_cast<size_t>(static_cast<uint64_t>(width) * height)) return;
         uint32_t* pixels = span.data();
 
         if (options.mode == ExecutionMode::SingleThread || options.threadCount <= 1 || height <= 1) {
@@ -124,6 +166,7 @@ public:
         if (width == 0 || height == 0) return;
 
         auto span = bmp.GetPixelSpan();
+        if (span.size() < static_cast<size_t>(static_cast<uint64_t>(width) * height)) return;
         const uint32_t* pixels = span.data();
 
         if (options.mode == ExecutionMode::SingleThread || options.threadCount <= 1 || height <= 1) {
@@ -152,6 +195,7 @@ public:
         if (width == 0 || height == 0) return;
 
         auto span = bmp.GetPixelSpanMut();
+        if (span.size() < static_cast<size_t>(static_cast<uint64_t>(width) * height)) return;
         uint32_t* pixels = span.data();
 
         if (options.mode == ExecutionMode::SingleThread || options.threadCount <= 1 || height <= 1) {
@@ -174,6 +218,7 @@ public:
         if (width == 0 || height == 0) return;
 
         auto span = bmp.GetPixelSpan();
+        if (span.size() < static_cast<size_t>(static_cast<uint64_t>(width) * height)) return;
         const uint32_t* pixels = span.data();
 
         if (options.mode == ExecutionMode::SingleThread || options.threadCount <= 1 || height <= 1) {

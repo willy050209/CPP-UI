@@ -6,7 +6,8 @@
 #pragma once
 
 #include <cstdint>
-#include "compat/compat.hpp"
+#include <cstring>
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/input/Key.hpp"
 
@@ -84,7 +85,7 @@ enum class KeyModifiers : uint8_t {
 /// <param name="a">修飾鍵 A。</param>
 /// <param name="b">修飾鍵 B。</param>
 /// <returns>組合後之修飾鍵旗標。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline KeyModifiers operator|(KeyModifiers a, KeyModifiers b) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 KeyModifiers operator|(KeyModifiers a, KeyModifiers b) noexcept {
     return static_cast<KeyModifiers>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
 }
 
@@ -94,7 +95,7 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline KeyModifiers operator|(KeyModifiers 
 /// <param name="a">修飾鍵 A。</param>
 /// <param name="b">修飾鍵 B。</param>
 /// <returns>交集修飾鍵旗標。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline KeyModifiers operator&(KeyModifiers a, KeyModifiers b) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 KeyModifiers operator&(KeyModifiers a, KeyModifiers b) noexcept {
     return static_cast<KeyModifiers>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
 }
 
@@ -104,7 +105,7 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline KeyModifiers operator&(KeyModifiers 
 /// <param name="mods">修飾鍵集合。</param>
 /// <param name="target">目標待檢測修飾鍵。</param>
 /// <returns>若包含傳回 true，否則傳回 false。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool HasModifier(KeyModifiers mods, KeyModifiers target) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool HasModifier(KeyModifiers mods, KeyModifiers target) noexcept {
     return (mods & target) == target;
 }
 
@@ -119,6 +120,13 @@ struct RawMouseEventData {
     int32_t      wheelDeltaX = 0; // 滾輪水平滾動量
     int32_t      wheelDeltaY = 0; // 滾輪垂直滾動量
     int32_t      clickCount = 1;  // 單擊 (1), 雙擊 (2)
+
+    RawMouseEventData() noexcept = default;
+    RawMouseEventData(core::Point pos, core::Point phys, core::Point logi,
+                      RawMouseButton btn = RawMouseButton::None,
+                      int32_t wdx = 0, int32_t wdy = 0, int32_t clicks = 1) noexcept
+        : position(pos), physicalPosition(phys), logicalPosition(logi),
+          button(btn), wheelDeltaX(wdx), wheelDeltaY(wdy), clickCount(clicks) {}
 };
 
 /// <summary>
@@ -128,6 +136,10 @@ struct RawKeyEventData {
     uint32_t virtualKey = 0; // 虛擬鍵碼 (VK_*)
     uint32_t scanCode   = 0; // 平台掃描碼
     bool     isRepeat   = false;
+
+    RawKeyEventData() noexcept = default;
+    RawKeyEventData(uint32_t vk, uint32_t sc, bool repeat = false) noexcept
+        : virtualKey(vk), scanCode(sc), isRepeat(repeat) {}
 };
 
 /// <summary>
@@ -135,6 +147,9 @@ struct RawKeyEventData {
 /// </summary>
 struct RawTextInputData {
     uint32_t codepoint = 0;
+
+    RawTextInputData() noexcept = default;
+    explicit RawTextInputData(uint32_t cp) noexcept : codepoint(cp) {}
 };
 
 /// <summary>
@@ -144,6 +159,19 @@ struct RawImeData {
     char    text[128] = {};       // UTF-8 組字或定稿字串
     int32_t cursorPosition = 0;   // 組字串內之游標字元偏移
     bool    isResult = false;     // true 代表定稿確認，false 代表組字中
+
+    RawImeData() noexcept = default;
+    RawImeData(const char* txt, int32_t cursorPos, bool result) noexcept
+        : text{}, cursorPosition(cursorPos), isResult(result) {
+        if (txt) {
+            size_t i = 0;
+            while (i < sizeof(text) - 1 && txt[i] != '\0') {
+                text[i] = txt[i];
+                ++i;
+            }
+            text[i] = '\0';
+        }
+    }
 };
 
 /// <summary>
@@ -153,6 +181,10 @@ struct RawWindowEventData {
     uint32_t width  = 0; // 客戶區物理像素寬度
     uint32_t height = 0; // 客戶區物理像素高度
     float    dpiScale = 1.0f; // DPI 縮放係數 (如 1.0, 1.25, 1.5, 2.0)
+
+    RawWindowEventData() noexcept = default;
+    RawWindowEventData(uint32_t w, uint32_t h, float dpi = 1.0f) noexcept
+        : width(w), height(h), dpiScale(dpi) {}
 };
 
 /// <summary>

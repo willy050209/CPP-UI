@@ -5,7 +5,7 @@
 
 #include <cassert>
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/rendering/backend/IRenderContext.hpp"
 #include "../src/rendering/backend/SkiaRenderContext.hpp"
 #include "ui/rendering/DisplayList.hpp"

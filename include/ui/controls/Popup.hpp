@@ -10,7 +10,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/ContentControl.hpp"
 #include "ui/input/ILightDismissable.hpp"
 

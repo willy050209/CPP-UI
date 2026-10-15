@@ -7,7 +7,7 @@
 
 #include <memory>
 #include <vector>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/graphics/GraphicsTypes.hpp"
 #include "ui/graphics/Pen.hpp"

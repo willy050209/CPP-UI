@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 namespace core {
@@ -297,7 +297,7 @@ struct Color {
     /// <summary>
     /// 預設建構黑色不透明顏色 (0, 0, 0, 255)。
     /// </summary>
-    COMPAT_CONSTEXPR_14 Color() noexcept = default;
+    COMPAT_CONSTEXPR Color() noexcept = default;
 
     /// <summary>
     /// 以指定 RGBA 分量建構顏色。
@@ -306,7 +306,7 @@ struct Color {
     /// <param name="green">綠色通道 (0-255)。</param>
     /// <param name="blue">藍色通道 (0-255)。</param>
     /// <param name="alpha">不透明度通道 (0-255)，預設為 255。</param>
-    COMPAT_CONSTEXPR_14 Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) noexcept
+    COMPAT_CONSTEXPR Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) noexcept
         : r(red), g(green), b(blue), a(alpha) {}
 
     /// <summary>
@@ -317,7 +317,7 @@ struct Color {
     /// <param name="g">綠色通道 (0-255)。</param>
     /// <param name="b">藍色通道 (0-255)。</param>
     /// <returns>對應之 Color 物件。</returns>
-    COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint8_t a, uint8_t r, uint8_t g, uint8_t b) noexcept {
+    COMPAT_NODISCARD static COMPAT_CONSTEXPR Color FromArgb(uint8_t a, uint8_t r, uint8_t g, uint8_t b) noexcept {
         return Color(r, g, b, a);
     }
 
@@ -328,7 +328,7 @@ struct Color {
     /// <param name="g">綠色通道 (0-255)。</param>
     /// <param name="b">藍色通道 (0-255)。</param>
     /// <returns>對應之 Color 物件。</returns>
-    COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint8_t r, uint8_t g, uint8_t b) noexcept {
+    COMPAT_NODISCARD static COMPAT_CONSTEXPR Color FromArgb(uint8_t r, uint8_t g, uint8_t b) noexcept {
         return Color(r, g, b, 255);
     }
 
@@ -337,7 +337,7 @@ struct Color {
     /// </summary>
     /// <param name="argb">32 位元 ARGB 封裝值。</param>
     /// <returns>對應之 Color 物件。</returns>
-    COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint32_t argb) noexcept {
+    COMPAT_NODISCARD static COMPAT_CONSTEXPR Color FromArgb(uint32_t argb) noexcept {
         return Color(
             static_cast<uint8_t>((argb >> 16) & 0xFF),
             static_cast<uint8_t>((argb >> 8) & 0xFF),
@@ -352,7 +352,7 @@ struct Color {
     /// <param name="a">不透明度通道 (0-255)。</param>
     /// <param name="baseColor">基底顏色。</param>
     /// <returns>對應之 Color 物件。</returns>
-    COMPAT_NODISCARD static COMPAT_CONSTEXPR_14 Color FromArgb(uint8_t a, const Color& baseColor) noexcept {
+    COMPAT_NODISCARD static COMPAT_CONSTEXPR Color FromArgb(uint8_t a, const Color& baseColor) noexcept {
         return Color(baseColor.r, baseColor.g, baseColor.b, a);
     }
 
@@ -360,7 +360,7 @@ struct Color {
     /// 將當前顏色轉換為 32 位元 ARGB 整數值 (0xAARRGGBB)。
     /// </summary>
     /// <returns>32 位元 ARGB 整數。</returns>
-    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 uint32_t ToArgb() const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR uint32_t ToArgb() const noexcept {
         return (static_cast<uint32_t>(a) << 24) |
                (static_cast<uint32_t>(r) << 16) |
                (static_cast<uint32_t>(g) << 8) |
@@ -371,7 +371,7 @@ struct Color {
     /// 檢查此顏色是否為未初始化的空顏色 (全 0)。
     /// </summary>
     /// <returns>若 RGBA 全為 0 傳回 true，否則傳回 false。</returns>
-    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool IsEmpty() const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR bool IsEmpty() const noexcept {
         return r == 0 && g == 0 && b == 0 && a == 0;
     }
 
@@ -440,7 +440,7 @@ struct Color {
     /// </summary>
     /// <param name="other">待比較的另一顏色。</param>
     /// <returns>若 RGBA 四通道皆相等傳回 true，否則傳回 false。</returns>
-    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator==(const Color& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR bool operator==(const Color& other) const noexcept {
         return r == other.r && g == other.g && b == other.b && a == other.a;
     }
 
@@ -449,7 +449,7 @@ struct Color {
     /// </summary>
     /// <param name="other">待比較的另一顏色。</param>
     /// <returns>若任一通道不相等傳回 true，否則傳回 false。</returns>
-    COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const Color& other) const noexcept {
+    COMPAT_NODISCARD COMPAT_CONSTEXPR bool operator!=(const Color& other) const noexcept {
         return !(*this == other);
     }
 };

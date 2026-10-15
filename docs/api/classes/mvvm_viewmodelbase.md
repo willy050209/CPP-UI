@@ -51,7 +51,7 @@ protected:
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/mvvm/ViewModelBase.hpp"
 
 class UserProfileViewModel : public cppui::mvvm::ViewModelBase {

@@ -5,7 +5,7 @@
 
 #include "BmiForm.hpp"
 #include "ui/dsl/Fluent.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace bmi_calculator {
 

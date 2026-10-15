@@ -1,6 +1,6 @@
-﻿# 受約束範圍與演算法 (compat::ranges)
+# 受約束範圍與演算法 (compat::ranges)
 
-定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
+定義於標頭檔 [`include/compat/Compat.hpp`](../../../include/compat/Compat.hpp)。  
 所屬命名空間：`compat::ranges`。
 
 ---
@@ -57,7 +57,7 @@ CPO 是一組特殊的函式物件，保證安全統一存取容器或陣列的�
 傳統 C++ 排序結構體時必須撰寫自訂 Lambda，而在 `compat::ranges` 中，可以直接傳入成員指標或投影函式：
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include <vector>
 
 struct Widget {
@@ -96,7 +96,7 @@ void SortWidgetsByZIndex() {
 支援將任何管線視圖結果一鍵轉換為指定實體 STL 容器：
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include <vector>
 
 void ConvertViewToVector() {

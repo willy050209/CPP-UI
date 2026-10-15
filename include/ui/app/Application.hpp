@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "Form.hpp"
 #include "PlatformBackend.hpp"
 #include "Dispatcher.hpp"
@@ -155,6 +155,15 @@ public:
     /// <param name="action">待排隊執行的任務回呼，不可為空。</param>
     /// <exception cref="std::invalid_argument">當 action 為空時擲出。</exception>
     static void Post(std::function<void()> action);
+
+    /// <summary>
+    /// 將受生命週期權杖保護之非同步任務投遞至 UI 執行緒執行。
+    /// 若執行時權杖已失效，調度器自動捨棄該任務以防範 Use-After-Free。
+    /// </summary>
+    /// <param name="token">生命週期權杖。</param>
+    /// <param name="action">待排隊執行的任務回呼，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 action 為空時擲出。</exception>
+    static void Post(core::LifetimeToken token, std::function<void()> action);
 
     /// <summary>
     /// 檢查呼叫端是否運行於 UI 主執行緒。

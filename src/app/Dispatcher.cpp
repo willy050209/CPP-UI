@@ -15,13 +15,17 @@ Dispatcher::Dispatcher()
     : m_mainThreadId(std::this_thread::get_id()), m_hasMainThreadId(true) {}
 
 void Dispatcher::InvokeAsync(std::function<void()> action) {
+    InvokeAsync(core::LifetimeToken{}, std::move(action));
+}
+
+void Dispatcher::InvokeAsync(core::LifetimeToken token, std::function<void()> action) {
     if (!action) {
         throw std::invalid_argument("Dispatcher::InvokeAsync: action cannot be empty.");
     }
 
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_queue.push(std::move(action));
+        m_queue.push(TaskEntry{ std::move(action), std::move(token) });
     }
 
     Application::WakeUpUIThread();
@@ -35,7 +39,7 @@ bool Dispatcher::CheckAccess() const noexcept {
 }
 
 void Dispatcher::DrainTasks() {
-    std::vector<std::function<void()>> tasks;
+    std::vector<TaskEntry> tasks;
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         while (!m_queue.empty()) {
@@ -45,9 +49,13 @@ void Dispatcher::DrainTasks() {
     }
 
     for (const auto& task : tasks) {
-        if (task) {
+        if (task.action) {
+            // 若任務關聯了生命週期權杖，檢查其所屬物件是否仍存活；若已失效則安全略過以防 Use-After-Free
+            if (task.token.HasHandle() && !task.token.IsAlive()) {
+                continue;
+            }
             try {
-                task();
+                task.action();
             } catch (...) {
                 // 防禦性捕捉任務異常，防止中斷 UI 訊息迴圈
             }
@@ -62,7 +70,7 @@ void Dispatcher::SetMainThreadId(std::thread::id threadId) noexcept {
 
 void Dispatcher::Clear() {
     std::lock_guard<std::mutex> lock(m_mutex);
-    std::queue<std::function<void()>> empty;
+    std::queue<TaskEntry> empty;
     std::swap(m_queue, empty);
 }
 

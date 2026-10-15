@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/graphics/Bitmap.hpp"
 #include "ui/graphics/ParallelOptions.hpp"
 

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <string>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 #include "ui/input/RoutedEventArgs.hpp"
 #include "ui/input/Key.hpp"

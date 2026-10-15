@@ -72,7 +72,7 @@ private:
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/input/FocusManager.hpp"
 #include "ui/core/UIElement.hpp"
 

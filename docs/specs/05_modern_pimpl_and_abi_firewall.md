@@ -134,7 +134,7 @@ private:
 #pragma once
 
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 

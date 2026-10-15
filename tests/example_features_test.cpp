@@ -3,7 +3,7 @@
  * @brief 平台切換 (強制 Skia)、非同步事件 (Dispatcher) 與心臟線漸層繪圖全自動單元測試
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/app/AppBuilder.hpp"
 #include "ui/app/Form.hpp"

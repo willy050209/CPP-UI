@@ -7,7 +7,7 @@
 #include <chrono>
 #include <memory>
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Visual.hpp"
 #include "ui/core/UIElement.hpp"
 #include "ui/layout/LayoutTypes.hpp"

@@ -98,7 +98,7 @@ COMPAT_NODISCARD compat::span<const uint32_t> GetFramebufferPixels() const noexc
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
 #include "ui/pal/PlatformWindowGeneric.hpp"
 #include "ui/pal/RawInputEvent.hpp"

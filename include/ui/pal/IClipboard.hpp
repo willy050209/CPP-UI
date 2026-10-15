@@ -7,7 +7,7 @@
 
 #include <string>
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 namespace pal {

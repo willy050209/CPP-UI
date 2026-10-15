@@ -7,7 +7,7 @@
 
 #include <memory>
 #include <vector>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/Popup.hpp"
 #include "ui/controls/MenuItem.hpp"
 

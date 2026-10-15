@@ -10,7 +10,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/layout/Panel.hpp"
 #include "ui/layout/LayoutTypes.hpp"
 

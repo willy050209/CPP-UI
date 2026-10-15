@@ -3,7 +3,7 @@
  * @brief UI 虛擬化與高階展示控制項範例 (ListBox 100k, TreeView, DataGrid, TextBox 剪貼簿)
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/AppBuilder.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/controls/ListBox.hpp"

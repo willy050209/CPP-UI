@@ -317,6 +317,13 @@ void Application::Post(std::function<void()> action) {
     s_dispatcher.Post(std::move(action));
 }
 
+void Application::Post(core::LifetimeToken token, std::function<void()> action) {
+    if (!action) {
+        throw std::invalid_argument("Application::Post: action cannot be empty.");
+    }
+    s_dispatcher.Post(token, std::move(action));
+}
+
 bool Application::CheckAccess() noexcept {
     return s_dispatcher.CheckAccess();
 }

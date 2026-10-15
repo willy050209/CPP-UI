@@ -11,7 +11,9 @@
 #include <algorithm>
 #include <functional>
 #include <vector>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
+#include "ui/core/LifetimeToken.hpp"
+#include "ui/reactive/Signal.hpp"
 #include "ui/core/Visual.hpp"
 #include "ui/layout/LayoutTypes.hpp"
 #include "ui/input/RoutedEvent.hpp"
@@ -504,11 +506,35 @@ public:
     /// <param name="tabStop">是否為停靠點。</param>
     void SetTabStop(bool tabStop) noexcept { m_isTabStop = tabStop; }
 
+    // --- 生命週期權杖與連線管理 ---
+
+    /// <summary>
+    /// 取得與本 UIElement 生命週期繫結之輕量級權杖 (LifetimeToken)。
+    /// 當本元件解構時該權杖自動失效，可用於防範非同步回呼、Dispatcher 與定時器之 Use-After-Free。
+    /// </summary>
+    /// <returns>所屬 LifetimeToken 實例。</returns>
+    COMPAT_NODISCARD LifetimeToken GetLifetimeToken() const noexcept { return m_lifetimeToken; }
+
+    /// <summary>
+    /// 將 RAII 訂閱連線納入本元件生命週期管理，元件解構時自動中斷訂閱。
+    /// </summary>
+    /// <param name="connection">欲託管之 ScopedConnection。</param>
+    void ManageConnection(reactive::ScopedConnection connection) {
+        m_managedConnections.push_back(std::move(connection));
+    }
+
 protected:
+    core::LifetimeToken                        m_lifetimeToken{ core::LifetimeToken::Create() };
+    std::vector<reactive::ScopedConnection>    m_managedConnections;
+
     struct HandlerEntry {
         uint32_t           eventId = 0;
         RoutedEventHandler handler;
         bool               handledEventsToo = false;
+
+        HandlerEntry() = default;
+        HandlerEntry(uint32_t id, RoutedEventHandler h, bool too = false)
+            : eventId(id), handler(std::move(h)), handledEventsToo(too) {}
     };
     std::vector<HandlerEntry> m_eventHandlers;
     std::shared_ptr<void>     m_dataContext;

@@ -4,7 +4,7 @@
  */
 
 #include "ui/graphics/Convolution.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include <cmath>
 #include <algorithm>
 #include <thread>
@@ -120,6 +120,9 @@ void ConvolutionEngine::ConvolveSeparable(
 
     if (width == 0 || height == 0) {
         throw std::invalid_argument("ConvolutionEngine::ConvolveSeparable: source bitmap has zero dimensions");
+    }
+    if (width > Bitmap::MAX_DIMENSION || height > Bitmap::MAX_DIMENSION || (static_cast<uint64_t>(width) * height > Bitmap::MAX_PIXELS)) {
+        throw std::invalid_argument("ConvolutionEngine::ConvolveSeparable: bitmap dimensions exceed safety limit");
     }
     if (dst.GetWidth() != width || dst.GetHeight() != height) {
         throw std::invalid_argument("ConvolutionEngine::ConvolveSeparable: destination bitmap dimensions must match source");
@@ -267,11 +270,18 @@ void ConvolutionEngine::Convolve2D(
     if (width == 0 || height == 0) {
         throw std::invalid_argument("ConvolutionEngine::Convolve2D: source bitmap has zero dimensions");
     }
+    if (width > Bitmap::MAX_DIMENSION || height > Bitmap::MAX_DIMENSION || (static_cast<uint64_t>(width) * height > Bitmap::MAX_PIXELS)) {
+        throw std::invalid_argument("ConvolutionEngine::Convolve2D: bitmap dimensions exceed safety limit");
+    }
     if (dst.GetWidth() != width || dst.GetHeight() != height) {
         throw std::invalid_argument("ConvolutionEngine::Convolve2D: destination bitmap dimensions must match source");
     }
     if (kernel.width <= 0 || kernel.height <= 0 || kernel.weights.empty()) {
         throw std::invalid_argument("ConvolutionEngine::Convolve2D: invalid kernel geometry or empty weights");
+    }
+    uint64_t requiredKernelWeights = static_cast<uint64_t>(kernel.width) * kernel.height;
+    if (kernel.weights.size() < static_cast<size_t>(requiredKernelWeights)) {
+        throw std::invalid_argument("ConvolutionEngine::Convolve2D: kernel weights count does not match kernel dimensions");
     }
     if (kernel.divisor == 0) {
         throw std::invalid_argument("ConvolutionEngine::Convolve2D: kernel divisor cannot be zero");

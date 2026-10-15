@@ -81,7 +81,7 @@ COMPAT_NODISCARD bool IsSkiaActive() const noexcept;
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "src/rendering/backend/SkiaRenderContext.hpp"
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/rendering/DisplayListRenderer.hpp"

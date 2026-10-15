@@ -57,7 +57,7 @@ class BiDiAnalyzer;
 
 ```cpp
 #include "ui/text/BiDiAnalyzer.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 using namespace cppui::text;
 

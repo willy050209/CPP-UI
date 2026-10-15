@@ -82,7 +82,7 @@ public:
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/input/InputManager.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 #include "ui/core/UIElement.hpp"

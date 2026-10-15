@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cstdint>
 #include <string>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 #include "ui/input/KeyEventArgs.hpp"

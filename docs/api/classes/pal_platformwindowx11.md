@@ -110,7 +110,7 @@ flowchart TD
 
 ```cpp
 #include "ui/pal/PlatformWindowFactory.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void LaunchWindow() {
     using namespace cppui::pal;

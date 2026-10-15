@@ -99,7 +99,7 @@ void Reset() noexcept;
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/rendering/LinearArena.hpp"
 
 struct Particle {

@@ -8,6 +8,8 @@ namespace cppui {
 namespace core {
 
 UIElement::~UIElement() {
+    m_lifetimeToken.Invalidate();
+    m_managedConnections.clear();
     input::FocusManager::Get().NotifyElementDestroyed(this);
     input::InputManager::Get().NotifyElementDestroyed(this);
 }

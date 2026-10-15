@@ -7,7 +7,7 @@
 
 #include <cstdint>
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/graphics/GraphicsTypes.hpp"
 
@@ -20,13 +20,19 @@ namespace graphics {
 /// </summary>
 class Bitmap : public std::enable_shared_from_this<Bitmap> {
 public:
+    /// <summary>點陣圖單邊最大允許像素維度 (32768)。</summary>
+    static constexpr uint32_t MAX_DIMENSION = 32768;
+
+    /// <summary>點陣圖最大允許總像素數 (268,435,456，約 1GB 記憶體容量)。</summary>
+    static constexpr uint64_t MAX_PIXELS    = 256ULL * 1024ULL * 1024ULL;
+
     /// <summary>
     /// 以指定寬度與高度建構全透明初始點陣圖。
     /// </summary>
-    /// <param name="width">影像寬度像素值 (必須大於 0)。</param>
-    /// <param name="height">影像高度像素值 (必須大於 0)。</param>
+    /// <param name="width">影像寬度像素值 (必須介於 1 ~ MAX_DIMENSION)。</param>
+    /// <param name="height">影像高度像素值 (必須介於 1 ~ MAX_DIMENSION)。</param>
     /// <param name="format">像素資料格式，預設為 Format32bppArgb。</param>
-    /// <exception cref="std::invalid_argument">若 width 或 height 為 0 擲出例外。</exception>
+    /// <exception cref="std::invalid_argument">若 width 或 height 為 0、超出上限或乘積溢位擲出例外。</exception>
     Bitmap(uint32_t width, uint32_t height, PixelFormat format = PixelFormat::Format32bppArgb);
 
     /// <summary>

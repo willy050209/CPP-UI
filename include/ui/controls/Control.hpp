@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 #include <functional>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/core/UIElement.hpp"
 #include "ui/rendering/DrawingContext.hpp"
@@ -45,19 +45,19 @@ enum class AnchorStyles : uint32_t {
     Right  = 1 << 3
 };
 
-COMPAT_CONSTEXPR_14 inline AnchorStyles operator|(AnchorStyles a, AnchorStyles b) noexcept {
+COMPAT_CONSTEXPR_14 AnchorStyles operator|(AnchorStyles a, AnchorStyles b) noexcept {
     return static_cast<AnchorStyles>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
 }
 
-COMPAT_CONSTEXPR_14 inline AnchorStyles operator&(AnchorStyles a, AnchorStyles b) noexcept {
+COMPAT_CONSTEXPR_14 AnchorStyles operator&(AnchorStyles a, AnchorStyles b) noexcept {
     return static_cast<AnchorStyles>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
 }
 
-COMPAT_CONSTEXPR_14 inline AnchorStyles operator^(AnchorStyles a, AnchorStyles b) noexcept {
+COMPAT_CONSTEXPR_14 AnchorStyles operator^(AnchorStyles a, AnchorStyles b) noexcept {
     return static_cast<AnchorStyles>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
 }
 
-COMPAT_CONSTEXPR_14 inline AnchorStyles operator~(AnchorStyles a) noexcept {
+COMPAT_CONSTEXPR_14 AnchorStyles operator~(AnchorStyles a) noexcept {
     return static_cast<AnchorStyles>(~static_cast<uint32_t>(a));
 }
 

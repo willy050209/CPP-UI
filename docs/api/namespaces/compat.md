@@ -1,6 +1,6 @@
-﻿# compat 核心相容層技術手冊 (Namespace & Shim Architecture)
+# compat 核心相容層技術手冊 (Namespace & Shim Architecture)
 
-`compat` 命名空間與單標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp) 為 CPPUI 提供 **零外部依賴、向下相容 C++14/17、向上對齊 C++20/23/26** 的現代 C++ 墊片架構 (Compatibility Shim Layer)。
+`compat` 命名空間與單標頭檔 [`include/compat/Compat.hpp`](../../../include/compat/Compat.hpp) 為 CPPUI 提供 **零外部依賴、向下相容 C++14/17、向上對齊 C++20/23/26** 的現代 C++ 墊片架構 (Compatibility Shim Layer)。
 
 ---
 
@@ -10,7 +10,7 @@ CPPUI 採用業界高標準的雙軌執行模型，兼顧現代編譯器的極�
 
 ```mermaid
 flowchart TD
-    App["CPPUI 應用程式 / 核心庫"] --> Include["引入 &lt;compat/compat.hpp&gt;"]
+    App["CPPUI 應用程式 / 核心庫"] --> Include["引入 &lt;compat/Compat.hpp&gt;"]
     Include --> Check{"編譯器語言標準與標準庫支援？"}
     Check -- "C++20/23/26 且標準庫具備原生實作" --> StdRoute["透傳至原生 std::* (Zero Overhead)"]
     Check -- "C++14/17 或 -DCOMPAT_FORCE_SELF_IMPLEMENTATION" --> SelfRoute["切換至純自研 Fallback 實作"]
@@ -82,7 +82,7 @@ flowchart TD
 
 ### 4.1 字串檢視：`compat::string_view`
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 // 唯讀字串參數強制首選 string_view
 void DrawLabel(compat::string_view label) {
@@ -95,7 +95,7 @@ void DrawLabel(compat::string_view label) {
 
 ### 4.2 區間數值夾取：`compat::clamp`
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 // 向下相容 C++14 的安全數值夾取 (取代 C++17 std::clamp)
 float opacity = compat::clamp(currentOpacity * factor, 0.0f, 1.0f);
@@ -103,7 +103,7 @@ float opacity = compat::clamp(currentOpacity * factor, 0.0f, 1.0f);
 
 ### 4.3 跨平台路徑：`compat::filesystem`
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void CheckAsset(const compat::filesystem::path& assetPath) {
     if (compat::filesystem::exists(assetPath)) {

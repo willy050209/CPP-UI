@@ -10,7 +10,7 @@
 #include <memory>
 #include <algorithm>
 #include <limits>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/ContentControl.hpp"
 #include "ui/input/PointerEventArgs.hpp"
 

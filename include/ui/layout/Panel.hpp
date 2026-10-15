@@ -9,7 +9,7 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/UIElement.hpp"
 
 namespace cppui {

@@ -88,7 +88,7 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool operator!=(const Point& other) const n
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 
 void ExamplePoint() {

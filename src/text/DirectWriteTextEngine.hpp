@@ -15,7 +15,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/text/Font.hpp"
 #include "ui/text/TextLayout.hpp"
 

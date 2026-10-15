@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <cmath>
 #include <algorithm>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 namespace text {

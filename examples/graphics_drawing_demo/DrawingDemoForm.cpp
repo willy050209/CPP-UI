@@ -9,7 +9,7 @@
 #include "ui/graphics/Brush.hpp"
 #include "ui/graphics/Pen.hpp"
 #include "ui/graphics/Colors.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include <cmath>
 #include <vector>
 

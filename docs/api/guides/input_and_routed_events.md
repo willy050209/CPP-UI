@@ -123,7 +123,7 @@ button.OnPointerReleased([&](PointerEventArgs& e) {
 以下展示如何在一個複合互動卡片中運用隧道攔截、按鈕冒泡、文字輸入與 Tab 導航：
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/UIElement.hpp"
 #include "ui/layout/StackPanel.hpp"
 #include "ui/layout/Border.hpp"

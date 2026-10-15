@@ -98,7 +98,7 @@ $O(1)$ 清空命令清單，保留已分配記憶體供下一幀重用。
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/rendering/DisplayList.hpp"
 
 void InspectDisplayList(const cppui::rendering::DisplayList& dl) {

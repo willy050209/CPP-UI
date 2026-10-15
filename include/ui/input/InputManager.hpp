@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/RawInputEvent.hpp"
 #include "ui/input/InputTypes.hpp"
 #include "ui/input/RoutedEvent.hpp"

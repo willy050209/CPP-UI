@@ -5,7 +5,7 @@
 
 #include "ui/app/Application.hpp"
 #include "ui/app/AppBuilder.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "SkiaDemoForm.hpp"
 
 int main() {

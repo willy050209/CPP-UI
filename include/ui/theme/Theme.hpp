@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ThemeTypes.hpp"
 #include "ColorTokens.hpp"
 #include "TypographyTokens.hpp"

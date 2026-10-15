@@ -90,7 +90,7 @@ enum class FontStretch : uint8_t;
 
 ```cpp
 #include "ui/text/Font.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 using namespace cppui::text;
 

@@ -61,7 +61,7 @@ class LineBreaker;
 
 ```cpp
 #include "ui/text/LineBreaker.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 using namespace cppui::text;
 

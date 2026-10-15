@@ -3,7 +3,7 @@
  * @brief GDI+ 風格現代 2D 圖形 API、Skia/軟體雙引擎、執行緒安全自動同步與 PictureBox 100% 覆蓋單元測試
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/graphics/GraphicsTypes.hpp"
 #include "ui/graphics/Colors.hpp"

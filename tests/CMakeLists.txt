@@ -167,6 +167,11 @@ add_executable(autosize_test autosize_test.cpp)
 target_link_libraries(autosize_test PRIVATE cppui_core)
 add_test(NAME AutoSizeTest COMMAND autosize_test)
 
+# 安全性與記憶體安全 (LinearArena 對齊、LifetimeToken UAF 防禦、Bitmap 溢位防護) 單元測試
+add_executable(security_safety_test security_safety_test.cpp)
+target_link_libraries(security_safety_test PRIVATE cppui_core)
+add_test(NAME SecuritySafetyTest COMMAND security_safety_test)
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
@@ -188,7 +193,7 @@ if(ASAN_DLL_DIR)
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
         ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest PopupTest
         ClipboardTest VirtualizationTest TreeViewTest DataGridTest DiagnosticsTest
-        KeyTest AutoSizeTest
+        KeyTest AutoSizeTest SecuritySafetyTest
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)

@@ -1,4 +1,4 @@
-﻿# 高分屏 DPI 與座標轉換指南 (DPI Scaling & Coordinate Systems)
+# 高分屏 DPI 與座標轉換指南 (DPI Scaling & Coordinate Systems)
 
 說明 CPPUI 中 **裝置獨立像素 (Device Independent Pixels, DIP)**、**實體像素 (Physical Pixels)**、**客戶區排版空間 (Client Layout Space)** 與專屬 [`CoordinateTransform`](../classes/core_coordinatetransform.md) 類別的設計原理與最佳實踐。
 
@@ -75,7 +75,7 @@ SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 ## 4. 座標換算實戰範例 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/CoordinateTransform.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 #include "ui/pal/RawInputEvent.hpp"

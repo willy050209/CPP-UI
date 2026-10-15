@@ -3,7 +3,7 @@
  * @brief 視覺化診斷工具與 Visual Tree Inspector (DevTools) 展示範例
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/AppBuilder.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/controls/Button.hpp"

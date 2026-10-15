@@ -76,7 +76,7 @@ inline std::shared_ptr<RelayCommand> MakeCommand(std::function<void()> execute, 
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/mvvm/RelayCommand.hpp"
 #include "ui/controls/Button.hpp"
 

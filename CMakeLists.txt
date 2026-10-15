@@ -30,7 +30,7 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    add_compile_options(/W4 /utf-8 /permissive- /Zc:__cplusplus /EHsc)
+    add_compile_options(/W4 /utf-8 /permissive- /Zc:__cplusplus /EHsc /FS)
 elseif(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # GNU 風格 clang++ 於 Windows 鏈結 MSVC ABI 時，顯式定義 _DLL 避免 MT 標記衝突
     add_compile_definitions(_DLL)
@@ -134,6 +134,22 @@ if(CPPUI_ENABLE_ASAN)
 endif()
 
 # -----------------------------------------------------------------------------
+# 相依函式庫：CPP-Compat (向下相容層)
+# -----------------------------------------------------------------------------
+include(FetchContent)
+
+if(NOT DEFINED FETCHCONTENT_SOURCE_DIR_COMPAT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../CPP-Compat")
+    set(FETCHCONTENT_SOURCE_DIR_COMPAT "${CMAKE_CURRENT_SOURCE_DIR}/../CPP-Compat")
+endif()
+
+FetchContent_Declare(
+    compat
+    GIT_REPOSITORY https://github.com/willy050209/CPP-Compat.git
+    GIT_TAG        master
+)
+FetchContent_MakeAvailable(compat)
+
+# -----------------------------------------------------------------------------
 # 核心公共標頭檔介面 (Interface Library)
 # -----------------------------------------------------------------------------
 include(GNUInstallDirs)
@@ -141,9 +157,11 @@ include(GNUInstallDirs)
 add_library(cppui_headers INTERFACE)
 target_include_directories(cppui_headers INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/compat>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/compat>
+)
+target_link_libraries(cppui_headers INTERFACE
+    $<BUILD_INTERFACE:compat::compat>
+    $<INSTALL_INTERFACE:compat::compat>
 )
 
 # -----------------------------------------------------------------------------
@@ -349,7 +367,7 @@ endif()
 include(CMakePackageConfigHelpers)
 
 # 安裝目標二進位與標頭檔
-install(TARGETS cppui_core cppui_headers
+install(TARGETS cppui_core cppui_headers compat
     EXPORT CppUITargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -358,6 +376,10 @@ install(TARGETS cppui_core cppui_headers
 )
 
 install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(DIRECTORY "${compat_SOURCE_DIR}/include/"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 

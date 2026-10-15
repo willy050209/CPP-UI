@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "Theme.hpp"
 
 namespace cppui {

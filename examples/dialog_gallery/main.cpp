@@ -4,7 +4,7 @@
  * 展示 MessageBox、OpenFileDialog 與 SaveFileDialog 在 Auto / Native / BuiltIn 模式與深淺主題下的互動。
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/dialogs/DialogCommon.hpp"

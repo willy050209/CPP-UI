@@ -36,7 +36,7 @@
 
 ```cpp
 #include "ui/theme/ThemeManager.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void SetupApplicationTheme() {
     using namespace cppui::theme;

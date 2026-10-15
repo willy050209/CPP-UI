@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/app/AppBuilder.hpp"

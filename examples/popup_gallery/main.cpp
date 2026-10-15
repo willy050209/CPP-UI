@@ -5,7 +5,7 @@
  * 自動邊界翻轉 (Auto-Flip) 及外部點擊收合 (Light-Dismiss)。
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/app/Form.hpp"
 #include "ui/controls/Button.hpp"

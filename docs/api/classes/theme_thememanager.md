@@ -107,7 +107,7 @@ void NotifyThemeChanged();
 
 ```cpp
 #include "ui/theme/ThemeManager.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void ThemeSwitchingDemo() {
     using namespace cppui::theme;

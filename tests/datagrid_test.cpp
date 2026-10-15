@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/DataGrid.hpp"
 
 using namespace cppui::controls;

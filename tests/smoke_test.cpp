@@ -5,7 +5,7 @@
 
 #include <cassert>
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 
 int main() {

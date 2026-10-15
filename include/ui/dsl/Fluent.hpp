@@ -12,7 +12,7 @@
 #include <functional>
 #include <type_traits>
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/core/UIElement.hpp"
 #include "ui/layout/Panel.hpp"

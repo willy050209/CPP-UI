@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 #include "ui/core/UIElement.hpp"
 #include "ui/controls/Control.hpp"

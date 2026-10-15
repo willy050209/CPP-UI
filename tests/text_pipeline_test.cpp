@@ -6,7 +6,7 @@
 #include <cassert>
 #include <chrono>
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/text/Font.hpp"
 #include "ui/text/FontManager.hpp"
 #include "ui/text/TextShaper.hpp"

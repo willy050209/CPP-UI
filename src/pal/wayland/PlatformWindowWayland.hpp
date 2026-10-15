@@ -19,7 +19,7 @@
 #include <xkbcommon/xkbcommon.h>
 #include "protocol/xdg-shell-client-protocol.h"
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
 #include "ui/core/CoordinateTransform.hpp"
 

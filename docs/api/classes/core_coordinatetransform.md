@@ -111,7 +111,7 @@ COMPAT_CONSTEXPR_14 explicit CoordinateTransform(float dpiScale = 1.0f) noexcept
 ## 範例程式碼 (Example)
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/CoordinateTransform.hpp"
 
 void DemonstrateCoordinateTransform() {

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <vector>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/input/RoutedEvent.hpp"
 #include "ui/input/RoutedEventArgs.hpp"
 

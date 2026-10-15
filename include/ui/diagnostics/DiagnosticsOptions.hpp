@@ -6,7 +6,7 @@
 #pragma once
 
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 namespace diagnostics {

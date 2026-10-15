@@ -10,7 +10,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "Form.hpp"
 #include "PlatformBackend.hpp"
 #include "ui/ioc/ServiceCollection.hpp"
@@ -51,23 +51,30 @@ public:
     /// <typeparam name="Args">表單建構子引數型別包。</typeparam>
     /// <param name="args">表單建構子引數。</param>
     /// <returns>應用程式退出代碼 (Exit Code)。</returns>
-    template<typename TForm, typename... Args>
-    int32_t Run(Args&&... args) {
+    /// <summary>
+    /// 從 IoC 容器解析指定 Form 型別並啟動應用程式；若未於容器中註冊則嘗試以無引數建構實例。
+    /// </summary>
+    template<typename TForm, typename... Args,
+             typename std::enable_if<(sizeof...(Args) == 0), int>::type = 0>
+    int32_t Run() {
         std::shared_ptr<TForm> form = nullptr;
-        if constexpr (sizeof...(Args) == 0) {
-            if (m_services) {
-                form = m_services->GetService<TForm>();
-            }
-            if (!form) {
-                if constexpr (std::is_default_constructible<TForm>::value) {
-                    form = std::make_shared<TForm>();
-                }
-            }
-        } else {
-            if constexpr (std::is_constructible<TForm, Args...>::value) {
-                form = std::make_shared<TForm>(std::forward<Args>(args)...);
-            }
+        if (m_services) {
+            form = m_services->GetService<TForm>();
         }
+        if (!form) {
+            form = CreateDefaultForm<TForm>();
+        }
+        return RunForm(form);
+    }
+
+    /// <summary>
+    /// 以傳入引數建構指定 Form 型別並啟動應用程式。
+    /// </summary>
+    template<typename TForm, typename Arg1, typename... RestArgs>
+    int32_t Run(Arg1&& arg1, RestArgs&&... restArgs) {
+        std::shared_ptr<TForm> form = CreateConstructedForm<TForm>(
+            std::forward<Arg1>(arg1), std::forward<RestArgs>(restArgs)...
+        );
         return RunForm(form);
     }
 
@@ -82,6 +89,30 @@ public:
     }
 
 private:
+    template<typename TForm>
+    static typename std::enable_if<std::is_default_constructible<TForm>::value, std::shared_ptr<TForm>>::type
+    CreateDefaultForm() {
+        return std::make_shared<TForm>();
+    }
+
+    template<typename TForm>
+    static typename std::enable_if<!std::is_default_constructible<TForm>::value, std::shared_ptr<TForm>>::type
+    CreateDefaultForm() {
+        return nullptr;
+    }
+
+    template<typename TForm, typename... Args>
+    static typename std::enable_if<std::is_constructible<TForm, Args...>::value, std::shared_ptr<TForm>>::type
+    CreateConstructedForm(Args&&... args) {
+        return std::make_shared<TForm>(std::forward<Args>(args)...);
+    }
+
+    template<typename TForm, typename... Args>
+    static typename std::enable_if<!std::is_constructible<TForm, Args...>::value, std::shared_ptr<TForm>>::type
+    CreateConstructedForm(Args&&...) {
+        return nullptr;
+    }
+
     int32_t RunForm(std::shared_ptr<Form> form);
 
     std::shared_ptr<ioc::IServiceProvider> m_services;

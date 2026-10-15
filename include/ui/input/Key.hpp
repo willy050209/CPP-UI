@@ -6,7 +6,7 @@
 #pragma once
 
 #include <cstdint>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 namespace cppui {
 namespace input {
@@ -152,7 +152,7 @@ enum class Key : uint32_t {
 /// </summary>
 /// <param name="vk">整數虛擬鍵碼。</param>
 /// <returns>對應之 Key 列舉值。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline Key FromVirtualKey(uint32_t vk) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 Key FromVirtualKey(uint32_t vk) noexcept {
     return static_cast<Key>(vk);
 }
 
@@ -161,7 +161,7 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline Key FromVirtualKey(uint32_t vk) noex
 /// </summary>
 /// <param name="key">Key 列舉值。</param>
 /// <returns>對應之整數虛擬鍵碼。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline uint32_t ToVirtualKey(Key key) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 uint32_t ToVirtualKey(Key key) noexcept {
     return static_cast<uint32_t>(key);
 }
 
@@ -193,7 +193,7 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline uint32_t ToVirtualKey(Key key) noexc
 /// </summary>
 /// <param name="key">待檢驗按鍵。</param>
 /// <returns>若為修飾鍵傳回 true，否則傳回 false。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool IsModifierKey(Key key) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool IsModifierKey(Key key) noexcept {
     switch (key) {
         case Key::Shift:
         case Key::Control:
@@ -217,7 +217,7 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool IsModifierKey(Key key) noexcept
 /// </summary>
 /// <param name="key">待檢驗按鍵。</param>
 /// <returns>若為箭頭鍵傳回 true，否則傳回 false。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool IsArrowKey(Key key) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool IsArrowKey(Key key) noexcept {
     switch (key) {
         case Key::Left:
         case Key::Up:
@@ -234,7 +234,7 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool IsArrowKey(Key key) noexcept {
 /// </summary>
 /// <param name="key">待檢驗按鍵。</param>
 /// <returns>若為功能鍵傳回 true，否則傳回 false。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool IsFunctionKey(Key key) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool IsFunctionKey(Key key) noexcept {
     uint32_t vk = static_cast<uint32_t>(key);
     return (vk >= static_cast<uint32_t>(Key::F1) && vk <= static_cast<uint32_t>(Key::F24));
 }
@@ -244,7 +244,7 @@ COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool IsFunctionKey(Key key) noexcept
 /// </summary>
 /// <param name="key">待檢驗按鍵。</param>
 /// <returns>若為字母或數字鍵傳回 true，否則傳回 false。</returns>
-COMPAT_NODISCARD COMPAT_CONSTEXPR_14 inline bool IsAlphaNumeric(Key key) noexcept {
+COMPAT_NODISCARD COMPAT_CONSTEXPR_14 bool IsAlphaNumeric(Key key) noexcept {
     uint32_t vk = static_cast<uint32_t>(key);
     return (vk >= static_cast<uint32_t>(Key::D0) && vk <= static_cast<uint32_t>(Key::D9)) ||
            (vk >= static_cast<uint32_t>(Key::A) && vk <= static_cast<uint32_t>(Key::Z));

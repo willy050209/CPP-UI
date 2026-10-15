@@ -1,6 +1,6 @@
-﻿# 期望值、可空值與錯誤處理 (compat::expected & optional)
+# 期望值、可空值與錯誤處理 (compat::expected & optional)
 
-定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
+定義於標頭檔 [`include/compat/Compat.hpp`](../../../include/compat/Compat.hpp)。  
 所屬命名空間：`compat`。
 
 ---
@@ -60,7 +60,7 @@ namespace compat {
 
 ### 範例 1：資源加載管線 (`expected` Monadic 鏈式呼叫)
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 enum class FontError { FileNotFound, CorruptedHeader, UnsupportedFormat };
 
@@ -101,7 +101,7 @@ void LoadUIFont() {
 
 ### 範例 2：可空命中測試 (`optional`)
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/core/Geometry.hpp"
 
 struct VisualElement {

@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/controls/ContentControl.hpp"
 #include "ui/mvvm/ICommand.hpp"
 

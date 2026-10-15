@@ -12,7 +12,7 @@
 #include <string>
 #include <stdexcept>
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/app/Timer.hpp"
 #include "ui/controls/Timer.hpp"
 #include "ui/app/Application.hpp"

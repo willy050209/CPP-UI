@@ -95,7 +95,7 @@ COMPAT_NODISCARD static Theme HighContrast();
 
 ```cpp
 #include "ui/theme/Theme.hpp"
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void CreateCustomBrandTheme() {
     using namespace cppui::theme;

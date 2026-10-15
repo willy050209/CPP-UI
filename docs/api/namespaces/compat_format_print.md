@@ -1,6 +1,6 @@
 # 格式化、終端輸出與數值解析 (compat::format, print & parse)
 
-定義於標頭檔 [`include/compat/compat.hpp`](../../../include/compat/compat.hpp)。  
+定義於標頭檔 [`include/compat/Compat.hpp`](../../../include/compat/Compat.hpp)。  
 所屬命名空間：`compat`。
 
 ---
@@ -32,7 +32,7 @@
 * `fill`：自訂填充字元（預設為空白）。
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void FormatExamples() {
     // 置中對齊，總寬度 10，填充 '*'
@@ -61,7 +61,7 @@ void FormatExamples() {
 
 ### 3.2 使用範例
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void PrintExamples() {
     // 不換行輸出
@@ -79,7 +79,7 @@ void PrintExamples() {
 專案嚴格禁止使用 `std::stoi` / `std::atof`，全面採用無任何堆積配置、無異常拋出的高速解析原語：
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void ParseExamples() {
     // 1. 高階 parse 介面 (回傳 compat::expected<T, compat::string_view>)
@@ -107,7 +107,7 @@ void ParseExamples() {
 為避免 `std::to_string` 的語系依賴與未定義記憶體快取問題，`compat` 提供完全一致且高效的轉換函式：
 
 ```cpp
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 
 void ToStringExamples() {
     std::string s1 = compat::to_string(42);         // "42"

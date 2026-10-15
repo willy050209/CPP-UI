@@ -12,7 +12,8 @@
 #include <thread>
 #include <utility>
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
+#include "ui/core/LifetimeToken.hpp"
 
 namespace cppui {
 namespace app {
@@ -38,12 +39,31 @@ public:
     void InvokeAsync(std::function<void()> action);
 
     /// <summary>
+    /// 以非同步方式在 UI 執行緒上排隊並執行操作，並綁定生命週期權杖。
+    /// 若執行時權杖已失效 (如所屬視窗或元件已解構)，則自動捨棄該任務以防 Use-After-Free。
+    /// </summary>
+    /// <param name="token">生命週期權杖。</param>
+    /// <param name="action">待排隊調度的回呼函式，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 action 為空時擲出。</exception>
+    void InvokeAsync(core::LifetimeToken token, std::function<void()> action);
+
+    /// <summary>
     /// 便捷別名：投遞任務至 UI 執行緒。
     /// </summary>
     /// <param name="action">待排隊調度的回呼函式，不可為空。</param>
     /// <exception cref="std::invalid_argument">當 action 為空時擲出。</exception>
     void Post(std::function<void()> action) {
         InvokeAsync(std::move(action));
+    }
+
+    /// <summary>
+    /// 便捷別名：投遞受生命週期權杖保護之任務至 UI 執行緒。
+    /// </summary>
+    /// <param name="token">生命週期權杖。</param>
+    /// <param name="action">待排隊調度的回呼函式，不可為空。</param>
+    /// <exception cref="std::invalid_argument">當 action 為空時擲出。</exception>
+    void Post(core::LifetimeToken token, std::function<void()> action) {
+        InvokeAsync(token, std::move(action));
     }
 
     /// <summary>
@@ -69,8 +89,13 @@ public:
     void Clear();
 
 private:
+    struct TaskEntry {
+        std::function<void()> action;
+        core::LifetimeToken   token;
+    };
+
     mutable std::mutex m_mutex;
-    std::queue<std::function<void()>> m_queue;
+    std::queue<TaskEntry> m_queue;
     std::thread::id m_mainThreadId;
     bool m_hasMainThreadId{false};
 };

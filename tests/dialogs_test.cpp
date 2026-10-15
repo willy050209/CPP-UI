@@ -3,7 +3,7 @@
  * @brief 對話框模組 (MessageBox, OpenFileDialog, SaveFileDialog) 單元測試
  */
 
-#include "compat/compat.hpp"
+#include "compat/Compat.hpp"
 #include "ui/dialogs/DialogCommon.hpp"
 #include "ui/dialogs/MessageBox.hpp"
 #include "ui/dialogs/MessageBoxForm.hpp"
