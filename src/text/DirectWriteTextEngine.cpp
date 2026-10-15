@@ -145,12 +145,12 @@ FontMetrics DirectWriteTextEngine::GetFontMetrics(const FontDescriptor& font) {
     FontMetrics fm;
     IDWriteTextFormat* pFormat = GetOrCreateTextFormat(font);
     if (!pFormat || !m_factory) {
-        // 退回預設估算度量
-        fm.ascent = font.GetSize() * 0.8f;
-        fm.descent = font.GetSize() * 0.2f;
-        fm.lineGap = font.GetSize() * 0.2f;
-        fm.capHeight = font.GetSize() * 0.7f;
-        fm.xHeight = font.GetSize() * 0.5f;
+        // 退回預設估算度量 (與 FallbackFontHelper 規範對齊)
+        fm.ascent = std::round(font.GetSize() * 0.8f);
+        fm.descent = std::round(font.GetSize() * 0.2f);
+        fm.lineGap = (std::max)(0.0f, std::ceil(font.GetSize() * 1.25f) - (fm.ascent + fm.descent));
+        fm.capHeight = fm.ascent * 0.7f;
+        fm.xHeight = fm.ascent * 0.5f;
         return fm;
     }
 
@@ -165,7 +165,7 @@ FontMetrics DirectWriteTextEngine::GetFontMetrics(const FontDescriptor& font) {
         if (actualCount > 0) {
             fm.ascent = lineMetrics.baseline;
             fm.descent = lineMetrics.height - lineMetrics.baseline;
-            fm.lineGap = lineMetrics.height * 0.1f;
+            fm.lineGap = (std::max)(0.0f, std::ceil(lineMetrics.height) - lineMetrics.height);
             fm.capHeight = lineMetrics.baseline * 0.7f;
             fm.xHeight = lineMetrics.baseline * 0.5f;
         }

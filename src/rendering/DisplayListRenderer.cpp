@@ -89,7 +89,7 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                     skCanvas->restore();
                     break;
                 }
-                case DrawOpType::DrawRect: {
+                case DrawOpType::DrawRectangle: {
                     const auto* op = static_cast<const DrawRectOp*>(payload);
                     SkPaint paint;
                     paint.setColor(SkColorSetARGB(op->color.a, op->color.r, op->color.g, op->color.b));
@@ -99,7 +99,7 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                     stats.renderedOps++;
                     break;
                 }
-                case DrawOpType::DrawRoundedRect: {
+                case DrawOpType::DrawRoundedRectangle: {
                     const auto* op = static_cast<const DrawRoundedRectOp*>(payload);
                     SkPaint paint;
                     paint.setColor(SkColorSetARGB(op->color.a, op->color.r, op->color.g, op->color.b));

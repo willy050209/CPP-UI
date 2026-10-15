@@ -7,6 +7,7 @@
 #include "TextLayoutImpl.hpp"
 #include "FallbackFontMetrics.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace cppui {
 namespace text {
@@ -36,7 +37,7 @@ struct TextLayoutEngine::Impl {
 
             DWRITE_TEXT_METRICS tm;
             if (SUCCEEDED(nativeLayout->GetMetrics(&tm))) {
-                layoutImpl->size = core::Size(tm.widthIncludingTrailingWhitespace, tm.height);
+                layoutImpl->size = core::Size(std::ceil(tm.widthIncludingTrailingWhitespace), std::ceil(tm.height));
             }
 
             UINT32 lineCount = 0;
@@ -49,17 +50,19 @@ struct TextLayoutEngine::Impl {
                 float currentY = 0.0f;
                 size_t charOffset = 0;
                 for (UINT32 i = 0; i < actualLines; ++i) {
+                    float normLineH = std::ceil(dwriteLines[i].height);
                     TextLine line;
                     line.startIndex = charOffset;
                     line.length = dwriteLines[i].length;
-                    line.bounds = core::Rect(0.0f, currentY, layoutImpl->size.width, dwriteLines[i].height);
+                    line.bounds = core::Rect(0.0f, currentY, layoutImpl->size.width, normLineH);
                     line.baseline = dwriteLines[i].baseline;
                     line.isWrapped = (dwriteLines[i].isTrimmed != 0);
 
                     layoutImpl->lines.push_back(line);
-                    currentY += dwriteLines[i].height;
+                    currentY += normLineH;
                     charOffset += dwriteLines[i].length;
                 }
+                layoutImpl->size.height = (std::max)(layoutImpl->size.height, currentY);
             }
             return TextLayout(std::move(layoutImpl));
         }
@@ -69,7 +72,7 @@ struct TextLayoutEngine::Impl {
         (void)maxHeight;
         (void)trimming;
         auto metrics = FallbackFontHelper::ComputeMetrics(font.GetSize());
-        float lineH = metrics.lineHeight;
+        float lineH = std::ceil(metrics.lineHeight);
 
         if (text.empty()) {
             layoutImpl->size = core::Size(0.0f, lineH);
@@ -177,7 +180,7 @@ struct TextLayoutEngine::Impl {
             }
         }
 
-        layoutImpl->size = core::Size(maxObservedWidth, currentY);
+        layoutImpl->size = core::Size(std::ceil(maxObservedWidth), std::ceil(currentY));
         return TextLayout(std::move(layoutImpl));
     }
 
@@ -187,7 +190,7 @@ struct TextLayoutEngine::Impl {
         float maxWidth
     ) const {
         if (text.empty()) {
-            return core::Size(0.0f, font.GetSize() * 1.2f);
+            return core::Size(0.0f, std::ceil(font.GetSize() * 1.25f));
         }
         TextLayout layout = CreateLayout(text, font, maxWidth, 1e9f, TextAlignment::Left, TextWrapping::WordWrap, TextTrimming::None);
         return layout.GetSize();

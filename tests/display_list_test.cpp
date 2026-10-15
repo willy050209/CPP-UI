@@ -15,6 +15,7 @@
 #include "ui/rendering/DisplayListRenderer.hpp"
 #include "ui/text/Font.hpp"
 #include "../src/rendering/backend/SoftwareRenderContext.hpp"
+#include "PixelParityTestUtils.hpp"
 
 int main() {
     using namespace cppui::core;
@@ -116,7 +117,52 @@ int main() {
         compat::println("[PASS] DrawText clip boundary clipping verified (no text bleed outside clip rect)");
     }
 
-    // 6. 極限效能基準測試 (Benchmark): 單幀錄製 50,000 個幾何指令
+    // 6. 幾何退化與像素一致性契約測試 (Geometry Degradation Parity Contract)
+    {
+        compat::println("[Test 6] Verifying geometry degradation and parity invariants...");
+        constexpr uint32_t kSize = 100;
+
+        DisplayList dlRect;
+        DrawingContext dcRect(dlRect);
+        dcRect.DrawRectangle(Rect(10.0f, 10.0f, 80.0f, 80.0f), Colors::Blue);
+
+        DisplayList dlRoundRect;
+        DrawingContext dcRoundRect(dlRoundRect);
+        // 半徑為 0 之圓角矩形必須無條件退化為標準矩形
+        dcRoundRect.DrawRoundedRectangle(Rect(10.0f, 10.0f, 80.0f, 80.0f), 0.0f, Colors::Blue);
+
+        SoftwareRenderTarget targetRect;
+        targetRect.Resize(kSize, kSize);
+        targetRect.Clear(Colors::Black);
+
+        SoftwareRenderTarget targetRoundRect;
+        targetRoundRect.Resize(kSize, kSize);
+        targetRoundRect.Clear(Colors::Black);
+
+        renderer.Render(dlRect, &targetRect);
+        renderer.Render(dlRoundRect, &targetRoundRect);
+
+        auto spanRect = targetRect.GetPixelSpan();
+        auto spanRound = targetRoundRect.GetPixelSpan();
+
+        auto parity = cppui::test::PixelParityTestUtils::VerifyParity(
+            spanRect, spanRound, kSize, kSize, 100.0, 1.0
+        );
+        assert(parity.passed && "Zero-radius rounded rect must be bitwise identical to standard rectangle!");
+
+        // 測試透明度裁切契約 (Opacity 0.0f 必須全數剔除)
+        DisplayList dlCull;
+        DrawingContext dcCull(dlCull);
+        dcCull.PushOpacity(0.0f);
+        dcCull.DrawRectangle(Rect(0.0f, 0.0f, 50.0f, 50.0f), Colors::Red);
+        dcCull.PopOpacity();
+
+        RenderStats cullStats = renderer.Render(dlCull, &targetRect);
+        assert(cullStats.culledOps == 1 && "Opacity 0.0f must cull the draw op!");
+        compat::println("[PASS] Geometry degradation and opacity cull contract verified (MSE={:.4f}, PSNR={:.1f} dB)", parity.mse, parity.psnr);
+    }
+
+    // 7. 極限效能基準測試 (Benchmark): 單幀錄製 50,000 個幾何指令
     constexpr size_t BENCHMARK_OP_COUNT = 50000;
     compat::println("[BENCHMARK] Starting recording benchmark with {} operations...", BENCHMARK_OP_COUNT);
 

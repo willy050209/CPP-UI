@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cmath>
 #include <string>
 #include "compat/Compat.hpp"
 
@@ -72,6 +73,12 @@ struct FontMetrics {
     /// <returns>行高數值。</returns>
     COMPAT_NODISCARD COMPAT_CONSTEXPR_14 float GetLineHeight() const noexcept {
         return ascent + descent + lineGap;
+    }
+
+    /// <summary>計算並傳回標準化之整數像素行高 (std::ceil(ascent + descent + lineGap))。</summary>
+    /// <returns>上取整之像素行高數值。</returns>
+    COMPAT_NODISCARD float GetNormalizedLineHeight() const noexcept {
+        return std::ceil(ascent + descent + lineGap);
     }
 };
 

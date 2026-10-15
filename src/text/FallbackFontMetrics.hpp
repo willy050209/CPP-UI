@@ -20,6 +20,9 @@ struct FallbackFontMetrics {
     int32_t scale;
     float   charWidth;
     float   charHeight;
+    float   ascent;
+    float   descent;
+    float   lineGap;
     float   lineHeight;
     float   baseline;
 };
@@ -41,11 +44,14 @@ public:
         m.scale = (fontSize >= 18.0f) ? (std::max)(1, static_cast<int32_t>(std::round(fontSize / 10.0f))) : 1;
         m.charWidth = 8.0f * static_cast<float>(m.scale);
         m.charHeight = 8.0f * static_cast<float>(m.scale);
-        m.lineHeight = fontSize * 1.25f;
+        m.ascent = std::round(fontSize * 0.8f);
+        m.descent = std::round(fontSize * 0.2f);
+        m.lineGap = (std::max)(0.0f, std::ceil(fontSize * 1.25f) - (m.ascent + m.descent));
+        m.lineHeight = std::ceil(m.ascent + m.descent + m.lineGap);
         if (m.lineHeight < m.charHeight) {
             m.lineHeight = m.charHeight;
         }
-        m.baseline = fontSize;
+        m.baseline = m.ascent;
         return m;
     }
 

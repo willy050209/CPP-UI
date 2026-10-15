@@ -18,6 +18,7 @@
 #include "ui/rendering/DrawingContext.hpp"
 #include "ui/rendering/DisplayListRenderer.hpp"
 #include "../src/rendering/backend/SoftwareRenderContext.hpp"
+#include "../src/text/FallbackFontMetrics.hpp"
 
 int main() {
     using namespace cppui;
@@ -271,6 +272,55 @@ int main() {
         assert(whiteTextPixels > 0);
         compat::println("  [PASS] Chinese glyphs rasterized successfully ({} white pixels rendered with font '{}').",
                         whiteTextPixels, zhDesc.GetFamily());
+    }
+
+    // -------------------------------------------------------------------------
+    // 10. 字型度量正規化與防截斷跨引擎契約測試 (Metrics Normalization & Parity)
+    // -------------------------------------------------------------------------
+    compat::println("[Test 10] Text Metrics Normalization & Non-Truncation Contract...");
+    {
+        const float testSizes[] = { 10.0f, 12.0f, 14.0f, 16.0f, 20.0f, 24.0f, 32.0f };
+        for (float sz : testSizes) {
+            FontDescriptor fd = fm.GetDefaultFont(sz);
+            FontMetrics m = fm.GetFontMetrics(fd);
+
+            assert(m.ascent > 0.0f);
+            assert(m.descent >= 0.0f);
+            assert(m.lineGap >= 0.0f);
+
+            float normH = m.GetNormalizedLineHeight();
+            assert(normH >= m.ascent + m.descent + m.lineGap);
+            assert(normH == std::ceil(m.ascent + m.descent + m.lineGap));
+
+            FallbackFontMetrics fbm = FallbackFontHelper::ComputeMetrics(sz);
+            assert(fbm.ascent > 0.0f);
+            assert(fbm.descent >= 0.0f);
+            assert(fbm.lineGap >= 0.0f);
+            assert(fbm.lineHeight == std::ceil(fbm.ascent + fbm.descent + fbm.lineGap));
+            assert(fbm.baseline <= fbm.lineHeight);
+        }
+
+        // 多行排版零截斷契約測試
+        FontDescriptor layoutFont = fm.GetDefaultFont(16.0f);
+        FontMetrics layoutM = fm.GetFontMetrics(layoutFont);
+
+        compat::string_view multiLineSample = "First Line\nSecond Line with Descenders (g, p, y, q)\nThird Line: 繁體中文與符號測試 🚀";
+        TextLayout layout = TextLayoutEngine::Get().CreateLayout(multiLineSample, layoutFont);
+
+        assert(layout.GetLines().size() == 3);
+        float expectedMinHeight = 3.0f * (layoutM.ascent + layoutM.descent);
+        assert(layout.GetSize().height >= expectedMinHeight && "Layout height must never truncate lines or descenders!");
+
+        for (const auto& line : layout.GetLines()) {
+            assert(line.bounds.height >= layoutM.ascent + layoutM.descent);
+            assert(line.baseline <= line.bounds.height);
+        }
+
+        core::Size measured = TextLayoutEngine::Get().MeasureText(multiLineSample, layoutFont);
+        assert(measured.height >= layout.GetSize().height);
+
+        compat::println("  [PASS] FontMetrics normalized line heights and multi-line non-truncation verified (3 lines, height: {:.1f} >= {:.1f}).",
+                        layout.GetSize().height, expectedMinHeight);
     }
 
     compat::println("=================================================");

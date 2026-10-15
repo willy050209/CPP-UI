@@ -11,6 +11,7 @@
 #include "ui/rendering/DisplayList.hpp"
 #include "ui/rendering/DrawingContext.hpp"
 #include "ui/rendering/DisplayListRenderer.hpp"
+#include "PixelParityTestUtils.hpp"
 
 int main() {
     using namespace cppui::core;
@@ -65,7 +66,62 @@ int main() {
     ctx.EndFrame();
     compat::println("[PASS] Resize to 600x450");
 
-    // 5. 釋放環境
+    // 5. 跨後端像素與幾何一致性契約測試 (Pixel Parity & Contract Test)
+    compat::println("[Test 5] Dual-Backend Cross-Rendering Parity (PSNR / SSIM)...");
+    {
+        constexpr uint32_t kParityW = 200;
+        constexpr uint32_t kParityH = 200;
+
+        // 初始化軟體渲染目標
+        SoftwareRenderTarget swTarget;
+        swTarget.Resize(kParityW, kParityH);
+        swTarget.Clear(Colors::Black);
+
+        // 調整 SkiaContext 至相同大小
+        ctx.Resize(kParityW, kParityH);
+        IRenderTarget* skiaFrameTarget = ctx.BeginFrame();
+        assert(skiaFrameTarget != nullptr);
+        skiaFrameTarget->Clear(Colors::Black);
+
+        // 構建包含幾何、圓角、線條與裁切之 DisplayList
+        DisplayList parityDl;
+        DrawingContext parityDc(parityDl);
+        parityDc.PushClip(Rect(10.0f, 10.0f, 180.0f, 180.0f));
+        parityDc.DrawRectangle(Rect(20.0f, 20.0f, 80.0f, 60.0f), Color(100, 149, 237, 255));
+        parityDc.DrawRoundedRectangle(Rect(110.0f, 20.0f, 60.0f, 60.0f), 10.0f, Color(255, 140, 0, 255));
+        parityDc.DrawLine(Point(20.0f, 100.0f), Point(180.0f, 160.0f), Color(50, 205, 50, 255), 3.0f);
+        parityDc.PopClip();
+
+        // 雙後端重播同一份 DisplayList
+        DisplayListRenderer dlRenderer;
+        RenderStats skiaStats = dlRenderer.Render(parityDl, skiaFrameTarget);
+        RenderStats swStats   = dlRenderer.Render(parityDl, &swTarget);
+
+        assert(skiaStats.totalOps == swStats.totalOps);
+        assert(skiaStats.renderedOps == swStats.renderedOps);
+        assert(skiaStats.culledOps == swStats.culledOps);
+
+        ctx.EndFrame();
+
+        // 提取雙後端輸出像素緩衝區
+        compat::span<const uint32_t> swSpan = swTarget.GetPixelSpan();
+        compat::span<const uint32_t> skiaSpan(skiaFrameTarget->GetPixelBuffer(), kParityW * kParityH);
+
+        double minPsnr = ctx.IsSkiaActive() ? 30.0 : 100.0;
+        double minSsim = ctx.IsSkiaActive() ? 0.95 : 1.0;
+
+        cppui::test::ParityResult parity = cppui::test::PixelParityTestUtils::VerifyParity(
+            swSpan, skiaSpan, kParityW, kParityH, minPsnr, minSsim
+        );
+
+        compat::println("  [PASS] Op Count Parity: total={}, rendered={}, culled={}",
+                        skiaStats.totalOps, skiaStats.renderedOps, skiaStats.culledOps);
+        compat::println("  [PASS] Pixel Parity Metric: MSE={:.4f}, PSNR={:.2f} dB (>= {:.1f}), SSIM={:.4f} (>= {:.2f})",
+                        parity.mse, parity.psnr, minPsnr, parity.ssim, minSsim);
+        assert(parity.passed);
+    }
+
+    // 6. 釋放環境
     ctx.Destroy();
     compat::println("[PASS] SkiaRenderContext Destroy");
 
