@@ -7,6 +7,8 @@
 #include "generic/ClipboardGeneric.hpp"
 #if defined(_WIN32) || defined(WIN32)
 #include "win32/ClipboardWin32.hpp"
+#elif defined(CPPUI_HAS_X11) && CPPUI_HAS_X11
+#include "x11/ClipboardX11.hpp"
 #endif
 
 namespace cppui {
@@ -22,6 +24,8 @@ static std::shared_ptr<IClipboard>& GetCustomInstance() {
 static std::shared_ptr<IClipboard> GetDefaultInstance() {
 #if defined(_WIN32) || defined(WIN32)
     static auto s_default = std::make_shared<ClipboardWin32>();
+#elif defined(CPPUI_HAS_X11) && CPPUI_HAS_X11
+    static auto s_default = std::make_shared<x11::ClipboardX11>();
 #else
     static auto s_default = std::make_shared<ClipboardGeneric>();
 #endif

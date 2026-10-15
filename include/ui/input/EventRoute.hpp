@@ -7,6 +7,7 @@
 
 #include <vector>
 #include "compat/Compat.hpp"
+#include "ui/core/LifetimeToken.hpp"
 #include "ui/input/RoutedEvent.hpp"
 #include "ui/input/RoutedEventArgs.hpp"
 
@@ -23,6 +24,14 @@ namespace input {
 class EventRoute {
 public:
     /// <summary>
+    /// 路由節點結構，結合 UIElement 指標與其 LifetimeToken，防範派發回呼中刪除物件引發 Use-After-Free。
+    /// </summary>
+    struct RouteNode {
+        core::UIElement*    element = nullptr;
+        core::LifetimeToken token;
+    };
+
+    /// <summary>
     /// 建構事件路由路徑，自目標節點向上回溯構建路由鏈分支。
     /// </summary>
     /// <param name="target">命中之目標 UI 元件指標。</param>
@@ -32,9 +41,9 @@ public:
     /// <returns>UIElement 指標。</returns>
     COMPAT_NODISCARD core::UIElement* GetTarget() const noexcept { return m_target; }
 
-    /// <summary>取得向上回溯至根節點之視覺樹分支清單。</summary>
-    /// <returns>UIElement 指標清單引用。</returns>
-    COMPAT_NODISCARD const std::vector<core::UIElement*>& GetBranch() const noexcept { return m_branch; }
+    /// <summary>取得向上回溯至根節點之視覺樹分支節點清單。</summary>
+    /// <returns>RouteNode 清單引用。</returns>
+    COMPAT_NODISCARD const std::vector<RouteNode>& GetBranch() const noexcept { return m_branch; }
 
     /// <summary>
     /// 依序執行完整的 Tunnel -> Direct/Bubble 派發週期。
@@ -68,8 +77,8 @@ public:
     void DispatchTunnel(const RoutedEvent& tunnelEvent, RoutedEventArgs& args);
 
 private:
-    core::UIElement*              m_target = nullptr;
-    std::vector<core::UIElement*> m_branch; // [target, parent1, parent2, ..., root]
+    core::UIElement*       m_target = nullptr;
+    std::vector<RouteNode> m_branch; // [target, parent1, parent2, ..., root]
 };
 
 } // namespace input

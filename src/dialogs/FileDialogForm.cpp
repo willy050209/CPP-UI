@@ -264,12 +264,18 @@ void FileDialogForm::PopulateDirectoryItems() {
             compat::filesystem::directory_iterator endIt;
             while (!ec && it != endIt) {
                 const auto& entry = *it;
-                if (entry.is_directory()) {
+                std::error_code statusEc;
+                const bool isDir = entry.is_directory(statusEc);
+                if (!statusEc && isDir) {
                     dirs.push_back(entry);
-                } else if (entry.is_regular_file()) {
-                    std::string fname = entry.path().filename().string();
-                    if (m_filterItems.empty() || DialogUtilities::MatchesFilter(fname, m_filterItems[m_currentFilterIndex])) {
-                        files.push_back(entry);
+                } else {
+                    statusEc.clear();
+                    const bool isFile = entry.is_regular_file(statusEc);
+                    if (!statusEc && isFile) {
+                        std::string fname = entry.path().filename().string();
+                        if (m_filterItems.empty() || DialogUtilities::MatchesFilter(fname, m_filterItems[m_currentFilterIndex])) {
+                            files.push_back(entry);
+                        }
                     }
                 }
                 it.increment(ec);

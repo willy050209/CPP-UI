@@ -3,6 +3,7 @@
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/InputManager.hpp"
 #include <algorithm>
+#include <cmath>
 
 namespace cppui {
 namespace core {
@@ -122,6 +123,12 @@ void UIElement::Measure(Size availableSize) {
         return;
     }
 
+    // 消毒與非數值防護 (NaN / Infinity)
+    if (std::isnan(availableSize.width) || availableSize.width < 0.0f) availableSize.width = 0.0f;
+    if (std::isnan(availableSize.height) || availableSize.height < 0.0f) availableSize.height = 0.0f;
+    if (std::isinf(availableSize.width)) availableSize.width = 1000000.0f;
+    if (std::isinf(availableSize.height)) availableSize.height = 1000000.0f;
+
     if (m_isMeasureValid && availableSize == m_previousAvailableSize) {
         return; // 快取命中
     }
@@ -146,6 +153,10 @@ void UIElement::Measure(Size availableSize) {
 
     // 呼叫內容測量自訂點
     Size unconstrainedContentSize = MeasureOverride(Size(contentAvailableW, contentAvailableH));
+    if (std::isnan(unconstrainedContentSize.width) || unconstrainedContentSize.width < 0.0f) unconstrainedContentSize.width = 0.0f;
+    if (std::isnan(unconstrainedContentSize.height) || unconstrainedContentSize.height < 0.0f) unconstrainedContentSize.height = 0.0f;
+    if (std::isinf(unconstrainedContentSize.width)) unconstrainedContentSize.width = 1000000.0f;
+    if (std::isinf(unconstrainedContentSize.height)) unconstrainedContentSize.height = 1000000.0f;
 
     // 結合明確尺寸與測量尺寸
     float finalContentW = (m_width >= 0.0f) ? m_width : unconstrainedContentSize.width;
@@ -159,6 +170,7 @@ void UIElement::Measure(Size availableSize) {
     m_desiredSize = Size(finalContentW + marginW, finalContentH + marginH);
     m_previousAvailableSize = availableSize;
     m_isMeasureValid = true;
+    m_isArrangeValid = false;
 }
 
 void UIElement::Arrange(Rect finalRect) {
@@ -169,6 +181,16 @@ void UIElement::Arrange(Rect finalRect) {
         m_isArrangeValid = true;
         return;
     }
+
+    // 消毒與非數值防護 (NaN / Infinity)
+    if (std::isnan(finalRect.x)) finalRect.x = 0.0f;
+    if (std::isnan(finalRect.y)) finalRect.y = 0.0f;
+    if (std::isnan(finalRect.width) || finalRect.width < 0.0f) finalRect.width = 0.0f;
+    if (std::isnan(finalRect.height) || finalRect.height < 0.0f) finalRect.height = 0.0f;
+    if (std::isinf(finalRect.x)) finalRect.x = 0.0f;
+    if (std::isinf(finalRect.y)) finalRect.y = 0.0f;
+    if (std::isinf(finalRect.width)) finalRect.width = 1000000.0f;
+    if (std::isinf(finalRect.height)) finalRect.height = 1000000.0f;
 
     if (m_isArrangeValid && finalRect == m_previousFinalRect) {
         return; // 快取命中
@@ -247,7 +269,9 @@ void UIElement::Arrange(Rect finalRect) {
     ArrangeOverride(Size(arrangeW, arrangeH));
 
     m_previousFinalRect = finalRect;
-    m_isArrangeValid = true;
+    if (m_isMeasureValid) {
+        m_isArrangeValid = true;
+    }
 }
 
 Size UIElement::MeasureOverride(Size availableSize) {
@@ -357,8 +381,12 @@ void UIElement::RaiseEventInternal(const input::RoutedEvent& routedEvent, input:
     }
 
     // 2. 派發給註冊的監聽器列表 (複製一份避免回呼中修改容器引發迭代器失效)
+    auto token = m_lifetimeToken;
     auto handlersCopy = m_eventHandlers;
     for (auto& entry : handlersCopy) {
+        if (!token.IsAlive()) {
+            break;
+        }
         if (entry.eventId == id) {
             if (!e.IsHandled() || entry.handledEventsToo) {
                 entry.handler(e);

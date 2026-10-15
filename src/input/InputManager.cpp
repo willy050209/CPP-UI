@@ -119,9 +119,11 @@ void InputManager::ProcessMouseDown(core::UIElement& root, const pal::RawMouseEv
 
     // Light-Dismiss: 若存在開啟且未鎖定常開的浮層，且點擊落於該浮層及其目標之外，則自動收合
     if (!m_openPopups.empty()) {
+        const auto snapshot = m_openPopups;
         std::vector<ILightDismissable*> toClose;
-        for (auto* popup : m_openPopups) {
+        for (auto* popup : snapshot) {
             if (!popup || popup->StaysOpen()) continue;
+            if (std::find(m_openPopups.begin(), m_openPopups.end(), popup) == m_openPopups.end()) continue;
 
             bool isInside = false;
             core::Visual* cur = hitUI;
@@ -138,7 +140,9 @@ void InputManager::ProcessMouseDown(core::UIElement& root, const pal::RawMouseEv
             }
         }
         for (auto* popup : toClose) {
-            popup->SetIsOpen(false);
+            if (std::find(m_openPopups.begin(), m_openPopups.end(), popup) != m_openPopups.end()) {
+                popup->SetIsOpen(false);
+            }
         }
     }
 

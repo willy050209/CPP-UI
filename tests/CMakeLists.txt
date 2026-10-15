@@ -172,6 +172,11 @@ add_executable(security_safety_test security_safety_test.cpp)
 target_link_libraries(security_safety_test PRIVATE cppui_core)
 add_test(NAME SecuritySafetyTest COMMAND security_safety_test)
 
+# 可靠性與跨平台穩定性 (EventRoute UAF、LightDismiss 迭代器防護、LayoutManager 震盪防護、幾何消毒) 單元測試
+add_executable(reliability_stability_test reliability_stability_test.cpp)
+target_link_libraries(reliability_stability_test PRIVATE cppui_core)
+add_test(NAME ReliabilityStabilityTest COMMAND reliability_stability_test)
+
 # -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
@@ -193,7 +198,7 @@ if(ASAN_DLL_DIR)
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
         ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest PopupTest
         ClipboardTest VirtualizationTest TreeViewTest DataGridTest DiagnosticsTest
-        KeyTest AutoSizeTest SecuritySafetyTest
+        KeyTest AutoSizeTest SecuritySafetyTest ReliabilityStabilityTest
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)

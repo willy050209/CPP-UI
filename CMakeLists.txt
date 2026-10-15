@@ -264,7 +264,10 @@ else()
         if(X11_FOUND)
             set(CPPUI_HAS_X11 1)
             message(STATUS "X11 detected: ${X11_LIBRARIES}")
-            list(APPEND CPPUI_SOURCES src/pal/x11/PlatformWindowX11.cpp)
+            list(APPEND CPPUI_SOURCES
+                src/pal/x11/PlatformWindowX11.cpp
+                src/pal/x11/ClipboardX11.cpp
+            )
         endif()
     endif()
 
