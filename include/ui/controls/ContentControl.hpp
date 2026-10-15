@@ -86,6 +86,42 @@ public:
     void SetText(compat::string_view text) override;
 
     /// <summary>
+    /// 設定字型家族名稱並同步更新內部內容。
+    /// </summary>
+    /// <param name="family">字型家族字串視圖。</param>
+    void SetFontFamily(compat::string_view family) override;
+
+    /// <summary>
+    /// 設定字型大小並同步更新內部內容。
+    /// </summary>
+    /// <param name="size">字型大小像素值。</param>
+    void SetFontSize(float size) override;
+
+    /// <summary>
+    /// 設定字型粗細並同步更新內部內容。
+    /// </summary>
+    /// <param name="weight">FontWeight 列舉值。</param>
+    void SetFontWeight(text::FontWeight weight) override;
+
+    /// <summary>
+    /// 設定字型傾斜度並同步更新內部內容。
+    /// </summary>
+    /// <param name="style">FontStyle 列舉值。</param>
+    void SetFontStyle(text::FontStyle style) override;
+
+    /// <summary>
+    /// 設定完整字型描述項並同步更新內部內容。
+    /// </summary>
+    /// <param name="font">FontDescriptor 物件。</param>
+    void SetFont(const text::FontDescriptor& font) override;
+
+    /// <summary>
+    /// 設定前景色彩並同步更新內部內容。
+    /// </summary>
+    /// <param name="fg">前景色彩。</param>
+    void SetForeground(core::Color fg) override;
+
+    /// <summary>
     /// 覆寫排版測量階段，計算包含 Padding 與 BorderThickness 之內容所需尺寸。
     /// </summary>
     /// <param name="availableSize">父容器提供之可用尺寸。</param>

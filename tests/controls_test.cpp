@@ -38,6 +38,7 @@
 #include "ui/input/KeyEventArgs.hpp"
 #include "ui/input/PointerEventArgs.hpp"
 #include "ui/input/EventRoute.hpp"
+#include "ui/dsl/Fluent.hpp"
 
 int main() {
     using namespace cppui;
@@ -1033,6 +1034,58 @@ int main() {
         assert(picNullThrew);
 
         compat::println("  [PASS] Separator, Label, PictureBox properties and fail-fast validation verified.");
+    }
+
+    // -------------------------------------------------------------------------
+    // [Test 17] ContentControl Font & Foreground Propagation & Fluent DSL
+    // -------------------------------------------------------------------------
+    compat::println("[Test 17] ContentControl Font & Foreground Propagation & Fluent DSL...");
+    {
+        // 1. Direct API propagation to child TextBlock
+        auto lbl = std::make_shared<Label>("BMI Result");
+        lbl->SetFontSize(24.0f);
+        lbl->SetFontWeight(text::FontWeight::Bold);
+        lbl->SetForeground(Color(80, 200, 255, 255));
+
+        auto childTb = std::dynamic_pointer_cast<TextBlock>(lbl->GetContent());
+        assert(childTb != nullptr);
+        assert(childTb->GetFontSize() == 24.0f);
+        assert(childTb->GetFontWeight() == text::FontWeight::Bold);
+        assert(childTb->GetForeground() == Color(80, 200, 255, 255));
+
+        // 2. Initialization with current font & color when setting new content string
+        lbl->SetText("Updated BMI Result");
+        auto updatedChildTb = std::dynamic_pointer_cast<TextBlock>(lbl->GetContent());
+        assert(updatedChildTb != nullptr);
+        assert(updatedChildTb->GetFontSize() == 24.0f);
+        assert(updatedChildTb->GetFontWeight() == text::FontWeight::Bold);
+        assert(updatedChildTb->GetForeground() == Color(80, 200, 255, 255));
+
+        // 3. Fluent DSL font styling on Label (Control)
+        auto builder = dsl::Label("Title Label")
+            .FontSize(20.0f)
+            .FontWeight(text::FontWeight::Bold)
+            .Foreground(Colors::White);
+
+        std::shared_ptr<Label> dslLabel = builder.Get();
+        assert(dslLabel != nullptr);
+        auto dslChildTb = std::dynamic_pointer_cast<TextBlock>(dslLabel->GetContent());
+        assert(dslChildTb != nullptr);
+        assert(dslChildTb->GetFontSize() == 20.0f);
+        assert(dslChildTb->GetFontWeight() == text::FontWeight::Bold);
+        assert(dslChildTb->GetForeground() == Colors::White);
+
+        // 4. Defensive TextBox caret clamping and out-of-range protection
+        auto tb = std::make_shared<TextBox>();
+        tb->SetCaretIndex(999);
+        assert(tb->GetCaretIndex() == 0); // Clamped to 0
+        tb->InsertText("Hello");
+        assert(tb->GetText() == "Hello");
+        assert(tb->GetCaretIndex() == 5);
+        tb->SetCaretIndex(999);
+        assert(tb->GetCaretIndex() == 5); // Clamped to length
+
+        compat::println("  [PASS] ContentControl font propagation, Fluent DSL, and TextBox clamping verified.");
     }
 
     compat::println("=================================================");

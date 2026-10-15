@@ -271,6 +271,7 @@ void TextBox::SetText(compat::string_view text) {
 
 void TextBox::InsertText(compat::string_view text) {
     if (text.empty() || m_isReadOnly) return;
+    m_caretIndex = (std::min)(m_caretIndex, m_text.size());
     compat::string_view toInsert = text;
     if (m_maxLength > 0) {
         if (m_text.size() >= m_maxLength) return;
@@ -478,7 +479,8 @@ void TextBox::RaiseTextChanged() {
 
 float TextBox::GetCaretXOffset() const {
     if (m_text.empty() || m_caretIndex == 0) return 0.0f;
-    return m_textLayout.HitTestTextPosition(m_caretIndex).x;
+    size_t clampedIndex = (std::min)(m_caretIndex, m_text.size());
+    return m_textLayout.HitTestTextPosition(clampedIndex).x;
 }
 
 core::Rect TextBox::GetCaretRect() const {
@@ -495,7 +497,8 @@ core::Rect TextBox::GetCaretRect() const {
     } else {
         float textBeforeW = 0.0f;
         if (!m_text.empty() && m_caretIndex > 0) {
-            textBeforeW = m_textLayout.HitTestTextPosition(m_caretIndex).x;
+            size_t clampedIndex = (std::min)(m_caretIndex, m_text.size());
+            textBeforeW = m_textLayout.HitTestTextPosition(clampedIndex).x;
         }
         float compCursorOffset = 0.0f;
         if (m_compositionCursor > 0 && !m_compositionText.empty()) {
@@ -597,8 +600,9 @@ void TextBox::OnRender(rendering::DrawingContext& dc) {
         dc.DrawTextLayout(m_textLayout, textOrigin, m_foreground);
     } else {
         // 組字渲染：分別繪製前置文字、組字串 (帶底線標記)、後置文字
-        std::string beforeText = m_text.substr(0, m_caretIndex);
-        std::string afterText = m_text.substr(m_caretIndex);
+        size_t clampedIndex = (std::min)(m_caretIndex, m_text.size());
+        std::string beforeText = m_text.substr(0, clampedIndex);
+        std::string afterText = m_text.substr(clampedIndex);
 
         float xCursor = left;
         if (!beforeText.empty()) {

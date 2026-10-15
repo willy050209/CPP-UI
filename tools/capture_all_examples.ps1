@@ -138,7 +138,7 @@ Add-Type -TypeDefinition $winApiCode -ReferencedAssemblies System.Drawing
 
 $tasks = @(
     @{ Exe = "hello_world.exe"; Output = "hello_world_preview.png"; Args = "" },
-    @{ Exe = "bmi_calculator.exe"; Output = "bmi_calculator_preview.png"; Args = "" },
+    @{ Exe = "bmi_calculator.exe"; Output = "bmi_calculator_preview.png"; Args = "--sample" },
     @{ Exe = "graphics_drawing_demo.exe"; Output = "graphics_drawing_preview.png"; Args = "" },
     @{ Exe = "graphics_drawing_demo.exe"; Output = "graphics_grayscale_preview.png"; Args = "--grayscale" },
     @{ Exe = "drawing_cardioid_example.exe"; Output = "drawing_cardioid_preview.png"; Args = "" },
@@ -223,6 +223,13 @@ foreach ($t in $tasks) {
         Write-Host "ERROR ($($_.Exception.Message))" -ForegroundColor Red
         $failCount++
     }
+}
+ 
+$hwPath = Join-Path $OutputDir "hello_world_preview.png"
+$qsPath = Join-Path $OutputDir "quickstart_preview.png"
+if (Test-Path $hwPath) {
+    Copy-Item $hwPath $qsPath -Force
+    Write-Host "Synchronized quickstart_preview.png from hello_world_preview.png" -ForegroundColor Green
 }
 
 Write-Host "=========================================================="

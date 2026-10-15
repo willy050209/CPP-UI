@@ -42,6 +42,10 @@ void ContentControl::SetContent(std::shared_ptr<core::UIElement> content) {
 void ContentControl::SetContent(compat::string_view text) {
     auto textBlock = std::make_shared<TextBlock>(text);
     textBlock->SetForeground(m_foreground);
+    textBlock->SetFontFamily(GetFontFamily());
+    textBlock->SetFontSize(GetFontSize());
+    textBlock->SetFontWeight(GetFontWeight());
+    textBlock->SetFontStyle(GetFontStyle());
     textBlock->SetHitTestVisible(false); // 穿透至本控制項
     SetContent(std::move(textBlock));
 }
@@ -68,6 +72,60 @@ compat::string_view ContentControl::GetText() const noexcept {
 void ContentControl::SetText(compat::string_view text) {
     SetContentText(text);
     Control::SetText(text);
+}
+
+void ContentControl::SetFontFamily(compat::string_view family) {
+    Control::SetFontFamily(family);
+    if (auto* tb = dynamic_cast<TextBlock*>(m_content.get())) {
+        tb->SetFontFamily(family);
+    } else if (auto* ctrl = dynamic_cast<Control*>(m_content.get())) {
+        ctrl->SetFontFamily(family);
+    }
+}
+
+void ContentControl::SetFontSize(float size) {
+    Control::SetFontSize(size);
+    if (auto* tb = dynamic_cast<TextBlock*>(m_content.get())) {
+        tb->SetFontSize(size);
+    } else if (auto* ctrl = dynamic_cast<Control*>(m_content.get())) {
+        ctrl->SetFontSize(size);
+    }
+}
+
+void ContentControl::SetFontWeight(text::FontWeight weight) {
+    Control::SetFontWeight(weight);
+    if (auto* tb = dynamic_cast<TextBlock*>(m_content.get())) {
+        tb->SetFontWeight(weight);
+    } else if (auto* ctrl = dynamic_cast<Control*>(m_content.get())) {
+        ctrl->SetFontWeight(weight);
+    }
+}
+
+void ContentControl::SetFontStyle(text::FontStyle style) {
+    Control::SetFontStyle(style);
+    if (auto* tb = dynamic_cast<TextBlock*>(m_content.get())) {
+        tb->SetFontStyle(style);
+    } else if (auto* ctrl = dynamic_cast<Control*>(m_content.get())) {
+        ctrl->SetFontStyle(style);
+    }
+}
+
+void ContentControl::SetFont(const text::FontDescriptor& font) {
+    Control::SetFont(font);
+    if (auto* tb = dynamic_cast<TextBlock*>(m_content.get())) {
+        tb->SetFont(font);
+    } else if (auto* ctrl = dynamic_cast<Control*>(m_content.get())) {
+        ctrl->SetFont(font);
+    }
+}
+
+void ContentControl::SetForeground(core::Color fg) {
+    Control::SetForeground(fg);
+    if (auto* tb = dynamic_cast<TextBlock*>(m_content.get())) {
+        tb->SetForeground(fg);
+    } else if (auto* ctrl = dynamic_cast<Control*>(m_content.get())) {
+        ctrl->SetForeground(fg);
+    }
 }
 
 core::Size ContentControl::MeasureOverride(core::Size availableSize) {

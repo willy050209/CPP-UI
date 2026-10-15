@@ -414,41 +414,57 @@ public:
     // --- 文字排版樣式屬性 ---
 
     /// <summary>
-    /// 設定字型大小 (相容 TextBlock 與 TextBox)。
+    /// 設定字型大小 (相容 Control, TextBlock 與 TextBox)。
     /// </summary>
     /// <param name="size">字級大小 (pt/px)。</param>
     /// <returns>UIBuilder 引用支援鏈式調用。</returns>
     UIBuilder& FontSize(float size) {
-        if (auto* tb = dynamic_cast<controls::TextBlock*>(m_element.get())) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetFontSize(size);
+        } else if (auto* tb = dynamic_cast<controls::TextBlock*>(m_element.get())) {
             tb->SetFontSize(size);
-        } else if (auto* tbox = dynamic_cast<controls::TextBox*>(m_element.get())) {
-            tbox->SetFontSize(size);
         }
         return *this;
     }
 
     /// <summary>
-    /// 設定字型家族名稱 (相容 TextBlock 與 TextBox)。
+    /// 設定字型家族名稱 (相容 Control, TextBlock 與 TextBox)。
     /// </summary>
     /// <param name="family">字型家族字串 (如 "Segoe UI")。</param>
     /// <returns>UIBuilder 引用支援鏈式調用。</returns>
     UIBuilder& FontFamily(compat::string_view family) {
-        if (auto* tb = dynamic_cast<controls::TextBlock*>(m_element.get())) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetFontFamily(family);
+        } else if (auto* tb = dynamic_cast<controls::TextBlock*>(m_element.get())) {
             tb->SetFontFamily(family);
-        } else if (auto* tbox = dynamic_cast<controls::TextBox*>(m_element.get())) {
-            tbox->SetFontFamily(family);
         }
         return *this;
     }
 
     /// <summary>
-    /// 設定字型字重 (相容 TextBlock)。
+    /// 設定字型字重 (相容 Control 與 TextBlock)。
     /// </summary>
     /// <param name="weight">FontWeight 列舉值。</param>
     /// <returns>UIBuilder 引用支援鏈式調用。</returns>
     UIBuilder& FontWeight(text::FontWeight weight) {
-        if (auto* tb = dynamic_cast<controls::TextBlock*>(m_element.get())) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetFontWeight(weight);
+        } else if (auto* tb = dynamic_cast<controls::TextBlock*>(m_element.get())) {
             tb->SetFontWeight(weight);
+        }
+        return *this;
+    }
+
+    /// <summary>
+    /// 設定字型樣式傾斜度 (相容 Control 與 TextBlock)。
+    /// </summary>
+    /// <param name="style">FontStyle 列舉值。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& FontStyle(text::FontStyle style) {
+        if (auto* ctrl = dynamic_cast<controls::Control*>(m_element.get())) {
+            ctrl->SetFontStyle(style);
+        } else if (auto* tb = dynamic_cast<controls::TextBlock*>(m_element.get())) {
+            tb->SetFontStyle(style);
         }
         return *this;
     }

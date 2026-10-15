@@ -231,7 +231,9 @@ void InputManager::ProcessKeyDown(core::UIElement& root, const pal::RawKeyEventD
     // 檢查 Tab / Shift+Tab 鍵盤焦點導航
     if (key == Key::Tab) {
         bool shiftPressed = pal::HasModifier(mods, pal::KeyModifiers::Shift);
-        FocusManager::Get().MoveFocus(&root, !shiftPressed);
+        if (FocusManager::Get().MoveFocus(&root, !shiftPressed)) {
+            return; // 成功導航焦點，終止該按鍵派發以防止轉移至新焦點
+        }
     }
 
     core::UIElement* target = FocusManager::Get().GetFocusedElement();
@@ -266,12 +268,17 @@ void InputManager::ProcessKeyUp(core::UIElement& root, const pal::RawKeyEventDat
 }
 
 void InputManager::ProcessTextInput(core::UIElement& root, const pal::RawTextInputData& textData) {
+    uint32_t cp = textData.codepoint;
+    // 過濾非列印 ASCII 控制字元 (如 \t, \r, \b, \x1b)，防止控制鍵作為字串插入單行文字方塊
+    if (cp < 0x20) {
+        return;
+    }
+
     core::UIElement* target = FocusManager::Get().GetFocusedElement();
     if (!target) target = &root;
 
     // 將 UTF-32 碼點轉換為 UTF-8 字串
     std::string utf8Str;
-    uint32_t cp = textData.codepoint;
     if (cp <= 0x7F) {
         utf8Str.push_back(static_cast<char>(cp));
     } else if (cp <= 0x7FF) {

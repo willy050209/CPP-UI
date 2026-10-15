@@ -370,7 +370,7 @@ public:
     /// 設定字型家族名稱。
     /// </summary>
     /// <param name="family">字型家族字串視圖。</param>
-    void SetFontFamily(compat::string_view family);
+    virtual void SetFontFamily(compat::string_view family);
 
     /// <summary>
     /// 取得字型大小 (若未顯式設定則向上繼承)。
@@ -382,7 +382,7 @@ public:
     /// 設定字型大小。
     /// </summary>
     /// <param name="size">字型大小像素值。</param>
-    void SetFontSize(float size);
+    virtual void SetFontSize(float size);
 
     /// <summary>
     /// 取得字型粗細 (若未顯式設定則向上繼承)。
@@ -394,7 +394,7 @@ public:
     /// 設定字型粗細。
     /// </summary>
     /// <param name="weight">FontWeight 列舉值。</param>
-    void SetFontWeight(text::FontWeight weight);
+    virtual void SetFontWeight(text::FontWeight weight);
 
     /// <summary>
     /// 取得字型傾斜度 (若未顯式設定則向上繼承)。
@@ -406,7 +406,7 @@ public:
     /// 設定字型傾斜度。
     /// </summary>
     /// <param name="style">FontStyle 列舉值。</param>
-    void SetFontStyle(text::FontStyle style);
+    virtual void SetFontStyle(text::FontStyle style);
 
     /// <summary>
     /// 取得完整之有效字型描述項 (包含繼承解析)。
@@ -418,7 +418,7 @@ public:
     /// 設定完整字型描述項。
     /// </summary>
     /// <param name="font">FontDescriptor 物件。</param>
-    void SetFont(const text::FontDescriptor& font);
+    virtual void SetFont(const text::FontDescriptor& font);
 
     /// <summary>
     /// 檢查本控制項是否具備顯式自訂之字型設定。
@@ -473,7 +473,7 @@ public:
 
     /// <summary>設定前景筆刷色彩。</summary>
     /// <param name="fg">前景色彩。</param>
-    void SetForeground(core::Color fg);
+    virtual void SetForeground(core::Color fg);
 
     /// <summary>取得邊框筆刷色彩。</summary>
     /// <returns>邊框筆刷色彩。</returns>

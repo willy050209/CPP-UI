@@ -62,7 +62,7 @@ void* TextLayout::GetNativeHandle() const noexcept {
         return static_cast<void*>(m_impl->nativeLayout);
     }
 #endif
-    return m_impl ? static_cast<void*>(m_impl.get()) : nullptr;
+    return nullptr;
 }
 
 } // namespace text
