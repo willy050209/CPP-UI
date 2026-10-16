@@ -27,6 +27,11 @@ CPPUI 專案具備完整開箱即用的現代深淺主題、高分屏 DPI 自動
 | ![Quickstart Preview](docs/images/quickstart_preview.png) | ![BMI Calculator Preview](docs/images/bmi_calculator_preview.png) |
 | *高階 Application + Form 生命週期與 Fluent 排版* | *深色卡片主題、即時數值運算與動態狀態反饋* |
 
+| 官方視覺化表單設計器 (`cppui-designer`) | 真實試運行模式 (Live Run) |
+| :---: | :---: |
+| ![Visual Form Designer Preview](docs/images/visual_form_designer_preview.png) | ![Designer Live Run Preview](docs/images/designer_live_run_preview.png) |
+| *官方獨立設計工具、八向控制點、智慧導引線與檢查器 ([使用手冊](docs/api/guides/visual_form_designer_user_guide.md))* | *零設計干擾之獨立視窗試運行、控制項互動與主題即時測試* |
+
 | 2D 向量繪圖與幾何路徑 (`graphics_drawing_demo`) | 灰階影像濾鏡 (`graphics_drawing_demo`) |
 | :---: | :---: |
 | ![Graphics Drawing Preview](docs/images/graphics_drawing_preview.png) | ![Grayscale Filter Preview](docs/images/graphics_grayscale_preview.png) |
@@ -171,7 +176,7 @@ int main() {
 | **對話方塊** | [📂 **對話方塊與檔案選取器指南**](docs/api/guides/dialogs_and_file_picker_guide.md) | 深入 MessageBox 與 FileDialog 雙後端派送架構 |
 | **架構架構** | [🏗️ **MVVM 與 IoC 依賴注入架構**](docs/api/guides/mvvm_and_ioc_architecture.md) | 視圖模型、指令綁定與依賴反轉實踐 |
 | **跨平台** | [🐧 **跨平台抽象與 Linux X11 支援**](docs/api/guides/cross_platform_architecture.md) | PAL 抽象層、X11 原生視窗與通用視窗支援 |
-| **表單設計器** | [📐 **表單設計器 API 參考**](docs/api/namespaces/cppui_designer.md) • [📜 **架構設計規範**](docs/specs/06_visual_form_designer_architecture.md) | 深度解析五階段視覺化設計器架構、AST 領域模型、Pimpl 深常數性與專案匯出保護 |
+| **表單設計器** | [📐 **視覺化表單設計器使用手冊**](docs/api/guides/visual_form_designer_user_guide.md) • [📖 **API 參考**](docs/api/namespaces/cppui_designer.md) • [📜 **架構設計規範**](docs/specs/06_visual_form_designer_architecture.md) | 官方獨立 `cppui-designer` 工具完整使用指南、AST 領域模型、Pimpl 深常數性與專案匯出保護 |
 | **設計規範** | [📜 **設計規範 01 ~ 06 (Design Specs)**](docs/specs/01_architecture_layers.md) | 三層架構分離、代碼規範、記憶體架構、事件標準、現代 Pimpl 與表單設計器規範 |
 
 ---

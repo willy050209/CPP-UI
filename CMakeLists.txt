@@ -419,6 +419,11 @@ if(CPPUI_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
+option(CPPUI_BUILD_DESIGNER_TOOL "Build standalone CPPUI Visual Form Designer tool" ${CPPUI_IS_TOP_LEVEL})
+if(CPPUI_BUILD_DESIGNER AND CPPUI_BUILD_DESIGNER_TOOL)
+    add_subdirectory(tools/designer)
+endif()
+
 # -----------------------------------------------------------------------------
 # 安裝與導出規則 (Installation and CMake Package Export)
 # -----------------------------------------------------------------------------

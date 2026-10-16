@@ -262,6 +262,7 @@ graph TD
 
 ## 4. 實戰與概念指南 (Guides & Tutorials)
 
+* [**CPPUI 官方獨立視覺化表單設計器使用手冊 (Visual Form Designer User Guide)**](guides/visual_form_designer_user_guide.md)：詳細介紹官方獨立工具 `cppui-designer` 的介面佈局、工具箱、畫布拖曳、智慧吸附導引線、屬性與事件檢查器、即時代碼預覽、試運行與 CMake 專案匯出工作流。
 * [**視覺化表單設計器核心架構與 API 參考 (Visual Form Designer)**](namespaces/cppui_designer.md)：深入介紹五階段表單設計器核心體系，涵蓋 AST 領域模型、程式碼生成管道、視覺化畫布設計表面、屬性檢查器、即時代碼預覽、試運行與 CMake 專案增量匯出。
 * [**表單設計器系統規格書 (Design Spec 06: Form Designer)**](../specs/06_visual_form_designer_architecture.md)：詳細記載階段 1 至 5 的微架構決策、深常數性 Pimpl 封裝、SnapEngine 對齊導引線求解與使用者代碼保護策略。
 * [**對話方塊與檔案選取器實戰指南 (Dialogs and File Pickers Guide)**](guides/dialogs_and_file_picker_guide.md)：詳解 MessageBox、OpenFileDialog、SaveFileDialog 在 Auto/Native/BuiltIn 模式下的最佳實踐、深淺主題自適應、覆寫確認與 CI 無阻塞單元測試策略。

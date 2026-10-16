@@ -14,6 +14,18 @@
 5. **即時代碼預覽與試運行 (`cppui::designer::preview`)**：多分頁即時代碼展示、SourceMap 行號聚焦高亮、以及一鍵無裝飾器「真實執行」獨立 Form 視窗。
 6. **標準專案匯出引擎 (`cppui::designer::exporter`)**：自動產出完整 CMake 專案目錄樹，並具備使用者業務邏輯檔（`.cpp`）增量保護機制（保留使用者代碼，僅追加新事件 Stubs）。
 
+> [!TIP]
+> **官方獨立工具與完整使用手冊**：
+> CPPUI 提供預先構建之獨立官方工具 **`tools/designer/`** (`cppui-designer.exe`)。
+> 欲了解完整的介面導覽、拖曳操作、智慧導引線、屬性/事件檢查器與專案匯出流程，請參閱 [📖 **視覺化表單設計器官方使用手冊 (User Guide)**](../guides/visual_form_designer_user_guide.md)。
+
+### 視覺成果展示 (Visual Showcase)
+
+| 官方視覺化表單設計器 (`cppui-designer`) | 真實試運行模式 (Live Run) |
+| :---: | :---: |
+| ![Visual Form Designer Preview](../../images/visual_form_designer_preview.png) | ![Designer Live Run Preview](../../images/designer_live_run_preview.png) |
+| *獨立官方工具、八向控制點、智慧導引線與屬性檢查器* | *零設計干擾之獨立視窗試運行、控制項互動與主題即時測試* |
+
 ```mermaid
 graph TD
     subgraph "核心領域模型 (model)"

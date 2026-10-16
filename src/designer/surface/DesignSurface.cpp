@@ -196,6 +196,55 @@ void DesignSurface::OnRender(rendering::DrawingContext& dc) {
         if (sz.height <= 0.0f) sz.height = 1080.0f;
         AdornerOverlay::RenderGrid(dc, sz, m_impl->options.gridSize, m_impl->options.gridColor);
     }
+
+    // 繪製畫布上的所有控制項 (AST Widgets Rendering)
+    if (m_impl->document && m_impl->document->GetRoot()) {
+        for (const auto& kv : m_impl->boundsMap) {
+            const std::string& uuid = kv.first;
+            core::Rect rect = kv.second;
+            WidgetNode* node = m_impl->document->FindByUuid(uuid);
+            if (!node || node->GetType() == NodeType::Grid || node->GetType() == NodeType::Canvas) {
+                continue;
+            }
+
+            // 繪製控制項背景與外觀
+            if (node->GetType() == NodeType::Button) {
+                core::Color bg(14, 110, 210);
+                if (auto p = node->GetProperty("Background")) {
+                    if (auto c = p->Get<core::Color>()) bg = *c;
+                }
+                dc.DrawRoundedRectangle(rect, 4.0f, bg);
+            } else if (node->GetType() == NodeType::TextBox) {
+                dc.DrawRoundedRectangle(rect, 3.0f, core::Color(36, 40, 50));
+            } else if (node->GetType() == NodeType::CheckBox) {
+                core::Rect chk(rect.x, rect.y + 4.0f, 16.0f, 16.0f);
+                dc.DrawRoundedRectangle(chk, 2.0f, core::Color(24, 134, 75));
+            }
+
+            // 繪製控制項文字 (Content / Text)
+            std::string text;
+            if (auto cp = node->GetProperty("Content")) {
+                if (auto s = cp->Get<std::string>()) text = *s;
+            } else if (auto tp = node->GetProperty("Text")) {
+                if (auto s = tp->Get<std::string>()) text = *s;
+            }
+
+            if (!text.empty()) {
+                core::Point origin(rect.x + 8.0f, rect.y + 6.0f);
+                core::Color textColor(240, 240, 240);
+                float fontSize = 12.0f;
+                if (auto fp = node->GetProperty("FontSize")) {
+                    if (auto f = fp->Get<double>()) fontSize = static_cast<float>(*f);
+                }
+                if (node->GetType() == NodeType::CheckBox) {
+                    origin.x = rect.x + 24.0f;
+                    origin.y = rect.y + 4.0f;
+                }
+                text::FontDescriptor fontDesc("Segoe UI", fontSize);
+                dc.DrawText(text, origin, fontDesc, textColor);
+            }
+        }
+    }
 }
 
 void DesignSurface::OnPostRender(rendering::DrawingContext& dc) {
