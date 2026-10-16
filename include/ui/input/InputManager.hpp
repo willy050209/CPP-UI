@@ -14,6 +14,7 @@
 #include "ui/input/FocusEventArgs.hpp"
 #include "ui/input/FocusManager.hpp"
 #include "ui/input/ILightDismissable.hpp"
+#include "ui/core/LifetimeToken.hpp"
 
 namespace cppui {
 namespace core {
@@ -99,18 +100,27 @@ public:
     void NotifyElementDestroyed(core::UIElement* element) noexcept;
 
     // --- 浮層彈出控制項 (Popup Light-Dismiss) ---
+    
+    /// <summary>
+    /// 浮層註冊記錄結構，繫結生命週期權杖以防範 UAF。
+    /// </summary>
+    struct OpenPopupEntry {
+        ILightDismissable* popup = nullptr;
+        core::LifetimeToken token;
+    };
 
-    /// <summary>註冊當前已開啟之浮層 (用於 Light-Dismiss 監聽)。</summary>
+    /// <summary>註冊當前已開啟之浮層 (用於 Light-Dismiss 監聽，支援生命週期權杖防護)。</summary>
     /// <param name="popup">開啟之 ILightDismissable 指標。</param>
-    void RegisterOpenPopup(ILightDismissable* popup);
+    /// <param name="token">生命週期權杖 (可選，預設自動關聯)。</param>
+    void RegisterOpenPopup(ILightDismissable* popup, core::LifetimeToken token = core::LifetimeToken{});
 
     /// <summary>註銷已關閉之浮層。</summary>
     /// <param name="popup">關閉之 ILightDismissable 指標。</param>
     void UnregisterOpenPopup(ILightDismissable* popup);
 
-    /// <summary>取得當前所有已開啟之浮層清單。</summary>
+    /// <summary>取得當前所有存活且已開啟之浮層清單。</summary>
     /// <returns>ILightDismissable 指標陣列常數引用。</returns>
-    COMPAT_NODISCARD const std::vector<ILightDismissable*>& GetOpenPopups() const noexcept { return m_openPopups; }
+    COMPAT_NODISCARD const std::vector<ILightDismissable*>& GetOpenPopups() const;
 
     // 分流事件處理輔助方法
 
@@ -174,10 +184,12 @@ public:
 
 private:
     void UpdateHover(core::UIElement* newHover, core::Point windowPos, pal::KeyModifiers mods);
+    void PruneDeadPopups();
 
     core::UIElement* m_hoveredElement = nullptr;
     core::UIElement* m_capturedElement = nullptr;
-    std::vector<ILightDismissable*> m_openPopups;
+    std::vector<OpenPopupEntry> m_openPopups;
+    mutable std::vector<ILightDismissable*> m_activePopupsCache;
     IInputInspectorHook* m_inspectorHook = nullptr;
 };
 

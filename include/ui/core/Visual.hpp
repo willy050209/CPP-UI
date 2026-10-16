@@ -71,6 +71,12 @@ public:
     void RemoveVisualChild(const std::shared_ptr<Visual>& child);
 
     /// <summary>
+    /// 依原始指標移除指定之視覺子節點 (解構安全)。
+    /// </summary>
+    /// <param name="child">欲移除之子節點裸指標。</param>
+    void RemoveVisualChild(Visual* child);
+
+    /// <summary>
     /// 清除所有視覺子節點。
     /// </summary>
     void ClearVisualChildren();

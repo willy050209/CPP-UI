@@ -68,6 +68,16 @@ public:
     void SetIsOpen(bool value) override;
 
     /// <summary>
+    /// 開啟彈出層。
+    /// </summary>
+    void Open() { SetIsOpen(true); }
+
+    /// <summary>
+    /// 關閉彈出層。
+    /// </summary>
+    void Close() { SetIsOpen(false); }
+
+    /// <summary>
     /// 查詢是否保持開啟 (若為 false 則啟用外部點擊或 ESC 鍵 Light-Dismiss 自動關閉)。
     /// </summary>
     /// <returns>若保持開啟傳回 true。</returns>

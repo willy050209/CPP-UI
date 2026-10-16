@@ -240,6 +240,10 @@ TextBox::TextBox() {
     ContextMenuService::SetContextMenu(this, ctxMenu);
 }
 
+TextBox::~TextBox() {
+    ContextMenuService::SetContextMenu(this, nullptr);
+}
+
 TextBox::TextBox(compat::string_view placeholder) : TextBox() {
     SetPlaceholder(placeholder);
 }

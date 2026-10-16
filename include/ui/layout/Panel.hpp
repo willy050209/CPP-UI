@@ -46,6 +46,13 @@ public:
     void RemoveChild(const std::shared_ptr<core::UIElement>& child);
 
     /// <summary>
+    /// 依原始指標從版面容器中移除指定子元件 (解構安全)。
+    /// </summary>
+    /// <param name="child">待移除之子元件裸指標，不可為 nullptr。</param>
+    /// <exception cref="std::invalid_argument">當 child 為 nullptr 時擲出。</exception>
+    void RemoveChild(core::UIElement* child);
+
+    /// <summary>
     /// 清除所有子元件。
     /// </summary>
     void ClearChildren();

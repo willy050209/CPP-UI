@@ -42,10 +42,20 @@ void InputManager::ReleasePointerCapture(core::UIElement* element) {
     }
 }
 
+void InputManager::PruneDeadPopups() {
+    m_openPopups.erase(
+        std::remove_if(m_openPopups.begin(), m_openPopups.end(), [](const OpenPopupEntry& entry) {
+            return !entry.popup || (entry.token.HasHandle() && !entry.token.IsAlive());
+        }),
+        m_openPopups.end()
+    );
+}
+
 void InputManager::ResetState() {
     m_capturedElement = nullptr;
     m_hoveredElement = nullptr;
     m_openPopups.clear();
+    m_activePopupsCache.clear();
 }
 
 void InputManager::NotifyElementDestroyed(core::UIElement* element) noexcept {
@@ -57,27 +67,52 @@ void InputManager::NotifyElementDestroyed(core::UIElement* element) noexcept {
     }
     auto* dismissable = dynamic_cast<ILightDismissable*>(element);
     if (dismissable) {
-        m_openPopups.erase(
-            std::remove(m_openPopups.begin(), m_openPopups.end(), dismissable),
-            m_openPopups.end()
-        );
+        UnregisterOpenPopup(dismissable);
     }
+    PruneDeadPopups();
 }
 
-void InputManager::RegisterOpenPopup(ILightDismissable* popup) {
+void InputManager::RegisterOpenPopup(ILightDismissable* popup, core::LifetimeToken token) {
     if (!popup) return;
-    auto it = std::find(m_openPopups.begin(), m_openPopups.end(), popup);
+    PruneDeadPopups();
+
+    if (!token.HasHandle()) {
+        if (auto* elem = dynamic_cast<core::UIElement*>(popup)) {
+            token = elem->GetLifetimeToken();
+        }
+    }
+
+    auto it = std::find_if(m_openPopups.begin(), m_openPopups.end(), [popup](const OpenPopupEntry& e) {
+        return e.popup == popup;
+    });
     if (it == m_openPopups.end()) {
-        m_openPopups.push_back(popup);
+        m_openPopups.push_back({ popup, token });
+    } else {
+        it->token = token;
     }
 }
 
 void InputManager::UnregisterOpenPopup(ILightDismissable* popup) {
     if (!popup) return;
-    auto it = std::find(m_openPopups.begin(), m_openPopups.end(), popup);
+    auto it = std::find_if(m_openPopups.begin(), m_openPopups.end(), [popup](const OpenPopupEntry& e) {
+        return e.popup == popup;
+    });
     if (it != m_openPopups.end()) {
         m_openPopups.erase(it);
     }
+    PruneDeadPopups();
+}
+
+const std::vector<ILightDismissable*>& InputManager::GetOpenPopups() const {
+    const_cast<InputManager*>(this)->PruneDeadPopups();
+    m_activePopupsCache.clear();
+    m_activePopupsCache.reserve(m_openPopups.size());
+    for (const auto& entry : m_openPopups) {
+        if (entry.popup && (!entry.token.HasHandle() || entry.token.IsAlive())) {
+            m_activePopupsCache.push_back(entry.popup);
+        }
+    }
+    return m_activePopupsCache;
 }
 
 void InputManager::ProcessMouseMove(core::UIElement& root, const pal::RawMouseEventData& mouseData, pal::KeyModifiers mods) {
@@ -117,13 +152,21 @@ void InputManager::ProcessMouseDown(core::UIElement& root, const pal::RawMouseEv
         root.InvalidateVisual();
     }
 
+    PruneDeadPopups();
+
     // Light-Dismiss: 若存在開啟且未鎖定常開的浮層，且點擊落於該浮層及其目標之外，則自動收合
     if (!m_openPopups.empty()) {
         const auto snapshot = m_openPopups;
         std::vector<ILightDismissable*> toClose;
-        for (auto* popup : snapshot) {
+        for (const auto& entry : snapshot) {
+            if (entry.token.HasHandle() && !entry.token.IsAlive()) continue;
+            auto* popup = entry.popup;
             if (!popup || popup->StaysOpen()) continue;
-            if (std::find(m_openPopups.begin(), m_openPopups.end(), popup) == m_openPopups.end()) continue;
+
+            auto it = std::find_if(m_openPopups.begin(), m_openPopups.end(), [popup](const OpenPopupEntry& e) {
+                return e.popup == popup;
+            });
+            if (it == m_openPopups.end()) continue;
 
             bool isInside = false;
             core::Visual* cur = hitUI;
@@ -140,7 +183,10 @@ void InputManager::ProcessMouseDown(core::UIElement& root, const pal::RawMouseEv
             }
         }
         for (auto* popup : toClose) {
-            if (std::find(m_openPopups.begin(), m_openPopups.end(), popup) != m_openPopups.end()) {
+            auto it = std::find_if(m_openPopups.begin(), m_openPopups.end(), [popup](const OpenPopupEntry& e) {
+                return e.popup == popup;
+            });
+            if (it != m_openPopups.end() && (!it->token.HasHandle() || it->token.IsAlive())) {
                 popup->SetIsOpen(false);
             }
         }
@@ -214,11 +260,18 @@ void InputManager::ProcessKeyDown(core::UIElement& root, const pal::RawKeyEventD
     Key key = static_cast<Key>(keyData.virtualKey);
 
     // 檢查 Escape 鍵關閉頂層 Popup
-    if (key == Key::Escape && !m_openPopups.empty()) {
-        auto* topmost = m_openPopups.back();
-        if (topmost) {
-            topmost->SetIsOpen(false);
-            return; // 優先消費 ESC 鍵關閉浮層
+    if (key == Key::Escape) {
+        PruneDeadPopups();
+        while (!m_openPopups.empty()) {
+            auto entry = m_openPopups.back();
+            m_openPopups.pop_back();
+            if (entry.token.HasHandle() && !entry.token.IsAlive()) {
+                continue;
+            }
+            if (entry.popup) {
+                entry.popup->SetIsOpen(false);
+                return; // 優先消費 ESC 鍵關閉浮層
+            }
         }
     }
 

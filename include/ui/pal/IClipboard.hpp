@@ -79,6 +79,12 @@ public:
     /// </summary>
     /// <param name="customClipboard">自訂剪貼簿指標，傳入 nullptr 恢復預設。</param>
     static void SetCustomClipboard(std::shared_ptr<IClipboard> customClipboard);
+
+    /// <summary>
+    /// 取得目前使用中之原生 IClipboard 介面指標。
+    /// </summary>
+    /// <returns>目前作用中之 IClipboard 指標。</returns>
+    COMPAT_NODISCARD static IClipboard* GetCurrent();
 };
 
 } // namespace pal

@@ -17,6 +17,9 @@
 #include "ui/layout/LayoutManager.hpp"
 #include "ui/pal/IClipboard.hpp"
 #include "ui/dialogs/DialogCommon.hpp"
+#include "ui/controls/Popup.hpp"
+#include "ui/controls/OverlayLayer.hpp"
+#include "ui/controls/TextBlock.hpp"
 
 namespace cppui {
 namespace test {
@@ -264,6 +267,59 @@ static void TestSafeDirectoryIterationLogic() {
     compat::println("  -> PASSED: Non-throwing filesystem iteration succeeded with {} directories.", count);
 }
 
+static void TestPopupDestructionWhileOpen() {
+    compat::println("[Test] 6. Popup Destruction While Open Safety...");
+    auto& im = input::InputManager::Get();
+    im.ResetState();
+
+    auto overlay = std::make_shared<controls::OverlayLayer>();
+    auto content = std::make_shared<controls::TextBlock>("Popup Content");
+    auto popup = std::make_shared<controls::Popup>(content);
+    overlay->AddFloatingElement(popup);
+
+    popup->SetIsOpen(true);
+    assert(popup->IsOpen());
+    assert(im.GetOpenPopups().size() == 1);
+
+    // 模擬父容器銷毀或外部持有者釋放 (Popup 於開啟狀態下被銷毀)
+    // 驗證解構子安全呼叫 Close() 並從 InputManager 卸載，且不拋出 std::bad_weak_ptr
+    popup.reset();
+    overlay.reset();
+
+    assert(im.GetOpenPopups().empty());
+    compat::println("  -> PASSED: Popup destroyed while open safely unregistered from InputManager and OverlayLayer.");
+}
+
+static void TestInputManagerLifetimeTokenInvalidation() {
+    compat::println("[Test] 7. InputManager LifetimeToken Invalidation Defense...");
+    auto& im = input::InputManager::Get();
+    im.ResetState();
+
+    auto aliveFlag = std::make_shared<std::atomic<bool>>(true);
+    core::LifetimeToken token(aliveFlag);
+
+    auto popup = std::make_shared<MockPopup>("TokenPopup");
+    im.RegisterOpenPopup(popup.get(), token);
+    assert(im.GetOpenPopups().size() == 1);
+
+    // Invalidate the token externally
+    token.Invalidate();
+
+    // Now im.GetOpenPopups() must automatically prune it
+    assert(im.GetOpenPopups().empty());
+
+    // Process ESC key should safely prune without crash
+    core::UIElement root;
+    pal::RawKeyEventData keyData;
+    keyData.virtualKey = static_cast<uint32_t>(input::Key::Escape);
+    keyData.scanCode = 1;
+    keyData.isRepeat = false;
+    im.ProcessKeyDown(root, keyData, pal::KeyModifiers::None);
+
+    assert(im.GetOpenPopups().empty());
+    compat::println("  -> PASSED: Dead LifetimeToken popups safely ignored and pruned.");
+}
+
 } // namespace test
 } // namespace cppui
 
@@ -277,6 +333,8 @@ int main() {
     cppui::test::TestLayoutManagerOscillationDefense();
     cppui::test::TestUIElementNanInfinitySanitization();
     cppui::test::TestSafeDirectoryIterationLogic();
+    cppui::test::TestPopupDestructionWhileOpen();
+    cppui::test::TestInputManagerLifetimeTokenInvalidation();
 
     compat::println("==========================================================");
     compat::println(" ALL RELIABILITY & STABILITY TESTS PASSED (100% SUCCESS)  ");

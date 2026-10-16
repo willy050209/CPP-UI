@@ -56,7 +56,7 @@ ComboBox::ComboBox() {
 
 ComboBox::~ComboBox() {
     if (m_dropdownPopup && m_dropdownPopup->IsOpen()) {
-        m_dropdownPopup->SetIsOpen(false);
+        m_dropdownPopup->Close();
     }
 }
 
@@ -158,10 +158,12 @@ void ComboBox::RebuildDropdownItems() {
     if (!m_dropdownPanel) return;
     m_dropdownPanel->ClearChildren();
 
+    auto token = GetLifetimeToken();
     for (size_t i = 0; i < m_items.size(); ++i) {
         auto item = std::make_shared<MenuItem>(m_items[i]);
         int32_t idx = static_cast<int32_t>(i);
-        item->AddClickHandler([this, idx](MenuItem&) {
+        item->AddClickHandler([this, idx, token](MenuItem&) {
+            if (!token.IsAlive()) return;
             SetSelectedIndex(idx);
             SetIsDropDownOpen(false);
         });

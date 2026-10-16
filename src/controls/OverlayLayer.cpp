@@ -29,6 +29,13 @@ void OverlayLayer::RemoveFloatingElement(const std::shared_ptr<core::UIElement>&
     RemoveChild(element);
 }
 
+void OverlayLayer::RemoveFloatingElement(core::UIElement* element) {
+    if (!element) {
+        throw std::invalid_argument("OverlayLayer::RemoveFloatingElement: element cannot be nullptr.");
+    }
+    RemoveChild(element);
+}
+
 size_t OverlayLayer::GetFloatingElementCount() const noexcept {
     return GetChildrenCount();
 }

@@ -46,6 +46,13 @@ public:
     void RemoveFloatingElement(const std::shared_ptr<core::UIElement>& element);
 
     /// <summary>
+    /// 依原始指標從浮層中移除指定浮動子元件 (解構安全)。
+    /// </summary>
+    /// <param name="element">待移除之浮動子元件裸指標，不可為 nullptr。</param>
+    /// <exception cref="std::invalid_argument">當 element 為 nullptr 時擲出。</exception>
+    void RemoveFloatingElement(core::UIElement* element);
+
+    /// <summary>
     /// 取得當前承載之浮動子元件數量。
     /// </summary>
     /// <returns>浮動子元件數量。</returns>

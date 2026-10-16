@@ -27,10 +27,17 @@ void Panel::RemoveChild(const std::shared_ptr<core::UIElement>& child) {
     if (!child) {
         throw std::invalid_argument("Panel::RemoveChild: child cannot be null.");
     }
+    RemoveChild(child.get());
+}
+
+void Panel::RemoveChild(core::UIElement* child) {
+    if (!child) {
+        throw std::invalid_argument("Panel::RemoveChild: child cannot be null.");
+    }
 
     RemoveVisualChild(child);
     for (auto it = m_children.begin(); it != m_children.end(); ++it) {
-        if (it->get() == child.get()) {
+        if (it->get() == child) {
             m_children.erase(it);
             InvalidateMeasure();
             return;

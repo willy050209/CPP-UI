@@ -69,6 +69,37 @@ public:
     /// <summary>清空 X11 剪貼簿內容。</summary>
     void Clear() override;
 
+    /// <summary>
+    /// 設定與主視窗共享之 X11 Display 與 Window 連線。
+    /// </summary>
+    /// <param name="display">X11 Display 連線指標。</param>
+    /// <param name="window">主視窗 Window 控制代碼。</param>
+    void SetConnection(Display* display, Window window);
+
+    /// <summary>
+    /// 重設與特定主視窗之 X11 連線綁定。
+    /// </summary>
+    /// <param name="display">待解除之 X11 Display 連線指標。</param>
+    void ResetConnection(Display* display);
+
+    /// <summary>
+    /// 處理來自其他外部 X11 程式之 SelectionRequest 請求事件。
+    /// </summary>
+    /// <param name="req">XSelectionRequestEvent 事件結構。</param>
+    void HandleSelectionRequest(const XSelectionRequestEvent& req);
+
+    /// <summary>
+    /// 處理系統剪貼簿擁有權被搶佔之 SelectionClear 事件。
+    /// </summary>
+    /// <param name="clr">XSelectionClearEvent 事件結構。</param>
+    void HandleSelectionClear(const XSelectionClearEvent& clr);
+
+    /// <summary>
+    /// 處理向外部應用程式請求剪貼簿內容之 SelectionNotify 回應事件。
+    /// </summary>
+    /// <param name="notify">XSelectionEvent 事件結構。</param>
+    void HandleSelectionNotify(const XSelectionEvent& notify);
+
 private:
     void EnsureInitialized();
     void ProcessPendingEvents() const;
@@ -76,6 +107,8 @@ private:
     mutable std::mutex m_mutex;
     Display*           m_display = nullptr;
     Window             m_window = 0;
+    bool               m_ownsDisplay = false;
+    bool               m_ownsWindow = false;
     Atom               m_clipboardAtom = 0;
     Atom               m_utf8StringAtom = 0;
     Atom               m_targetsAtom = 0;

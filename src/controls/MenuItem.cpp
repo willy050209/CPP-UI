@@ -115,7 +115,7 @@ void MenuItem::OpenSubmenu() {
 
 void MenuItem::CloseSubmenu() {
     if (m_submenuPopup && m_submenuPopup->IsOpen()) {
-        m_submenuPopup->SetIsOpen(false);
+        m_submenuPopup->Close();
     }
 }
 
@@ -140,7 +140,7 @@ void MenuItem::TriggerClick() {
     core::Visual* cur = this;
     while (cur) {
         if (auto* popup = dynamic_cast<Popup*>(cur)) {
-            popup->SetIsOpen(false);
+            popup->Close();
             break;
         }
         cur = cur->GetVisualParent();

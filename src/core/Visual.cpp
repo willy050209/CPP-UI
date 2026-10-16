@@ -32,10 +32,15 @@ void Visual::AddVisualChild(std::shared_ptr<Visual> child) {
 
 void Visual::RemoveVisualChild(const std::shared_ptr<Visual>& child) {
     if (!child) return;
+    RemoveVisualChild(child.get());
+}
+
+void Visual::RemoveVisualChild(Visual* child) {
+    if (!child) return;
 
     for (auto it = m_visualChildren.begin(); it != m_visualChildren.end(); ++it) {
-        if (it->get() == child.get()) {
-            child->SetVisualParent(nullptr);
+        if (it->get() == child) {
+            (*it)->SetVisualParent(nullptr);
             m_visualChildren.erase(it);
             return;
         }

@@ -90,7 +90,9 @@ void ContextMenuService::SetContextMenu(core::UIElement* element, std::shared_pt
     }
 
     GetContextMenuRegistry()[element] = menu;
-    element->OnPointerReleased([element, menu](input::PointerEventArgs& e) {
+    auto token = element->GetLifetimeToken();
+    element->OnPointerReleased([element, menu, token](input::PointerEventArgs& e) {
+        if (!token.IsAlive()) return;
         if (e.GetButton() == pal::RawMouseButton::Right) {
             menu->Show(element, e.GetPosition(element));
             e.SetHandled(true);

@@ -16,6 +16,7 @@
 
 #include "compat/Compat.hpp"
 #include "ui/pal/IPlatformWindow.hpp"
+#include "ui/pal/IClipboard.hpp"
 #include "ui/core/CoordinateTransform.hpp"
 
 #include <X11/Xlib.h>
@@ -137,6 +138,10 @@ public:
     COMPAT_NODISCARD void* GetNativeHandle() const noexcept override {
         return reinterpret_cast<void*>(static_cast<uintptr_t>(m_window));
     }
+
+    /// <summary>取得視窗關聯之剪貼簿介面指標。</summary>
+    /// <returns>IClipboard 指標。</returns>
+    COMPAT_NODISCARD IClipboard* GetClipboard() const noexcept;
 
     // --- 事件與回呼委派 ---
 

@@ -4,6 +4,7 @@
  */
 
 #include "PlatformWindowX11.hpp"
+#include "src/pal/x11/ClipboardX11.hpp"
 
 #if defined(CPPUI_HAS_X11) && CPPUI_HAS_X11
 
@@ -79,12 +80,21 @@ PlatformWindowX11::PlatformWindowX11(const WindowDesc& desc)
     QueryDpiScale();
     SetTitle(desc.title);
 
+    // 共享 X11 Display 與 Window 連線至 ClipboardX11
+    if (auto* clipboard = dynamic_cast<ClipboardX11*>(GetClipboard())) {
+        clipboard->SetConnection(m_display, m_window);
+    }
+
     if (desc.visible) {
         Show();
     }
 }
 
 PlatformWindowX11::~PlatformWindowX11() {
+    if (auto* clipboard = dynamic_cast<ClipboardX11*>(GetClipboard())) {
+        clipboard->ResetConnection(m_display);
+    }
+
     if (m_wakePipe[0] != -1) {
         close(m_wakePipe[0]);
         m_wakePipe[0] = -1;
@@ -106,6 +116,10 @@ PlatformWindowX11::~PlatformWindowX11() {
         XCloseDisplay(m_display);
         m_display = nullptr;
     }
+}
+
+IClipboard* PlatformWindowX11::GetClipboard() const noexcept {
+    return Clipboard::GetCurrent();
 }
 
 void PlatformWindowX11::Show() {
@@ -387,6 +401,27 @@ void PlatformWindowX11::HandleXEvent(const XEvent& event) {
             focusEvt.type = RawEventType::WindowFocusLost;
             focusEvt.timestampMs = ts;
             DispatchEvent(focusEvt);
+            break;
+        }
+
+        case SelectionRequest: {
+            if (auto* clipboard = dynamic_cast<ClipboardX11*>(GetClipboard())) {
+                clipboard->HandleSelectionRequest(event.xselectionrequest);
+            }
+            break;
+        }
+
+        case SelectionClear: {
+            if (auto* clipboard = dynamic_cast<ClipboardX11*>(GetClipboard())) {
+                clipboard->HandleSelectionClear(event.xselectionclear);
+            }
+            break;
+        }
+
+        case SelectionNotify: {
+            if (auto* clipboard = dynamic_cast<ClipboardX11*>(GetClipboard())) {
+                clipboard->HandleSelectionNotify(event.xselection);
+            }
             break;
         }
 

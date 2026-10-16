@@ -282,6 +282,7 @@ else()
                 message(STATUS "Wayland detected: ${WAYLAND_LIBRARIES}")
                 list(APPEND CPPUI_SOURCES
                     src/pal/wayland/PlatformWindowWayland.cpp
+                    src/pal/wayland/ClipboardWayland.cpp
                     src/pal/wayland/protocol/xdg-shell-protocol.c
                 )
             endif()

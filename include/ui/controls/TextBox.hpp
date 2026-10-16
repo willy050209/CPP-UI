@@ -38,7 +38,7 @@ public:
     /// <summary>
     /// 虛擬解構子。
     /// </summary>
-    ~TextBox() override = default;
+    ~TextBox() override;
 
     /// <summary>
     /// 取得當前輸入之文字視圖。

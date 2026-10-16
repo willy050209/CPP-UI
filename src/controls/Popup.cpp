@@ -25,7 +25,7 @@ Popup::Popup(std::shared_ptr<core::UIElement> content)
 
 Popup::~Popup() {
     if (m_isOpen) {
-        SetIsOpen(false);
+        Close();
     }
 }
 
@@ -81,11 +81,15 @@ void Popup::SetIsOpen(bool value) {
 
         if (layer) {
             m_currentOverlayLayer = layer;
-            layer->AddFloatingElement(std::static_pointer_cast<core::UIElement>(shared_from_this()));
+            try {
+                layer->AddFloatingElement(std::static_pointer_cast<core::UIElement>(shared_from_this()));
+            } catch (const std::bad_weak_ptr&) {
+                // Popup 未透過 shared_ptr 管理 (例如配置於 stack)，略過浮層裝載
+            }
         }
 
         UpdatePlacement();
-        input::InputManager::Get().RegisterOpenPopup(this);
+        input::InputManager::Get().RegisterOpenPopup(this, GetLifetimeToken());
 
         OnOpened();
         for (const auto& handler : m_openedHandlers) {
@@ -100,7 +104,7 @@ void Popup::SetIsOpen(bool value) {
         input::InputManager::Get().UnregisterOpenPopup(this);
 
         if (m_currentOverlayLayer) {
-            m_currentOverlayLayer->RemoveFloatingElement(std::static_pointer_cast<core::UIElement>(shared_from_this()));
+            m_currentOverlayLayer->RemoveFloatingElement(this);
             m_currentOverlayLayer = nullptr;
         }
 
