@@ -3,7 +3,7 @@
 <div align="center">
 
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-14%20%7C%2017%20%7C%2020%20%7C%2023-blue.svg)](include/compat/Compat.hpp)
-[![CTest Suite](https://img.shields.io/badge/CTest-33%2F33%20Passing%20(100%25)-success.svg)](tests/)
+[![CTest Suite](https://img.shields.io/badge/CTest-37%2F37%20Passing%20(100%25)-success.svg)](tests/)
 [![Compiler Warnings](https://img.shields.io/badge/Compiler%20Warnings-0%20Errors%20%2F%200%20Warnings-brightgreen.svg)](docs/specs/02_coding_standards_compat.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](docs/api/guides/cross_platform_architecture.md)
@@ -194,10 +194,10 @@ cmake --build build --config Release
 
 ### 2. 執行單元測試套件 (CTest)
 
-專案包含 33 組高覆蓋率自動化單元測試，全面驗證平台抽象、佈局排版、雙引擎渲染、路由事件、MVVM/IoC、對話框、鍵盤碼、虛擬化、自適應 (AutoSize)、記憶體安全、高並發與跨平台穩定性管線：
+專案包含 37 組高覆蓋率自動化單元測試，全面驗證平台抽象、佈局排版、雙引擎渲染、路由事件、MVVM/IoC、對話框、鍵盤碼、虛擬化、自適應 (AutoSize)、記憶體安全、高並發、跨平台穩定性及 Visual Form Designer 核心 AST 領域模型管線：
 
 ```bash
-# 執行 CTest 自動化測試 (33/33 PASS)
+# 執行 CTest 自動化測試 (37/37 PASS)
 ctest --test-dir build -C Release --output-on-failure
 ```
 

@@ -348,6 +348,39 @@ endif()
 add_library(CppUI::CppUI ALIAS cppui_core)
 
 # -----------------------------------------------------------------------------
+# CPPUI Designer 視覺化表單生成器核心領域模型 (cppui_designer_core)
+# -----------------------------------------------------------------------------
+option(CPPUI_BUILD_DESIGNER "Build CPPUI Visual Form Designer core library" ON)
+
+if(CPPUI_BUILD_DESIGNER)
+    set(CPPUI_DESIGNER_SOURCES
+        src/designer/ast/WidgetNode.cpp
+        src/designer/ast/FormDocumentNode.cpp
+        src/designer/ast/CardinalityValidator.cpp
+        src/designer/ast/IdentifierValidator.cpp
+        src/designer/metadata/PropertyValue.cpp
+        src/designer/metadata/PropertyDescriptor.cpp
+        src/designer/commands/CommandHistoryManager.cpp
+        src/designer/commands/WidgetCommands.cpp
+        src/designer/commands/PropertyCommands.cpp
+        src/designer/commands/MacroCommand.cpp
+        src/designer/serialization/JsonParserInternal.cpp
+        src/designer/serialization/FormSerializer.cpp
+    )
+
+    add_library(cppui_designer_core STATIC ${CPPUI_DESIGNER_SOURCES})
+    target_link_libraries(cppui_designer_core PUBLIC cppui_headers)
+    target_include_directories(cppui_designer_core
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+    add_library(CppUI::DesignerCore ALIAS cppui_designer_core)
+endif()
+
+# -----------------------------------------------------------------------------
 # 測試與範例 (頂層專案與 FetchContent 子專案隔離)
 # -----------------------------------------------------------------------------
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -371,10 +404,16 @@ endif()
 # -----------------------------------------------------------------------------
 # 安裝與導出規則 (Installation and CMake Package Export)
 # -----------------------------------------------------------------------------
+include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 # 安裝目標二進位與標頭檔
-install(TARGETS cppui_core cppui_headers compat
+set(CPPUI_EXPORT_TARGETS cppui_core cppui_headers compat)
+if(CPPUI_BUILD_DESIGNER)
+    list(APPEND CPPUI_EXPORT_TARGETS cppui_designer_core)
+endif()
+
+install(TARGETS ${CPPUI_EXPORT_TARGETS}
     EXPORT CppUITargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

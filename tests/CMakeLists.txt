@@ -183,6 +183,27 @@ target_link_libraries(usability_integration_test PRIVATE cppui_core)
 add_test(NAME UsabilityIntegrationTest COMMAND usability_integration_test)
 
 # -----------------------------------------------------------------------------
+# CPPUI Visual Form Designer 核心領域模型單元測試套件
+# -----------------------------------------------------------------------------
+if(CPPUI_BUILD_DESIGNER)
+    add_executable(designer_ast_model_test designer_ast_model_test.cpp)
+    target_link_libraries(designer_ast_model_test PRIVATE cppui_designer_core cppui_core)
+    add_test(NAME DesignerAstModelTest COMMAND designer_ast_model_test)
+
+    add_executable(designer_property_signal_test designer_property_signal_test.cpp)
+    target_link_libraries(designer_property_signal_test PRIVATE cppui_designer_core cppui_core)
+    add_test(NAME DesignerPropertySignalTest COMMAND designer_property_signal_test)
+
+    add_executable(designer_command_undo_test designer_command_undo_test.cpp)
+    target_link_libraries(designer_command_undo_test PRIVATE cppui_designer_core cppui_core)
+    add_test(NAME DesignerCommandUndoTest COMMAND designer_command_undo_test)
+
+    add_executable(designer_serialization_test designer_serialization_test.cpp)
+    target_link_libraries(designer_serialization_test PRIVATE cppui_designer_core cppui_core)
+    add_test(NAME DesignerSerializationTest COMMAND designer_serialization_test)
+endif()
+
+# -----------------------------------------------------------------------------
 # AddressSanitizer (ASan) 測試執行時 DLL 自動部署與環境注入
 # -----------------------------------------------------------------------------
 if(ASAN_DLL)
@@ -207,6 +228,12 @@ if(ASAN_DLL_DIR)
     )
     if(CPPUI_HAS_X11)
         list(APPEND CPPUI_ALL_TESTS PalX11Test)
+    endif()
+    if(CPPUI_BUILD_DESIGNER)
+        list(APPEND CPPUI_ALL_TESTS
+            DesignerAstModelTest DesignerPropertySignalTest
+            DesignerCommandUndoTest DesignerSerializationTest
+        )
     endif()
     set_tests_properties(${CPPUI_ALL_TESTS} PROPERTIES
         ENVIRONMENT "PATH=${ASAN_DLL_DIR};$ENV{PATH}"
