@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     if (!capturePath.empty()) {
         graphics_drawing_demo::DrawingDemoForm form(startGrayscale);
         auto bmp = form.CaptureToBitmap();
-        bmp->SaveAsBmp(capturePath);
+        bmp->Save(capturePath);
         return 0;
     }
 

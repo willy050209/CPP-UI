@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cstdint>
 #include <vector>
+#include <fstream>
 #include <thread>
 #include <atomic>
 #include <stdexcept>
@@ -361,6 +362,66 @@ static void TestBitmap() {
 
     flipBmp.RotateFlip(RotateFlipType::Rotate90FlipNone);
     assert(flipBmp.GetWidth() == 2 && flipBmp.GetHeight() == 4);
+
+    // -------------------------------------------------------------------------
+    // 統一檔案儲存契約 (Bitmap::Save) 測試
+    // -------------------------------------------------------------------------
+    // 1. 副檔名自動推斷 (小寫 bmp，預設 Auto)
+    const std::string savePathAuto = "test_output_auto.bmp";
+    bool okAuto = bmp.Save(savePathAuto);
+    assert(okAuto);
+    {
+        std::ifstream in(savePathAuto, std::ios::binary);
+        assert(in.good());
+        uint8_t header[14] = { 0 };
+        in.read(reinterpret_cast<char*>(header), 14);
+        assert(header[0] == 'B' && header[1] == 'M');
+        uint32_t expectedFileSize = 54 + 64 * 32 * 4;
+        uint32_t actualFileSize = static_cast<uint32_t>(header[2]) |
+                                  (static_cast<uint32_t>(header[3]) << 8) |
+                                  (static_cast<uint32_t>(header[4]) << 16) |
+                                  (static_cast<uint32_t>(header[5]) << 24);
+        assert(actualFileSize == expectedFileSize);
+    }
+    compat::filesystem::remove(savePathAuto);
+
+    // 2. 副檔名自動推斷 (大寫 BMP，不分大小寫比對)
+    const std::string savePathUpper = "test_output_upper.BMP";
+    bool okUpper = bmp.Save(savePathUpper);
+    assert(okUpper);
+    compat::filesystem::remove(savePathUpper);
+
+    // 3. 顯式格式指定 (無副檔名，覆寫為 ImageFormat::Bmp)
+    const std::string savePathExplicit = "test_output_explicit";
+    bool okExplicit = bmp.Save(savePathExplicit, ImageFormat::Bmp);
+    assert(okExplicit);
+    compat::filesystem::remove(savePathExplicit);
+
+    // 4. 未識別副檔名 (Fail-Fast: 回傳 false 且不產生檔案)
+    const std::string savePathUnknown = "test_unknown.xyz";
+    bool okUnknown = bmp.Save(savePathUnknown);
+    assert(!okUnknown);
+    assert(!compat::filesystem::exists(savePathUnknown));
+
+    // 5. 無副檔名 (Fail-Fast: 預設 Auto 回傳 false)
+    const std::string savePathNoExt = "test_no_ext";
+    bool okNoExt = bmp.Save(savePathNoExt);
+    assert(!okNoExt);
+    assert(!compat::filesystem::exists(savePathNoExt));
+
+    // 6. 尚未實作之格式 (回傳 false)
+    bool okPng = bmp.Save("test.png", ImageFormat::Png);
+    assert(!okPng);
+
+    // 7. 異常與邊界輸入防護
+    bool okEmptyName = bmp.Save("");
+    assert(!okEmptyName);
+
+    Bitmap movedEmpty(4, 4);
+    Bitmap sinkMoved(std::move(movedEmpty));
+    (void)sinkMoved;
+    bool okMoved = movedEmpty.Save("moved.bmp");
+    assert(!okMoved);
 
     compat::println(" -> PASS: Bitmap");
 }

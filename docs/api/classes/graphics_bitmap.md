@@ -61,6 +61,9 @@ public:
     COMPAT_NODISCARD std::shared_ptr<Bitmap> Clone() const;
     COMPAT_NODISCARD std::shared_ptr<Bitmap> Clone(const core::Rect& rect, PixelFormat format) const;
     void RotateFlip(RotateFlipType rotateFlipType);
+
+    // 檔案序列化與儲存
+    bool Save(compat::string_view filename, ImageFormat format = ImageFormat::Auto) const;
 };
 
 } // namespace graphics
@@ -153,6 +156,19 @@ void RotateFlip(RotateFlipType rotateFlipType);
 * **功能**：就地（In-Place）修改像素資料，執行 90° 步進旋轉及水平/垂直鏡像翻轉。
 * **參數**：[`RotateFlipType`](graphics_enums.md#9-影像旋轉與翻轉列舉-rotatefliptype)（如 `Rotate90FlipNone`, `Rotate180FlipNone`, `RotateNoneFlipX` 等）。
 * **尺寸自動切換**：當進行 90° 或 270° 旋轉時，影像的寬度與高度將自動互換（$\text{NewWidth} = \text{Height}, \text{NewHeight} = \text{Width}$）。
+
+### 6.4 影像檔案儲存 (`Save`)
+```cpp
+bool Save(compat::string_view filename, ImageFormat format = ImageFormat::Auto) const;
+```
+* **功能**：將點陣影像編碼寫出至指定檔案路徑。
+* **參數**：
+  * `filename`：輸出檔案路徑視圖。
+  * `format`：目標影像格式列舉 [`ImageFormat`](graphics_enums.md#210-影像編碼格式列舉-imageformat)，預設為 `ImageFormat::Auto`。
+* **自動推斷與 Fail-Fast 契約**：
+  * 當 `format == ImageFormat::Auto` 時，自動依 `filename` 的副檔名不分大小寫推斷（支援 `.bmp`、`.png`、`.jpg`、`.jpeg`、`.gif`、`.webp`、`.heic`、`.heif`、`.tif`、`.tiff`）。
+  * 若無副檔名或副檔名未識別/未支援，明確回傳 `false`，杜絕靜默寫出格式不符檔案的風險。
+* **回傳值**：成功寫入傳回 `true`；若檔名為空、尺寸無效、副檔名未識別或寫檔失敗則傳回 `false`。
 
 ---
 

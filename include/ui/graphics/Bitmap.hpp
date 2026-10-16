@@ -155,11 +155,12 @@ public:
     void RotateFlip(RotateFlipType rotateFlipType);
 
     /// <summary>
-    /// 將影像儲存為未壓縮 32-bit BMP 點陣圖檔案。
+    /// 將影像儲存為指定格式之圖檔。
     /// </summary>
     /// <param name="filename">輸出檔案路徑。</param>
-    /// <returns>成功傳回 true，失敗傳回 false。</returns>
-    bool SaveAsBmp(compat::string_view filename) const;
+    /// <param name="format">目標影像格式，預設為 ImageFormat::Auto (依副檔名自動判斷)。</param>
+    /// <returns>成功寫出傳回 true，失敗或格式未支援傳回 false。</returns>
+    bool Save(compat::string_view filename, ImageFormat format = ImageFormat::Auto) const;
 
 private:
     struct Impl;

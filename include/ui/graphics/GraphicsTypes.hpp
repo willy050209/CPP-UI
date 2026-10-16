@@ -123,5 +123,19 @@ enum class RotateFlipType : uint8_t {
     RotateNoneFlipXY = 6
 };
 
+/// <summary>
+/// 影像編碼與檔案儲存格式列舉 (ImageFormat)
+/// </summary>
+enum class ImageFormat : uint8_t {
+    Auto = 0,   // 依副檔名自動推斷格式
+    Bmp  = 1,   // Windows 點陣圖 (*.bmp)
+    Png  = 2,   // Portable Network Graphics (*.png)
+    Jpeg = 3,   // JPEG / JPG (*.jpg, *.jpeg)
+    Gif  = 4,   // Graphics Interchange Format (*.gif)
+    Webp = 5,   // WebP 影像格式 (*.webp)
+    Heif = 6,   // High Efficiency Image File Format (*.heic, *.heif)
+    Tiff = 7    // Tagged Image File Format (*.tif, *.tiff)
+};
+
 } // namespace graphics
 } // namespace cppui

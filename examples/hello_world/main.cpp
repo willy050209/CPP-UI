@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
         if (compat::string_view(argv[i]) == "--capture" && i + 1 < argc) {
             HelloWorldForm form;
             auto bmp = form.CaptureToBitmap();
-            bmp->SaveAsBmp(argv[i + 1]);
+            bmp->Save(argv[i + 1]);
             return 0;
         }
     }

@@ -305,14 +305,79 @@ void Bitmap::RotateFlip(RotateFlipType rotateFlipType) {
     m_impl->m_pixels = std::move(temp);
 }
 
-bool Bitmap::SaveAsBmp(compat::string_view filename) const {
-    if (filename.empty() || !m_impl || m_impl->m_width == 0 || m_impl->m_height == 0) return false;
-    compat::shared_lock<compat::shared_mutex> lock(m_impl->m_mutex);
+namespace {
+
+static ImageFormat DeduceImageFormatFromExtension(compat::string_view filename) {
+    if (filename.empty()) {
+        return ImageFormat::Auto;
+    }
+
+    int64_t len = static_cast<int64_t>(filename.size());
+    int64_t dotPos = -1;
+    for (int64_t i = len - 1; i >= 0; --i) {
+        char ch = filename[static_cast<size_t>(i)];
+        if (ch == '/' || ch == '\\') {
+            break;
+        }
+        if (ch == '.') {
+            dotPos = i;
+            break;
+        }
+    }
+
+    if (dotPos < 0 || dotPos + 1 >= len) {
+        return ImageFormat::Auto;
+    }
+
+    std::string ext;
+    ext.reserve(static_cast<size_t>(len - dotPos - 1));
+    for (int64_t i = dotPos + 1; i < len; ++i) {
+        char ch = filename[static_cast<size_t>(i)];
+        if (ch >= 'A' && ch <= 'Z') {
+            ext.push_back(static_cast<char>(ch - 'A' + 'a'));
+        } else {
+            ext.push_back(ch);
+        }
+    }
+
+    if (ext == "bmp") {
+        return ImageFormat::Bmp;
+    }
+    if (ext == "png") {
+        return ImageFormat::Png;
+    }
+    if (ext == "jpg" || ext == "jpeg") {
+        return ImageFormat::Jpeg;
+    }
+    if (ext == "gif") {
+        return ImageFormat::Gif;
+    }
+    if (ext == "webp") {
+        return ImageFormat::Webp;
+    }
+    if (ext == "heic" || ext == "heif") {
+        return ImageFormat::Heif;
+    }
+    if (ext == "tif" || ext == "tiff") {
+        return ImageFormat::Tiff;
+    }
+
+    return ImageFormat::Auto;
+}
+
+static bool WriteBmpInternal(
+    compat::string_view filename,
+    uint32_t width,
+    uint32_t height,
+    compat::span<const uint32_t> pixels,
+    compat::shared_mutex& mutex
+) {
+    compat::shared_lock<compat::shared_mutex> lock(mutex);
 
     std::ofstream out(std::string(filename.data(), filename.size()), std::ios::binary);
     if (!out) return false;
 
-    const uint64_t imageSize64 = static_cast<uint64_t>(m_impl->m_width) * m_impl->m_height * 4ULL;
+    const uint64_t imageSize64 = static_cast<uint64_t>(width) * height * 4ULL;
     if (imageSize64 > 0xFFFFFFFFULL - 54ULL) {
         return false;
     }
@@ -329,13 +394,13 @@ bool Bitmap::SaveAsBmp(compat::string_view filename) const {
         54, 0, 0, 0
     };
 
-    const int32_t biHeight = -static_cast<int32_t>(m_impl->m_height);
+    const int32_t biHeight = -static_cast<int32_t>(height);
     uint8_t infoHeader[40] = {
         40, 0, 0, 0,
-        static_cast<uint8_t>(m_impl->m_width & 0xFF),
-        static_cast<uint8_t>((m_impl->m_width >> 8) & 0xFF),
-        static_cast<uint8_t>((m_impl->m_width >> 16) & 0xFF),
-        static_cast<uint8_t>((m_impl->m_width >> 24) & 0xFF),
+        static_cast<uint8_t>(width & 0xFF),
+        static_cast<uint8_t>((width >> 8) & 0xFF),
+        static_cast<uint8_t>((width >> 16) & 0xFF),
+        static_cast<uint8_t>((width >> 24) & 0xFF),
         static_cast<uint8_t>(biHeight & 0xFF),
         static_cast<uint8_t>((biHeight >> 8) & 0xFF),
         static_cast<uint8_t>((biHeight >> 16) & 0xFF),
@@ -352,8 +417,43 @@ bool Bitmap::SaveAsBmp(compat::string_view filename) const {
 
     out.write(reinterpret_cast<const char*>(fileHeader), 14);
     out.write(reinterpret_cast<const char*>(infoHeader), 40);
-    out.write(reinterpret_cast<const char*>(m_impl->m_pixels.data()), imageSize);
-    return true;
+    out.write(reinterpret_cast<const char*>(pixels.data()), imageSize);
+    return out.good();
+}
+
+} // anonymous namespace
+
+bool Bitmap::Save(compat::string_view filename, ImageFormat format) const {
+    if (filename.empty() || !m_impl || m_impl->m_width == 0 || m_impl->m_height == 0 || m_impl->m_pixels.empty()) {
+        return false;
+    }
+
+    ImageFormat resolvedFormat = format;
+    if (resolvedFormat == ImageFormat::Auto) {
+        resolvedFormat = DeduceImageFormatFromExtension(filename);
+        if (resolvedFormat == ImageFormat::Auto) {
+            // 無副檔名或未識別副檔名，依 Fail-Fast 原則安全拒絕寫檔
+            return false;
+        }
+    }
+
+    switch (resolvedFormat) {
+        case ImageFormat::Bmp:
+            return WriteBmpInternal(filename, m_impl->m_width, m_impl->m_height, m_impl->m_pixels, m_impl->m_mutex);
+
+        case ImageFormat::Png:
+        case ImageFormat::Jpeg:
+        case ImageFormat::Gif:
+        case ImageFormat::Webp:
+        case ImageFormat::Heif:
+        case ImageFormat::Tiff:
+            // 格式列舉已定義，但內建編碼器尚未掛載
+            return false;
+
+        case ImageFormat::Auto:
+        default:
+            return false;
+    }
 }
 
 } // namespace graphics

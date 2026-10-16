@@ -33,7 +33,7 @@
 | [`SkiaImageBridge`](../classes/graphics_skiaimagebridge.md) | `SkiaImageBridge.hpp` | [**SkiaImageBridge 橋接器**](../classes/graphics_skiaimagebridge.md) | Google Skia 向量加速與影像濾鏡橋接器，支援零拷貝記憶體共享與硬體濾鏡平滑加速。 |
 | [`Color`](../classes/graphics_color.md) | `Geometry.hpp` | [**Color 結構**](../classes/graphics_color.md) | 32-bit RGBA 色彩結構，支援 FromArgb、ToArgb、HSL 分析與 `constexpr`。 |
 | [`Colors`](../classes/graphics_colors.md) | `Colors.hpp` | [**Colors 調色盤常數**](../classes/graphics_colors.md) | 對標 GDI+ 完整 140+ 種標準現代色彩常數（十六進位 ARGB 與 RGB 對照）。 |
-| [`GraphicsTypes`](../classes/graphics_enums.md) | `GraphicsTypes.hpp` | [**Graphics 列舉字典**](../classes/graphics_enums.md) | 核心繪圖列舉型別（`DashStyle`, `LineCap`, `FillMode`, `SmoothingMode`, `InterpolationMode`, `PixelFormat`, `PictureBoxSizeMode` 等）。 |
+| [`GraphicsTypes`](../classes/graphics_enums.md) | `GraphicsTypes.hpp` | [**Graphics 列舉字典**](../classes/graphics_enums.md) | 核心繪圖列舉型別（`DashStyle`, `LineCap`, `FillMode`, `SmoothingMode`, `InterpolationMode`, `PixelFormat`, `PictureBoxSizeMode`, `ImageFormat` 等）。 |
 | [**圖形物件核心導航**](../classes/graphics_objects.md) | `include/ui/graphics/` | [**Graphics Objects Hub**](../classes/graphics_objects.md) | 圖形一級領域物件綜述、責任劃分與多執行緒讀寫鎖同步機制。 |
 
 ---

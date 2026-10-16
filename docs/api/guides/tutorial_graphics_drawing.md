@@ -40,7 +40,7 @@ graph TD
     subgraph Presentation["UI 呈現與離線渲染 (UI & Offline)"]
         PIC["PictureBox (Zoom / AutoSize)"]
         FORM["Form::CaptureToBitmap()"]
-        SAVE["Bitmap::SaveAsBmp()"]
+        SAVE["Bitmap::Save()"]
     end
 
     G -->|繪製向量與圖元| BMP
@@ -281,7 +281,7 @@ void DrawingDemoForm::ResetOriginal() {
 
 ## 7. 離線截圖與無頭驗證支援 (CaptureToBitmap)
 
-CPPUI 內建 [`Form::CaptureToBitmap()`](../classes/app_form.md) 與 [`Bitmap::SaveAsBmp()`](../classes/graphics_bitmap.md)，允許應用程式在**無螢幕、鎖定螢幕或 CI/CD 自動化測試**環境下，百分之百精確光柵化表單當前佈局並匯出高品質圖片：
+CPPUI 內建 [`Form::CaptureToBitmap()`](../classes/app_form.md) 與 [`Bitmap::Save()`](../classes/graphics_bitmap.md)，允許應用程式在**無螢幕、鎖定螢幕或 CI/CD 自動化測試**環境下，百分之百精確光柵化表單當前佈局並匯出高品質圖片：
 
 ```cpp
 int main(int argc, char* argv[]) {
@@ -301,7 +301,7 @@ int main(int argc, char* argv[]) {
     if (!capturePath.empty()) {
         graphics_drawing_demo::DrawingDemoForm form(startGrayscale);
         auto bmp = form.CaptureToBitmap();
-        bmp->SaveAsBmp(capturePath);
+        bmp->Save(capturePath);
         return 0;
     }
 

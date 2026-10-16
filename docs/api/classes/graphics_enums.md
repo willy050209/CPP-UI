@@ -203,7 +203,27 @@ CPPUI 圖形子系統中定義的強型別列舉（`enum class`）皆繼承固�
 
 ---
 
-### 2.11 路徑控制點標記：`PathPointType`
+### 2.11 影像編碼格式：`ImageFormat`
+
+定義點陣影像寫出與儲存時支援的編碼格式與副檔名自動解析策略。
+
+* **定義檔**：`GraphicsTypes.hpp`
+* **型別**：`enum class ImageFormat : uint8_t`
+
+| 列舉項目 | 數值 | 格式說明 | 常見副檔名 |
+| :--- | :--- | :--- | :--- |
+| `Auto` | `0` | 依檔案路徑副檔名不分大小寫自動推斷格式。 | 由檔名自動解析 |
+| `Bmp` | `1` | Windows 32-bit 未壓縮點陣圖格式。 | `.bmp` |
+| `Png` | `2` | Portable Network Graphics 無失真壓縮格式。 | `.png` |
+| `Jpeg` | `3` | JPEG 失真壓縮格式。 | `.jpg`, `.jpeg` |
+| `Gif` | `4` | Graphics Interchange Format 格式。 | `.gif` |
+| `Webp` | `5` | Google WebP 現代高壓縮格式。 | `.webp` |
+| `Heif` | `6` | High Efficiency Image File Format 格式。 | `.heic`, `.heif` |
+| `Tiff` | `7` | Tagged Image File Format 標籤影像格式。 | `.tif`, `.tiff` |
+
+---
+
+### 2.12 路徑控制點標記：`PathPointType`
 
 定義複合幾何路徑（[`GraphicsPath`](graphics_path.md)）內部頂點陣列中每個控制點的幾何意義與拓撲狀態。
 
