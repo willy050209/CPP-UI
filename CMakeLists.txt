@@ -377,6 +377,10 @@ if(CPPUI_BUILD_DESIGNER)
         src/designer/surface/SnapEngine.cpp
         src/designer/surface/AdornerOverlay.cpp
         src/designer/surface/DesignSurface.cpp
+        src/designer/inspector/InspectorTypes.cpp
+        src/designer/inspector/InheritanceMetadataRegistry.cpp
+        src/designer/inspector/PropertyEditors.cpp
+        src/designer/inspector/InspectorPanel.cpp
     )
 
     add_library(cppui_designer_core STATIC ${CPPUI_DESIGNER_SOURCES})

@@ -33,3 +33,7 @@
 #include "ui/designer/surface/SnapEngine.hpp"
 #include "ui/designer/surface/AdornerOverlay.hpp"
 #include "ui/designer/surface/DesignSurface.hpp"
+#include "ui/designer/inspector/InspectorTypes.hpp"
+#include "ui/designer/inspector/InheritanceMetadataRegistry.hpp"
+#include "ui/designer/inspector/PropertyEditors.hpp"
+#include "ui/designer/inspector/InspectorPanel.hpp"
