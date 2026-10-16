@@ -371,6 +371,12 @@ if(CPPUI_BUILD_DESIGNER)
         src/designer/codegen/FormClassEmitter.cpp
         src/designer/codegen/CMakeSnippetEmitter.cpp
         src/designer/codegen/FormCodegenPipeline.cpp
+        src/designer/surface/SurfaceTypes.cpp
+        src/designer/surface/SelectionModel.cpp
+        src/designer/surface/DesignerHitTest.cpp
+        src/designer/surface/SnapEngine.cpp
+        src/designer/surface/AdornerOverlay.cpp
+        src/designer/surface/DesignSurface.cpp
     )
 
     add_library(cppui_designer_core STATIC ${CPPUI_DESIGNER_SOURCES})

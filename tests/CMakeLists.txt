@@ -205,6 +205,10 @@ if(CPPUI_BUILD_DESIGNER)
     add_executable(designer_codegen_test designer_codegen_test.cpp)
     target_link_libraries(designer_codegen_test PRIVATE cppui_designer_core cppui_core)
     add_test(NAME DesignerCodegenTest COMMAND designer_codegen_test)
+
+    add_executable(designer_surface_test designer_surface_test.cpp)
+    target_link_libraries(designer_surface_test PRIVATE cppui_designer_core cppui_core)
+    add_test(NAME DesignerSurfaceTest COMMAND designer_surface_test)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -237,7 +241,7 @@ if(ASAN_DLL_DIR)
         list(APPEND CPPUI_ALL_TESTS
             DesignerAstModelTest DesignerPropertySignalTest
             DesignerCommandUndoTest DesignerSerializationTest
-            DesignerCodegenTest
+            DesignerCodegenTest DesignerSurfaceTest
         )
     endif()
     set_tests_properties(${CPPUI_ALL_TESTS} PROPERTIES
