@@ -69,7 +69,7 @@ public:
 
 private:
     struct Impl;
-    std::unique_ptr<Impl> m_impl;
+    compat::propagate_const<std::unique_ptr<Impl>> m_impl;
 };
 
 } // namespace text

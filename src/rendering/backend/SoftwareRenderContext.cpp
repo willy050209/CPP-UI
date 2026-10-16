@@ -535,53 +535,56 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
 
                 void* bits = nullptr;
                 HBITMAP hbm = CreateDIBSection(memDC, &bmi, DIB_RGB_COLORS, &bits, nullptr, 0);
-                if (hbm && bits) {
-                    HGDIOBJ oldBm = SelectObject(memDC, hbm);
+                if (hbm) {
+                    if (bits) {
+                        HGDIOBJ oldBm = SelectObject(memDC, hbm);
 
-                    RECT rc = { 0, 0, textW, textH };
-                    ::FillRect(memDC, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
-                    SetBkMode(memDC, TRANSPARENT);
-                    SetTextColor(memDC, RGB(255, 255, 255));
-                    TextOutW(memDC, 0, 0, wideText.data(), wideLen);
+                        RECT rc = { 0, 0, textW, textH };
+                        ::FillRect(memDC, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+                        SetBkMode(memDC, TRANSPARENT);
+                        SetTextColor(memDC, RGB(255, 255, 255));
+                        TextOutW(memDC, 0, 0, wideText.data(), wideLen);
 
-                    const uint32_t* mask = static_cast<const uint32_t*>(bits);
-                    float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
+                        const uint32_t* mask = static_cast<const uint32_t*>(bits);
+                        float srcAlphaNorm = static_cast<float>(color.a) / 255.0f;
 
-                    int32_t yStart = (std::max)(0, clipTop - dstY0);
-                    int32_t yEnd   = (std::min)(textH, clipBottom - dstY0);
-                    int32_t xStart = (std::max)(0, clipLeft - dstX0);
-                    int32_t xEnd   = (std::min)(textW, clipRight - dstX0);
+                        int32_t yStart = (std::max)(0, clipTop - dstY0);
+                        int32_t yEnd   = (std::min)(textH, clipBottom - dstY0);
+                        int32_t xStart = (std::max)(0, clipLeft - dstX0);
+                        int32_t xEnd   = (std::min)(textW, clipRight - dstX0);
 
-                    for (int32_t y = yStart; y < yEnd; ++y) {
-                        int32_t dstY = dstY0 + y;
-                        for (int32_t x = xStart; x < xEnd; ++x) {
-                            int32_t dstX = dstX0 + x;
+                        for (int32_t y = yStart; y < yEnd; ++y) {
+                            int32_t dstY = dstY0 + y;
+                            for (int32_t x = xStart; x < xEnd; ++x) {
+                                int32_t dstX = dstX0 + x;
 
-                            uint32_t maskVal = mask[y * textW + x] & 0xFF;
-                            if (maskVal == 0) continue;
+                                uint32_t maskVal = mask[y * textW + x] & 0xFF;
+                                if (maskVal == 0) continue;
 
-                            float alpha = (static_cast<float>(maskVal) / 255.0f) * srcAlphaNorm;
-                            if (alpha <= 0.0f) continue;
+                                float alpha = (static_cast<float>(maskVal) / 255.0f) * srcAlphaNorm;
+                                if (alpha <= 0.0f) continue;
 
-                            size_t dstIdx = static_cast<size_t>(dstY) * m_width + dstX;
-                            uint32_t dstPixel = m_pixels[dstIdx];
+                                size_t dstIdx = static_cast<size_t>(dstY) * m_width + dstX;
+                                uint32_t dstPixel = m_pixels[dstIdx];
 
-                            uint8_t dstB = static_cast<uint8_t>(dstPixel & 0xFF);
-                            uint8_t dstG = static_cast<uint8_t>((dstPixel >> 8) & 0xFF);
-                            uint8_t dstR = static_cast<uint8_t>((dstPixel >> 16) & 0xFF);
+                                uint8_t dstB = static_cast<uint8_t>(dstPixel & 0xFF);
+                                uint8_t dstG = static_cast<uint8_t>((dstPixel >> 8) & 0xFF);
+                                uint8_t dstR = static_cast<uint8_t>((dstPixel >> 16) & 0xFF);
 
-                            uint8_t outR = static_cast<uint8_t>(color.r * alpha + dstR * (1.0f - alpha));
-                            uint8_t outG = static_cast<uint8_t>(color.g * alpha + dstG * (1.0f - alpha));
-                            uint8_t outB = static_cast<uint8_t>(color.b * alpha + dstB * (1.0f - alpha));
+                                uint8_t outR = static_cast<uint8_t>(color.r * alpha + dstR * (1.0f - alpha));
+                                uint8_t outG = static_cast<uint8_t>(color.g * alpha + dstG * (1.0f - alpha));
+                                uint8_t outB = static_cast<uint8_t>(color.b * alpha + dstB * (1.0f - alpha));
 
-                            m_pixels[dstIdx] = (0xFF << 24) | (outR << 16) | (outG << 8) | outB;
+                                m_pixels[dstIdx] = (0xFF << 24) | (outR << 16) | (outG << 8) | outB;
+                            }
                         }
+
+                        SelectObject(memDC, oldBm);
                     }
 
+                    DeleteObject(hbm);
                     SelectObject(memDC, oldFont);
                     DeleteObject(hFont);
-                    SelectObject(memDC, oldBm);
-                    DeleteObject(hbm);
                     DeleteDC(memDC);
                     return;
                 }

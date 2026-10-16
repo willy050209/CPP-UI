@@ -64,6 +64,13 @@ PlatformWindowX11::PlatformWindowX11(const WindowDesc& desc)
     }
 
     m_gc = XCreateGC(m_display, m_window, 0, nullptr);
+    if (!m_gc) {
+        XDestroyWindow(m_display, m_window);
+        m_window = 0;
+        XCloseDisplay(m_display);
+        m_display = nullptr;
+        throw std::runtime_error("PlatformWindowX11: Failed to create X11 GC.");
+    }
 
     m_wmDeleteWindow = XInternAtom(m_display, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(m_display, m_window, &m_wmDeleteWindow, 1);

@@ -10,6 +10,15 @@ CPPUI 採用嚴格解耦的分層架構設計，自底向上分為平台抽象�
 
 ```mermaid
 graph TD
+    subgraph DesignerLayer["視覺化表單設計器層 (cppui::designer)"]
+        AST["FormDocumentNode & WidgetNode (核心領域 AST)"]
+        Codegen["FormCodegenPipeline & Emitters (代碼生成)"]
+        Surface["DesignSurface & AdornerOverlay (設計表面)"]
+        Inspector["InspectorPanel (屬性與事件檢查器)"]
+        Preview["LiveCodePreviewPanel & LiveFormRunner (預覽與試運行)"]
+        Exporter["ProjectExporter (標準 CMake 專案匯出)"]
+    end
+
     subgraph DSLLayer["宣告式與響應式層 (cppui::dsl & reactive)"]
         Fluent["UIBuilder<T> (Fluent RAD DSL)"]
         Factory["VStack / HStack / Grid / Border / Button / TextBox / PictureBox"]
@@ -102,6 +111,11 @@ graph TD
     Tree --> Geo
     Win --> CT
     Fluent --> Compat
+    AST --> Codegen
+    Codegen --> Fluent
+    Surface --> Ctrls
+    Inspector --> ThemeMgr
+    Run --> ControlsLayer
 ```
 
 ---
@@ -126,6 +140,7 @@ graph TD
 | [`cppui::text`](namespaces/cppui_text.md) | **文字排版與塑形管線** | 雙軌架構文字引擎，支援系統字型匹配、OpenType 字形塑形、BiDi 雙向分析、UAX #14 斷行、多行折行、省略號與雙向命中測試。 | [`FontDescriptor`](classes/text_font.md), [`FontManager`](classes/text_fontmanager.md), [`TextShaper`](classes/text_textshaper.md), [`BiDiAnalyzer`](classes/text_bidianalyzer.md), [`LineBreaker`](classes/text_linebreaker.md), [`TextLayout`](classes/text_textlayout.md), [`TextLayoutEngine`](classes/text_textlayoutengine.md) |
 | [`cppui::theme`](namespaces/cppui_theme.md) | **集中式主題與設計規格** | 提供設計代幣 (`ColorTokens`, `TypographyTokens`, `MetricTokens`)、語意主題 (`Theme`)、單例管理與動態切換廣播器 (`ThemeManager`)，支援深淺色與高對比模式。 | [`Theme`](classes/theme_theme.md), [`ThemeManager`](classes/theme_thememanager.md), [`ColorTokens`](classes/theme_tokens.md#1-colortokens-色彩代幣), [`TypographyTokens`](classes/theme_tokens.md#2-typographytokens-排版代幣), [`MetricTokens`](classes/theme_tokens.md#3-metricstokens-度量代幣) |
 | [`cppui::dialogs`](namespaces/cppui_dialogs.md) | **桌面對話方塊系統** | 封裝模態訊息方塊 (`MessageBox`)、開檔 (`OpenFileDialog`)、存檔 (`SaveFileDialog`)、純 CPPUI 主題視窗與雙後端派送架構。 | [`MessageBox`](classes/dialogs_messagebox.md), [`OpenFileDialog`](classes/dialogs_openfiledialog.md), [`SaveFileDialog`](classes/dialogs_savefiledialog.md), [`FileDialogForm`](classes/dialogs_filedialogform.md), [`DialogManager`](classes/dialogs_dialogcommon.md) |
+| [`cppui::designer`](namespaces/cppui_designer.md) | **視覺化表單設計器核心體系** | 涵蓋核心 AST 領域模型、基數循環驗證、多目標程式碼生成管線 (Fluent DSL / Classic C++ / CMakeLists.txt)、視覺化畫布設計表面 (8 向控制框與智慧導引線)、屬性與事件檢查器、即時代碼預覽、實例試運行 (Live Run) 與標準 CMake 專案匯出（具備使用者程式碼增量保護機制）。 | [`WidgetNode`](namespaces/cppui_designer.md#widgetnode-類別), [`FormDocumentNode`](namespaces/cppui_designer.md#formdocumentnode-類別), `DesignSurface`, `SelectionModel`, `SnapEngine`, `InspectorPanel`, `LiveCodePreviewPanel`, `LiveFormRunner`, `ProjectExporter` |
 | [`compat`](namespaces/compat.md) | **向下相容與微架構層** | 提供零依賴現代 C++ Polyfill（C++14/17/20/23/26 雙軌切換）與 12 大功能模組。<br>- [視圖與管道 (`compat::views`)](namespaces/compat_views.md)<br>- [範圍與演算法 (`compat::ranges`)](namespaces/compat_ranges.md)<br>- [錯誤處理 (`compat::expected`)](namespaces/compat_expected.md)<br>- [格式化與終端 (`compat::format/print`)](namespaces/compat_format_print.md) | `compat::string_view`, `compat::span`, `compat::views::*`, `compat::optional`, `compat::expected`, `compat::format`, `compat::print`, `COMPAT_CONSTEXPR_14` |
 
 ---
@@ -247,6 +262,8 @@ graph TD
 
 ## 4. 實戰與概念指南 (Guides & Tutorials)
 
+* [**視覺化表單設計器核心架構與 API 參考 (Visual Form Designer)**](namespaces/cppui_designer.md)：深入介紹五階段表單設計器核心體系，涵蓋 AST 領域模型、程式碼生成管道、視覺化畫布設計表面、屬性檢查器、即時代碼預覽、試運行與 CMake 專案增量匯出。
+* [**表單設計器系統規格書 (Design Spec 06: Form Designer)**](../specs/06_visual_form_designer_architecture.md)：詳細記載階段 1 至 5 的微架構決策、深常數性 Pimpl 封裝、SnapEngine 對齊導引線求解與使用者代碼保護策略。
 * [**對話方塊與檔案選取器實戰指南 (Dialogs and File Pickers Guide)**](guides/dialogs_and_file_picker_guide.md)：詳解 MessageBox、OpenFileDialog、SaveFileDialog 在 Auto/Native/BuiltIn 模式下的最佳實踐、深淺主題自適應、覆寫確認與 CI 無阻塞單元測試策略。
 * [**主題與樣式系統指南 (Theme and Styling System Guide)**](guides/theme_and_styling_system.md)：詳解集中式設計代幣、深色/淺色/高對比模式切換、品牌主題客製化、控制項顯式覆寫機制與自訂控制項主題套用實踐。
 * [**GDI+ 風格圖形 API 與 PictureBox 控制項實戰指南**](guides/gdi_plus_graphics_guide.md)：詳解解耦圖形管線架構、Skia 向量加速與 CPU 軟體光柵雙引擎、多執行緒讀寫鎖並發防護、PictureBox 5 種縮放模式與 Skia BSD 授權聲明。

@@ -3,7 +3,7 @@
 <div align="center">
 
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-14%20%7C%2017%20%7C%2020%20%7C%2023-blue.svg)](include/compat/Compat.hpp)
-[![CTest Suite](https://img.shields.io/badge/CTest-39%2F39%20Passing%20(100%25)-success.svg)](tests/)
+[![CTest Suite](https://img.shields.io/badge/CTest-41%2F41%20Passing%20(100%25)-success.svg)](tests/)
 [![Compiler Warnings](https://img.shields.io/badge/Compiler%20Warnings-0%20Errors%20%2F%200%20Warnings-brightgreen.svg)](docs/specs/02_coding_standards_compat.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](docs/api/guides/cross_platform_architecture.md)
@@ -123,6 +123,13 @@ int main() {
 - 在 MSVC (`/W4`)、GCC (`-Wall -Wextra -Wpedantic`)、Clang 下維持 **0 Warnings / 0 Errors**。
 - 單標頭檔 [`compat.hpp`](include/compat/Compat.hpp) 提供 `string_view`, `span`, `expected`, `ranges`, `format`, `print` 等現代 C++ 標準墊片，保證 C++14/17/20/23 跨標準相容。
 
+### 11. 視覺化表單設計器核心體系 (Visual Form Designer Architecture)
+- **核心領域 AST 模型 (`cppui::designer::model`)**：高內聚、鬆耦合、具備深常數性 (Deep Constness) 的節點抽象樹，內建 C++ 識別字檢驗、容器基數驗證、反應式異動信號與完整的 Undo/Redo 命令狀態機。
+- **多目標程式碼發射管道 (`cppui::designer::codegen`)**：支援同時輸出宣告式 Fluent DSL、Classic Code-Behind (.designer.hpp/.hpp/.cpp) 與 CMakeLists.txt，並具備雙向 SourceMap 行號追蹤。
+- **視覺化畫布設計表面 (`cppui::designer::surface`)**：提供真實 UIElement 裝飾層 (Adorner)、8 向選取控制框、智慧對齊導引線 (Smart Snap Guides) 與拖曳排版互動。
+- **型別安全屬性與事件檢查器 (`cppui::designer::inspector`)**：支援繼承鏈自動聚合、多選交集編輯 (`<Multiple Values>`)、動態附加屬性感測與主題語意代幣 (Theme Tokens) 整合。
+- **即時代碼預覽、試運行與專案匯出 (`cppui::designer::preview` & `exporter`)**：5 模式即時程式碼展示、一鍵無裝飾器「真實執行」獨立 Form 視窗、以及 CMake 專案匯出增量使用者程式碼保護機制。
+
 ---
 
 ## 📁 範例專案索引 (Examples Gallery)
@@ -164,7 +171,8 @@ int main() {
 | **對話方塊** | [📂 **對話方塊與檔案選取器指南**](docs/api/guides/dialogs_and_file_picker_guide.md) | 深入 MessageBox 與 FileDialog 雙後端派送架構 |
 | **架構架構** | [🏗️ **MVVM 與 IoC 依賴注入架構**](docs/api/guides/mvvm_and_ioc_architecture.md) | 視圖模型、指令綁定與依賴反轉實踐 |
 | **跨平台** | [🐧 **跨平台抽象與 Linux X11 支援**](docs/api/guides/cross_platform_architecture.md) | PAL 抽象層、X11 原生視窗與通用視窗支援 |
-| **設計規範** | [📜 **設計規範 01 ~ 05 (Design Specs)**](docs/specs/01_architecture_layers.md) | 三層架構分離、代碼規範、記憶體架構、事件標準與現代 Pimpl 模式 |
+| **表單設計器** | [📐 **表單設計器 API 參考**](docs/api/namespaces/cppui_designer.md) • [📜 **架構設計規範**](docs/specs/06_visual_form_designer_architecture.md) | 深度解析五階段視覺化設計器架構、AST 領域模型、Pimpl 深常數性與專案匯出保護 |
+| **設計規範** | [📜 **設計規範 01 ~ 06 (Design Specs)**](docs/specs/01_architecture_layers.md) | 三層架構分離、代碼規範、記憶體架構、事件標準、現代 Pimpl 與表單設計器規範 |
 
 ---
 
@@ -194,10 +202,10 @@ cmake --build build --config Release
 
 ### 2. 執行單元測試套件 (CTest)
 
-專案包含 37 組高覆蓋率自動化單元測試，全面驗證平台抽象、佈局排版、雙引擎渲染、路由事件、MVVM/IoC、對話框、鍵盤碼、虛擬化、自適應 (AutoSize)、記憶體安全、高並發、跨平台穩定性及 Visual Form Designer 核心 AST 領域模型管線：
+專案包含 41 組高覆蓋率自動化單元測試，全面驗證平台抽象、佈局排版、雙引擎渲染、路由事件、MVVM/IoC、對話框、鍵盤碼、虛擬化、自適應 (AutoSize)、記憶體安全、高並發、跨平台穩定性、以及 Visual Form Designer 全五階段領域管線（AST 模型、Code-Behind 程式碼發射、Design Surface 畫布命中與智慧導引線、屬性檢查器多選交集、Live Form 試運行與 CMake 專案匯出）：
 
 ```bash
-# 執行 CTest 自動化測試 (37/37 PASS)
+# 執行 CTest 自動化測試 (41/41 PASS)
 ctest --test-dir build -C Release --output-on-failure
 ```
 
