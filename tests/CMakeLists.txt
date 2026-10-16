@@ -213,6 +213,10 @@ if(CPPUI_BUILD_DESIGNER)
     add_executable(designer_inspector_test designer_inspector_test.cpp)
     target_link_libraries(designer_inspector_test PRIVATE cppui_designer_core cppui_core)
     add_test(NAME DesignerInspectorTest COMMAND designer_inspector_test)
+
+    add_executable(designer_e2e_integration_test designer_e2e_integration_test.cpp)
+    target_link_libraries(designer_e2e_integration_test PRIVATE cppui_designer_core cppui_core)
+    add_test(NAME DesignerE2eIntegrationTest COMMAND designer_e2e_integration_test)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -246,6 +250,7 @@ if(ASAN_DLL_DIR)
             DesignerAstModelTest DesignerPropertySignalTest
             DesignerCommandUndoTest DesignerSerializationTest
             DesignerCodegenTest DesignerSurfaceTest DesignerInspectorTest
+            DesignerE2eIntegrationTest
         )
     endif()
     set_tests_properties(${CPPUI_ALL_TESTS} PROPERTIES

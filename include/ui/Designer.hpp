@@ -37,3 +37,6 @@
 #include "ui/designer/inspector/InheritanceMetadataRegistry.hpp"
 #include "ui/designer/inspector/PropertyEditors.hpp"
 #include "ui/designer/inspector/InspectorPanel.hpp"
+#include "ui/designer/preview/LiveCodePreviewPanel.hpp"
+#include "ui/designer/preview/LiveFormRunner.hpp"
+#include "ui/designer/exporter/ProjectExporter.hpp"

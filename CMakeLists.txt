@@ -381,6 +381,9 @@ if(CPPUI_BUILD_DESIGNER)
         src/designer/inspector/InheritanceMetadataRegistry.cpp
         src/designer/inspector/PropertyEditors.cpp
         src/designer/inspector/InspectorPanel.cpp
+        src/designer/preview/LiveCodePreviewPanel.cpp
+        src/designer/preview/LiveFormRunner.cpp
+        src/designer/exporter/ProjectExporter.cpp
     )
 
     add_library(cppui_designer_core STATIC ${CPPUI_DESIGNER_SOURCES})
