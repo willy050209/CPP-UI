@@ -366,6 +366,11 @@ if(CPPUI_BUILD_DESIGNER)
         src/designer/commands/MacroCommand.cpp
         src/designer/serialization/JsonParserInternal.cpp
         src/designer/serialization/FormSerializer.cpp
+        src/designer/codegen/CodegenTypes.cpp
+        src/designer/codegen/FluentDslEmitter.cpp
+        src/designer/codegen/FormClassEmitter.cpp
+        src/designer/codegen/CMakeSnippetEmitter.cpp
+        src/designer/codegen/FormCodegenPipeline.cpp
     )
 
     add_library(cppui_designer_core STATIC ${CPPUI_DESIGNER_SOURCES})

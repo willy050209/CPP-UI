@@ -201,6 +201,10 @@ if(CPPUI_BUILD_DESIGNER)
     add_executable(designer_serialization_test designer_serialization_test.cpp)
     target_link_libraries(designer_serialization_test PRIVATE cppui_designer_core cppui_core)
     add_test(NAME DesignerSerializationTest COMMAND designer_serialization_test)
+
+    add_executable(designer_codegen_test designer_codegen_test.cpp)
+    target_link_libraries(designer_codegen_test PRIVATE cppui_designer_core cppui_core)
+    add_test(NAME DesignerCodegenTest COMMAND designer_codegen_test)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -211,7 +215,7 @@ if(ASAN_DLL)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${ASAN_DLL}"
             "$<TARGET_FILE_DIR:smoke_test>"
-        DEPENDS smoke_test
+            DEPENDS smoke_test
         COMMENT "Deploying AddressSanitizer runtime DLL to test directory"
     )
 endif()
@@ -233,6 +237,7 @@ if(ASAN_DLL_DIR)
         list(APPEND CPPUI_ALL_TESTS
             DesignerAstModelTest DesignerPropertySignalTest
             DesignerCommandUndoTest DesignerSerializationTest
+            DesignerCodegenTest
         )
     endif()
     set_tests_properties(${CPPUI_ALL_TESTS} PROPERTIES

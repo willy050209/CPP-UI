@@ -3,7 +3,7 @@
 <div align="center">
 
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-14%20%7C%2017%20%7C%2020%20%7C%2023-blue.svg)](include/compat/Compat.hpp)
-[![CTest Suite](https://img.shields.io/badge/CTest-37%2F37%20Passing%20(100%25)-success.svg)](tests/)
+[![CTest Suite](https://img.shields.io/badge/CTest-38%2F38%20Passing%20(100%25)-success.svg)](tests/)
 [![Compiler Warnings](https://img.shields.io/badge/Compiler%20Warnings-0%20Errors%20%2F%200%20Warnings-brightgreen.svg)](docs/specs/02_coding_standards_compat.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)](docs/api/guides/cross_platform_architecture.md)

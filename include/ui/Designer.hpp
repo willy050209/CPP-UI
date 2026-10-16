@@ -22,3 +22,8 @@
 #include "ui/designer/commands/CommandHistoryManager.hpp"
 #include "ui/designer/serialization/SchemaVersion.hpp"
 #include "ui/designer/serialization/FormSerializer.hpp"
+#include "ui/designer/codegen/CodegenTypes.hpp"
+#include "ui/designer/codegen/FluentDslEmitter.hpp"
+#include "ui/designer/codegen/FormClassEmitter.hpp"
+#include "ui/designer/codegen/CMakeSnippetEmitter.hpp"
+#include "ui/designer/codegen/FormCodegenPipeline.hpp"
