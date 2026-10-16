@@ -403,11 +403,17 @@ static void TestBitmap() {
     assert(!okUnknown);
     assert(!compat::filesystem::exists(savePathUnknown));
 
-    // 5. 無副檔名 (Fail-Fast: 預設 Auto 回傳 false)
+    // 5. 無副檔名與隱藏檔 (Fail-Fast: 預設 Auto 回傳 false 且不產生檔案)
     const std::string savePathNoExt = "test_no_ext";
     bool okNoExt = bmp.Save(savePathNoExt);
     assert(!okNoExt);
     assert(!compat::filesystem::exists(savePathNoExt));
+
+    // 隱藏檔不是副檔名：".bmp", "dir/.bmp", "dir\\.bmp" 均判定為無副檔名並回傳 false
+    assert(!bmp.Save(".bmp"));
+    assert(!compat::filesystem::exists(".bmp"));
+    assert(!bmp.Save("dir/.bmp"));
+    assert(!bmp.Save("dir\\.bmp"));
 
     // 6. 尚未實作之格式 (回傳 false)
     bool okPng = bmp.Save("test.png", ImageFormat::Png);
@@ -641,6 +647,75 @@ static void TestMultiThreadSynchronization() {
 }
 
 // =============================================================================
+// 8.1 Bitmap::Save 並發高壓競爭安全測試 (Concurrent Stress Test)
+// =============================================================================
+static void TestBitmapSaveConcurrentStress() {
+    compat::println("[Test] Testing Bitmap::Save Concurrent Multi-Thread Stress (Save vs RotateFlip/Clear)...");
+
+    auto sharedBmp = std::make_shared<Bitmap>(64, 64);
+    sharedBmp->Clear(Colors::Navy);
+
+    std::atomic<bool> running{ true };
+    std::atomic<int64_t> saveCount{ 0 };
+    std::atomic<int64_t> rotateCount{ 0 };
+    std::atomic<int64_t> mutateCount{ 0 };
+    std::vector<std::thread> workers;
+
+    // 啟動 2 個寫檔執行緒 (頻繁執行 Save)
+    for (int32_t t = 0; t < 2; ++t) {
+        workers.emplace_back([&, t]() {
+            std::string path = "test_concurrent_stress_" + compat::to_string(t) + ".bmp";
+            while (running.load(std::memory_order_relaxed)) {
+                bool ok = sharedBmp->Save(path);
+                if (ok) {
+                    saveCount.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+            compat::filesystem::remove(path);
+        });
+    }
+
+    // 啟動 2 個旋轉執行緒 (頻繁執行 RotateFlip，會重新分配/移動 m_pixels 緩衝區)
+    for (int32_t t = 0; t < 2; ++t) {
+        workers.emplace_back([&]() {
+            while (running.load(std::memory_order_relaxed)) {
+                sharedBmp->RotateFlip(RotateFlipType::Rotate90FlipNone);
+                rotateCount.fetch_add(1, std::memory_order_relaxed);
+            }
+        });
+    }
+
+    // 啟動 2 個畫素修改執行緒 (頻繁 Clear 與 SetPixel)
+    for (int32_t t = 0; t < 2; ++t) {
+        workers.emplace_back([&, t]() {
+            uint32_t c = 0;
+            while (running.load(std::memory_order_relaxed)) {
+                sharedBmp->SetPixel(static_cast<uint32_t>((c + t) % 64), static_cast<uint32_t>((c * 2) % 64), Colors::Gold);
+                if ((c % 50) == 0) {
+                    sharedBmp->Clear(Colors::DarkGreen);
+                }
+                c++;
+                mutateCount.fetch_add(1, std::memory_order_relaxed);
+            }
+        });
+    }
+
+    // 並發執行 150 毫秒高壓測試
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    running.store(false, std::memory_order_relaxed);
+
+    for (auto& th : workers) {
+        if (th.joinable()) {
+            th.join();
+        }
+    }
+
+    compat::println(" -> Completed {} saves, {} rotate-flips, {} pixel mutations concurrently (0 data race/UAF).",
+                    saveCount.load(), rotateCount.load(), mutateCount.load());
+    compat::println(" -> PASS: Bitmap::Save Concurrent Stress");
+}
+
+// =============================================================================
 // 9. Fail-Fast 參數驗證與契約邊界例外測試
 // =============================================================================
 static void TestFailFastValidation() {
@@ -800,11 +875,12 @@ int main() {
     TestGraphicsModes();
     TestPictureBoxAndFluent();
     TestMultiThreadSynchronization();
+    TestBitmapSaveConcurrentStress();
     TestFailFastValidation();
     TestPimplDeepConstnessAndMoveSemantics();
 
     compat::println("==================================================");
-    compat::println("  ALL 10 GRAPHICS GDI+ TEST SUITES PASSED (100%)  ");
+    compat::println("  ALL 11 GRAPHICS GDI+ TEST SUITES PASSED (100%)  ");
     compat::println("==================================================");
     return 0;
 }

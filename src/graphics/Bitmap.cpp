@@ -10,6 +10,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace cppui {
@@ -325,7 +326,8 @@ static ImageFormat DeduceImageFormatFromExtension(compat::string_view filename) 
         }
     }
 
-    if (dotPos < 0 || dotPos + 1 >= len) {
+    // 嚴格判定：點必須在主檔名之後 (dotPos > 0 且前一字元非目錄分隔符號)
+    if (dotPos <= 0 || dotPos + 1 >= len || filename[static_cast<size_t>(dotPos - 1)] == '/' || filename[static_cast<size_t>(dotPos - 1)] == '\\') {
         return ImageFormat::Auto;
     }
 
@@ -369,11 +371,8 @@ static bool WriteBmpInternal(
     compat::string_view filename,
     uint32_t width,
     uint32_t height,
-    compat::span<const uint32_t> pixels,
-    compat::shared_mutex& mutex
+    compat::span<const uint32_t> pixels
 ) {
-    compat::shared_lock<compat::shared_mutex> lock(mutex);
-
     std::ofstream out(std::string(filename.data(), filename.size()), std::ios::binary);
     if (!out) return false;
 
@@ -394,17 +393,18 @@ static bool WriteBmpInternal(
         54, 0, 0, 0
     };
 
-    const int32_t biHeight = -static_cast<int32_t>(height);
+    // 採用無號 32 位元整數進行位移，杜絕有號負數位移警告
+    const uint32_t biHeightRaw = static_cast<uint32_t>(-static_cast<int32_t>(height));
     uint8_t infoHeader[40] = {
         40, 0, 0, 0,
         static_cast<uint8_t>(width & 0xFF),
         static_cast<uint8_t>((width >> 8) & 0xFF),
         static_cast<uint8_t>((width >> 16) & 0xFF),
         static_cast<uint8_t>((width >> 24) & 0xFF),
-        static_cast<uint8_t>(biHeight & 0xFF),
-        static_cast<uint8_t>((biHeight >> 8) & 0xFF),
-        static_cast<uint8_t>((biHeight >> 16) & 0xFF),
-        static_cast<uint8_t>((biHeight >> 24) & 0xFF),
+        static_cast<uint8_t>(biHeightRaw & 0xFF),
+        static_cast<uint8_t>((biHeightRaw >> 8) & 0xFF),
+        static_cast<uint8_t>((biHeightRaw >> 16) & 0xFF),
+        static_cast<uint8_t>((biHeightRaw >> 24) & 0xFF),
         1, 0,
         32, 0,
         0, 0, 0, 0,
@@ -415,16 +415,17 @@ static bool WriteBmpInternal(
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
 
-    out.write(reinterpret_cast<const char*>(fileHeader), 14);
-    out.write(reinterpret_cast<const char*>(infoHeader), 40);
-    out.write(reinterpret_cast<const char*>(pixels.data()), imageSize);
+    out.write(reinterpret_cast<const char*>(fileHeader), static_cast<std::streamsize>(sizeof(fileHeader)));
+    out.write(reinterpret_cast<const char*>(infoHeader), static_cast<std::streamsize>(sizeof(infoHeader)));
+    out.write(reinterpret_cast<const char*>(pixels.data()), static_cast<std::streamsize>(imageSize));
+    out.flush();
     return out.good();
 }
 
 } // anonymous namespace
 
 bool Bitmap::Save(compat::string_view filename, ImageFormat format) const {
-    if (filename.empty() || !m_impl || m_impl->m_width == 0 || m_impl->m_height == 0 || m_impl->m_pixels.empty()) {
+    if (filename.empty() || !m_impl) {
         return false;
     }
 
@@ -437,9 +438,20 @@ bool Bitmap::Save(compat::string_view filename, ImageFormat format) const {
         }
     }
 
+    // 取得共享鎖保護所有內部像素緩衝區與維度
+    compat::shared_lock<compat::shared_mutex> lock(m_impl->m_mutex);
+
+    const uint32_t width = m_impl->m_width;
+    const uint32_t height = m_impl->m_height;
+    if (width == 0 || height == 0 || m_impl->m_pixels.size() < static_cast<size_t>(width) * height) {
+        return false;
+    }
+
+    compat::span<const uint32_t> pixels(m_impl->m_pixels.data(), static_cast<size_t>(width) * height);
+
     switch (resolvedFormat) {
         case ImageFormat::Bmp:
-            return WriteBmpInternal(filename, m_impl->m_width, m_impl->m_height, m_impl->m_pixels, m_impl->m_mutex);
+            return WriteBmpInternal(filename, width, height, pixels);
 
         case ImageFormat::Png:
         case ImageFormat::Jpeg:
