@@ -70,6 +70,15 @@ public:
 
     // --- 編輯命令操作捷徑 ---
 
+    /// <summary>
+    /// 新增控制項至畫布中（建立 AddWidgetCommand 並推入歷史堆疊）。
+    /// </summary>
+    /// <param name="type">節點型別。</param>
+    /// <param name="position">放置畫布座標。</param>
+    /// <param name="parentUuid">父容器節點 UUID，若為空則預設加入根容器中。</param>
+    /// <returns>新增成功回傳該節點的 UUID，若失敗則回傳空字串。</returns>
+    std::string AddNewWidget(NodeType type, const core::Point& position, const std::string& parentUuid = "");
+
     /// <summary>刪除當前選取的元件 (建立 RemoveWidgetCommand 並推入歷史堆疊)。</summary>
     /// <returns>若成功刪除至少一個元件回傳 true。</returns>
     bool DeleteSelected();

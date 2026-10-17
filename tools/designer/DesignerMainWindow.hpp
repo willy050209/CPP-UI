@@ -55,6 +55,11 @@ public:
     void ToggleTheme();
 
     /// <summary>
+    /// 觸發彈出獨立即時代碼預覽視窗。
+    /// </summary>
+    void TriggerCodePreview();
+
+    /// <summary>
     /// 觸發專案 CMake 匯出。
     /// </summary>
     void TriggerExportProject();

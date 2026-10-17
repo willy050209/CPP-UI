@@ -171,6 +171,27 @@ std::vector<PropertyDescriptor> BuildDescriptors(NodeType type) {
         case NodeType::ContextMenu: {
             return CreateControlProperties();
         }
+        case NodeType::Timer: {
+            return {
+                { "IntervalMs", PropertyValue(int32_t(1000)), PropertyCategory::Behavior, false },
+                { "IsEnabled", PropertyValue(true), PropertyCategory::Behavior, false }
+            };
+        }
+        case NodeType::OpenFileDialog:
+        case NodeType::SaveFileDialog: {
+            return {
+                { "Title", PropertyValue(std::string("Select File")), PropertyCategory::Common, false },
+                { "Filter", PropertyValue(std::string("All Files (*.*)|*.*")), PropertyCategory::Common, false },
+                { "InitialDirectory", PropertyValue(std::string("")), PropertyCategory::Common, false },
+                { "DefaultExtension", PropertyValue(std::string("")), PropertyCategory::Common, false }
+            };
+        }
+        case NodeType::MessageBox: {
+            return {
+                { "Caption", PropertyValue(std::string("Message")), PropertyCategory::Common, false },
+                { "Text", PropertyValue(std::string("")), PropertyCategory::Common, false }
+            };
+        }
         case NodeType::FormDocument: {
             return {
                 { "Title", PropertyValue(std::string("Form")), PropertyCategory::Common, false },
@@ -195,6 +216,20 @@ std::vector<EventDescriptor> CreateUIElementEvents() {
 }
 
 std::vector<EventDescriptor> BuildEvents(NodeType type) {
+    if (type == NodeType::Timer) {
+        return {
+            { "Tick", "Tick (計時器觸發)", "Behavior", "void(EventArgs&)", "OnTick", false }
+        };
+    }
+    if (type == NodeType::OpenFileDialog || type == NodeType::SaveFileDialog) {
+        return {
+            { "FileOk", "FileOk (檔案選取確認)", "Behavior", "void(CancelEventArgs&)", "OnFileOk", false }
+        };
+    }
+    if (type == NodeType::MessageBox) {
+        return {};
+    }
+
     std::vector<EventDescriptor> list = CreateUIElementEvents();
 
     switch (type) {
@@ -242,7 +277,7 @@ const std::unordered_map<NodeType, std::vector<PropertyDescriptor>>& GetProperty
             NodeType::TreeView, NodeType::ContextMenu, NodeType::MenuItem, NodeType::Button, NodeType::CheckBox,
             NodeType::ComboBox, NodeType::DataGrid, NodeType::Label, NodeType::ListBox, NodeType::PictureBox,
             NodeType::ProgressBar, NodeType::RadioButton, NodeType::Separator, NodeType::Slider, NodeType::TextBlock,
-            NodeType::TextBox
+            NodeType::TextBox, NodeType::Timer, NodeType::OpenFileDialog, NodeType::SaveFileDialog, NodeType::MessageBox
         };
         for (NodeType t : types) {
             map[t] = BuildDescriptors(t);
@@ -261,7 +296,7 @@ const std::unordered_map<NodeType, std::vector<EventDescriptor>>& GetEventMap() 
             NodeType::TreeView, NodeType::ContextMenu, NodeType::MenuItem, NodeType::Button, NodeType::CheckBox,
             NodeType::ComboBox, NodeType::DataGrid, NodeType::Label, NodeType::ListBox, NodeType::PictureBox,
             NodeType::ProgressBar, NodeType::RadioButton, NodeType::Separator, NodeType::Slider, NodeType::TextBlock,
-            NodeType::TextBox
+            NodeType::TextBox, NodeType::Timer, NodeType::OpenFileDialog, NodeType::SaveFileDialog, NodeType::MessageBox
         };
         for (NodeType t : types) {
             map[t] = BuildEvents(t);

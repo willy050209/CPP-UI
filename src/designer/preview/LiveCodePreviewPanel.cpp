@@ -170,7 +170,56 @@ DesignerEvent<std::pair<PreviewViewMode, std::string>>& LiveCodePreviewPanel::Co
 }
 
 void LiveCodePreviewPanel::OnRender(rendering::DrawingContext& dc) {
-    controls::Control::OnRender(dc);
+    float w = GetWidth();
+    float h = GetHeight();
+    if (w <= 0.0f) w = 660.0f;
+    if (h <= 0.0f) h = 230.0f;
+
+    // 編輯器底色與外框
+    dc.DrawRectangle(core::Rect(0.0f, 0.0f, w, h), core::Color(30, 30, 30));
+    dc.DrawLine(core::Point(0.0f, 0.0f), core::Point(w, 0.0f), core::Color(51, 51, 51), 1.0f);
+    dc.DrawLine(core::Point(0.0f, h - 1.0f), core::Point(w, h - 1.0f), core::Color(51, 51, 51), 1.0f);
+
+    // 左側行號槽
+    const float gutterWidth = 44.0f;
+    dc.DrawRectangle(core::Rect(0.0f, 0.0f, gutterWidth, h), core::Color(37, 37, 38));
+    dc.DrawLine(core::Point(gutterWidth, 0.0f), core::Point(gutterWidth, h), core::Color(51, 51, 51), 1.0f);
+
+    // 切割行字串
+    std::istringstream stream(m_impl->activeText);
+    std::string line;
+    size_t lineIdx = 0;
+    const float lineHeight = 18.0f;
+    float y = 6.0f;
+
+    while (std::getline(stream, line)) {
+        if (y + lineHeight > h) break;
+
+        // 行號 (右對齊)
+        std::string lineNoStr = std::to_string(lineIdx + 1);
+        float lineNoX = gutterWidth - static_cast<float>(lineNoStr.size() * 8) - 6.0f;
+        dc.DrawText(lineNoStr, core::Point(lineNoX, y),
+                    text::FontDescriptor("Consolas", 11.0f),
+                    core::Color(130, 130, 130));
+
+        // 簡要著色：關鍵字/符號
+        core::Color codeColor = core::Color(215, 215, 215);
+        if (line.find("#include") != std::string::npos || line.find("#pragma") != std::string::npos) {
+            codeColor = core::Color(197, 134, 192);
+        } else if (line.find("//") != std::string::npos) {
+            codeColor = core::Color(106, 153, 85);
+        } else if (line.find("class ") != std::string::npos || line.find("namespace ") != std::string::npos ||
+                   line.find("auto ") != std::string::npos || line.find("return ") != std::string::npos) {
+            codeColor = core::Color(86, 156, 214);
+        }
+
+        dc.DrawText(line, core::Point(gutterWidth + 8.0f, y),
+                    text::FontDescriptor("Consolas", 11.5f),
+                    codeColor);
+
+        y += lineHeight;
+        ++lineIdx;
+    }
 }
 
 } // namespace preview

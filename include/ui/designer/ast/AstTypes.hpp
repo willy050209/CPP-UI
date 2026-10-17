@@ -50,7 +50,13 @@ enum class NodeType : uint32_t {
     Separator,
     Slider,
     TextBlock,
-    TextBox
+    TextBox,
+
+    // 非視覺元件與對話方塊 (Non-Visual Components & Dialogs)
+    Timer,
+    OpenFileDialog,
+    SaveFileDialog,
+    MessageBox
 };
 
 /// <summary>
@@ -124,6 +130,10 @@ COMPAT_NODISCARD inline compat::string_view NodeTypeName(NodeType type) noexcept
         case NodeType::Slider:                 return "Slider";
         case NodeType::TextBlock:              return "TextBlock";
         case NodeType::TextBox:                return "TextBox";
+        case NodeType::Timer:                  return "Timer";
+        case NodeType::OpenFileDialog:         return "OpenFileDialog";
+        case NodeType::SaveFileDialog:         return "SaveFileDialog";
+        case NodeType::MessageBox:             return "MessageBox";
         default:                               return "Unknown";
     }
 }
@@ -159,6 +169,10 @@ COMPAT_NODISCARD inline compat::optional<NodeType> NodeTypeFromString(compat::st
     if (str == "Slider")                 return NodeType::Slider;
     if (str == "TextBlock")              return NodeType::TextBlock;
     if (str == "TextBox")                return NodeType::TextBox;
+    if (str == "Timer")                  return NodeType::Timer;
+    if (str == "OpenFileDialog")         return NodeType::OpenFileDialog;
+    if (str == "SaveFileDialog")         return NodeType::SaveFileDialog;
+    if (str == "MessageBox")             return NodeType::MessageBox;
     return compat::nullopt;
 }
 

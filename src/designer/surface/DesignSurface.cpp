@@ -11,6 +11,7 @@
 #include "ui/designer/commands/PropertyCommands.hpp"
 #include "ui/designer/commands/MacroCommand.hpp"
 #include <algorithm>
+#include <cctype>
 
 namespace cppui {
 namespace designer {
@@ -121,6 +122,123 @@ const std::map<std::string, core::Rect>& DesignSurface::GetAllNodeBounds() const
     return m_impl->boundsMap;
 }
 
+std::string DesignSurface::AddNewWidget(NodeType type, const core::Point& position, const std::string& parentUuid) {
+    if (!m_impl->document || !m_impl->historyManager) {
+        return "";
+    }
+
+    WidgetNode* parent = nullptr;
+    if (!parentUuid.empty()) {
+        parent = m_impl->document->FindByUuid(parentUuid);
+    }
+    if (!parent) {
+        parent = m_impl->document->GetRoot();
+    }
+    if (!parent) {
+        return "";
+    }
+
+    // 自動產生唯一的標識符 (Unique Identifier)
+    std::string typeName(NodeTypeName(type));
+    std::string baseName = typeName;
+    if (!baseName.empty()) {
+        baseName[0] = static_cast<char>(std::tolower(static_cast<unsigned char>(baseName[0])));
+    }
+    std::string candidateName;
+    int32_t counter = 1;
+    while (true) {
+        candidateName = baseName + std::to_string(counter++);
+        if (!m_impl->document->FindByName(candidateName)) {
+            break;
+        }
+    }
+
+    auto newNode = std::make_unique<WidgetNode>(type, candidateName);
+    std::string nodeUuid = newNode->GetUuid();
+
+    // 依元件類型配置預設尺寸與文字
+    float defaultWidth = 120.0f;
+    float defaultHeight = 32.0f;
+
+    switch (type) {
+        case NodeType::Button:
+            newNode->SetProperty("Content", PropertyValue(candidateName));
+            newNode->SetProperty("Background", PropertyValue(core::Color(14, 110, 210)));
+            newNode->SetProperty("Foreground", PropertyValue(core::Color(255, 255, 255)));
+            break;
+        case NodeType::TextBox:
+            newNode->SetProperty("Text", PropertyValue(std::string("")));
+            newNode->SetProperty("Placeholder", PropertyValue(candidateName));
+            defaultWidth = 180.0f;
+            break;
+        case NodeType::Label:
+        case NodeType::TextBlock:
+            newNode->SetProperty("Content", PropertyValue(candidateName));
+            newNode->SetProperty("FontSize", PropertyValue(13.0));
+            defaultWidth = 120.0f;
+            defaultHeight = 24.0f;
+            break;
+        case NodeType::CheckBox:
+            newNode->SetProperty("Content", PropertyValue(candidateName));
+            newNode->SetProperty("IsChecked", PropertyValue(false));
+            defaultWidth = 160.0f;
+            defaultHeight = 24.0f;
+            break;
+        case NodeType::RadioButton:
+            newNode->SetProperty("Content", PropertyValue(candidateName));
+            newNode->SetProperty("IsChecked", PropertyValue(false));
+            defaultWidth = 160.0f;
+            defaultHeight = 24.0f;
+            break;
+        case NodeType::ComboBox:
+        case NodeType::ListBox:
+            defaultWidth = 160.0f;
+            defaultHeight = (type == NodeType::ListBox) ? 120.0f : 32.0f;
+            break;
+        case NodeType::DataGrid:
+            defaultWidth = 320.0f;
+            defaultHeight = 180.0f;
+            break;
+        case NodeType::Slider:
+        case NodeType::ProgressBar:
+            defaultWidth = 180.0f;
+            defaultHeight = 24.0f;
+            break;
+        case NodeType::PictureBox:
+            defaultWidth = 160.0f;
+            defaultHeight = 120.0f;
+            break;
+        case NodeType::Grid:
+        case NodeType::StackPanel:
+        case NodeType::Canvas:
+        case NodeType::Border:
+        case NodeType::ScrollViewer:
+            defaultWidth = 240.0f;
+            defaultHeight = 180.0f;
+            break;
+        default:
+            break;
+    }
+
+    newNode->SetProperty("Width", PropertyValue(static_cast<double>(defaultWidth)));
+    newNode->SetProperty("Height", PropertyValue(static_cast<double>(defaultHeight)));
+    newNode->SetAttachedProperty("Canvas.Left", PropertyValue(static_cast<double>(position.x)));
+    newNode->SetAttachedProperty("Canvas.Top", PropertyValue(static_cast<double>(position.y)));
+
+    core::Rect bounds(position.x, position.y, defaultWidth, defaultHeight);
+
+    auto cmd = std::make_unique<AddWidgetCommand>(parent->GetUuid(), std::move(newNode));
+    auto res = m_impl->historyManager->Execute(*m_impl->document, std::move(cmd));
+    if (res.has_value()) {
+        SetNodeBounds(nodeUuid, bounds);
+        m_impl->selectionModel.SetSelection(nodeUuid);
+        InvalidateVisual();
+        return nodeUuid;
+    }
+
+    return "";
+}
+
 bool DesignSurface::DeleteSelected() {
     if (!m_impl->document || !m_impl->historyManager) {
         return false;
@@ -219,6 +337,35 @@ void DesignSurface::OnRender(rendering::DrawingContext& dc) {
             } else if (node->GetType() == NodeType::CheckBox) {
                 core::Rect chk(rect.x, rect.y + 4.0f, 16.0f, 16.0f);
                 dc.DrawRoundedRectangle(chk, 2.0f, core::Color(24, 134, 75));
+            } else if (node->GetType() == NodeType::RadioButton) {
+                core::Rect rad(rect.x + 2.0f, rect.y + 4.0f, 14.0f, 14.0f);
+                dc.DrawEllipse(rad, core::Color(0, 122, 204), 1.5f);
+                dc.FillEllipse(core::Rect(rad.x + 3.0f, rad.y + 3.0f, 8.0f, 8.0f), core::Color(0, 122, 204));
+            } else if (node->GetType() == NodeType::ComboBox) {
+                dc.DrawRoundedRectangle(rect, 3.0f, core::Color(45, 50, 62));
+                dc.DrawText("▾", core::Point(rect.x + rect.width - 18.0f, rect.y + 6.0f),
+                            text::FontDescriptor("Segoe UI", 12.0f), core::Color(200, 200, 200));
+            } else if (node->GetType() == NodeType::Slider) {
+                float midY = rect.y + rect.height / 2.0f;
+                dc.DrawLine(core::Point(rect.x + 6.0f, midY), core::Point(rect.x + rect.width - 6.0f, midY),
+                            core::Color(70, 75, 90), 4.0f);
+                core::Rect thumb(rect.x + rect.width * 0.4f - 6.0f, midY - 8.0f, 12.0f, 16.0f);
+                dc.DrawRoundedRectangle(thumb, 2.0f, core::Color(0, 122, 255));
+            } else if (node->GetType() == NodeType::ProgressBar) {
+                dc.DrawRoundedRectangle(rect, 3.0f, core::Color(40, 45, 55));
+                core::Rect fillRect(rect.x, rect.y, rect.width * 0.6f, rect.height);
+                dc.DrawRoundedRectangle(fillRect, 3.0f, core::Color(24, 134, 75));
+            } else if (node->GetType() == NodeType::PictureBox) {
+                dc.DrawRoundedRectangle(rect, 4.0f, core::Color(32, 36, 44));
+                dc.DrawText("🖼 [PictureBox]", core::Point(rect.x + 12.0f, rect.y + rect.height / 2.0f - 8.0f),
+                            text::FontDescriptor("Segoe UI", 11.5f), core::Color(140, 145, 160));
+            } else if (node->GetType() == NodeType::Separator) {
+                float midY = rect.y + rect.height / 2.0f;
+                dc.DrawLine(core::Point(rect.x, midY), core::Point(rect.x + rect.width, midY),
+                            core::Color(70, 75, 90), 1.0f);
+            } else if (node->GetType() == NodeType::Timer || node->GetType() == NodeType::MessageBox ||
+                       node->GetType() == NodeType::OpenFileDialog || node->GetType() == NodeType::SaveFileDialog) {
+                dc.DrawRoundedRectangle(rect, 4.0f, core::Color(45, 50, 62));
             }
 
             // 繪製控制項文字 (Content / Text)
@@ -236,7 +383,7 @@ void DesignSurface::OnRender(rendering::DrawingContext& dc) {
                 if (auto fp = node->GetProperty("FontSize")) {
                     if (auto f = fp->Get<double>()) fontSize = static_cast<float>(*f);
                 }
-                if (node->GetType() == NodeType::CheckBox) {
+                if (node->GetType() == NodeType::CheckBox || node->GetType() == NodeType::RadioButton) {
                     origin.x = rect.x + 24.0f;
                     origin.y = rect.y + 4.0f;
                 }

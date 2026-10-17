@@ -381,7 +381,9 @@ if(CPPUI_BUILD_DESIGNER)
         src/designer/inspector/InheritanceMetadataRegistry.cpp
         src/designer/inspector/PropertyEditors.cpp
         src/designer/inspector/InspectorPanel.cpp
+        src/designer/toolbox/ToolboxPanel.cpp
         src/designer/preview/LiveCodePreviewPanel.cpp
+        src/designer/preview/CodePreviewWindow.cpp
         src/designer/preview/LiveFormRunner.cpp
         src/designer/exporter/ProjectExporter.cpp
     )

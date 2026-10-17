@@ -6,6 +6,7 @@
 #include "DesignerMainWindow.hpp"
 #include "ui/app/Application.hpp"
 #include "ui/designer/preview/LiveFormRunner.hpp"
+#include "ui/designer/preview/CodePreviewWindow.hpp"
 #include "ui/designer/ast/FormDocumentNode.hpp"
 #include <memory>
 #include <string>
@@ -20,6 +21,12 @@ int main(int argc, char* argv[]) {
             liveForm->SetTitle("【試運行 (Live Run)】" + mainWindow->GetDocument().GetSettings().className);
             return cppui::app::Application::Run(liveForm);
         }
+    }
+
+    // 支援 --preview-code 引數直接啟動獨立語法高亮代碼預覽視窗
+    if (argc > 1 && std::string(argv[1]) == "--preview-code") {
+        auto codeWin = std::make_shared<cppui::designer::preview::CodePreviewWindow>(&mainWindow->GetDocument());
+        return cppui::app::Application::Run(codeWin);
     }
 
     return cppui::app::Application::Run(mainWindow);

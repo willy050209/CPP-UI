@@ -54,21 +54,21 @@ Theme Theme::Light() {
     Theme theme;
     theme.m_mode = ThemeMode::Light;
 
-    // 亮色表面與視窗
-    theme.m_colors.windowBackground  = core::Color(245, 246, 248, 255);
-    theme.m_colors.surfaceBackground = core::Color(255, 255, 255, 255);
-    theme.m_colors.surfaceBorder     = core::Color(226, 230, 238, 255);
-    theme.m_colors.cardBackground    = core::Color(255, 255, 255, 255);
+    // 亮色表面與視窗（柔和淺灰色調，避免過度亮白刺眼）
+    theme.m_colors.windowBackground  = core::Color(234, 236, 240, 255);
+    theme.m_colors.surfaceBackground = core::Color(242, 244, 248, 255);
+    theme.m_colors.surfaceBorder     = core::Color(214, 219, 228, 255);
+    theme.m_colors.cardBackground    = core::Color(248, 249, 250, 255);
 
     // 控制項狀態色彩
-    theme.m_colors.controlBackground          = core::Color(240, 242, 245, 255);
-    theme.m_colors.controlHoverBackground     = core::Color(228, 232, 238, 255);
-    theme.m_colors.controlPressedBackground   = core::Color(215, 220, 228, 255);
-    theme.m_colors.controlDisabledBackground  = core::Color(245, 245, 247, 255);
-    theme.m_colors.controlBorder              = core::Color(200, 205, 215, 255);
-    theme.m_colors.controlHoverBorder         = core::Color(170, 180, 195, 255);
+    theme.m_colors.controlBackground          = core::Color(228, 232, 240, 255);
+    theme.m_colors.controlHoverBackground     = core::Color(218, 224, 234, 255);
+    theme.m_colors.controlPressedBackground   = core::Color(206, 213, 224, 255);
+    theme.m_colors.controlDisabledBackground  = core::Color(232, 235, 239, 255);
+    theme.m_colors.controlBorder              = core::Color(190, 198, 212, 255);
+    theme.m_colors.controlHoverBorder         = core::Color(155, 166, 188, 255);
     theme.m_colors.controlFocusedBorder       = core::Color(0, 120, 215, 255);
-    theme.m_colors.controlDisabledBorder      = core::Color(220, 225, 230, 255);
+    theme.m_colors.controlDisabledBorder      = core::Color(210, 215, 222, 255);
 
     // 品牌與突顯色彩
     theme.m_colors.accentPrimary  = core::Color(0, 120, 215, 255);
@@ -78,10 +78,10 @@ Theme Theme::Light() {
     theme.m_colors.accentText     = core::Color(255, 255, 255, 255);
 
     // 排版與文字色彩
-    theme.m_colors.textPrimary     = core::Color(20, 24, 33, 255);
-    theme.m_colors.textSecondary   = core::Color(100, 110, 125, 255);
-    theme.m_colors.textDisabled    = core::Color(160, 166, 178, 255);
-    theme.m_colors.textPlaceholder = core::Color(150, 160, 175, 255);
+    theme.m_colors.textPrimary     = core::Color(25, 30, 40, 255);
+    theme.m_colors.textSecondary   = core::Color(90, 100, 115, 255);
+    theme.m_colors.textDisabled    = core::Color(150, 156, 168, 255);
+    theme.m_colors.textPlaceholder = core::Color(140, 150, 165, 255);
     theme.m_colors.textOnAccent    = core::Color(255, 255, 255, 255);
 
     return theme;

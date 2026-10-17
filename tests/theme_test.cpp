@@ -47,12 +47,12 @@ int main() {
 
         Theme light = Theme::Light();
         assert(light.GetMode() == ThemeMode::Light);
-        assert(light.Colors().windowBackground.r == 245);
-        assert(light.Colors().windowBackground.g == 246);
-        assert(light.Colors().windowBackground.b == 248);
-        assert(light.Colors().textPrimary.r == 20);
-        assert(light.Colors().textPrimary.g == 24);
-        assert(light.Colors().textPrimary.b == 33);
+        assert(light.Colors().windowBackground.r == 234);
+        assert(light.Colors().windowBackground.g == 236);
+        assert(light.Colors().windowBackground.b == 240);
+        assert(light.Colors().textPrimary.r == 25);
+        assert(light.Colors().textPrimary.g == 30);
+        assert(light.Colors().textPrimary.b == 40);
 
         Theme hc = Theme::HighContrast();
         assert(hc.GetMode() == ThemeMode::HighContrast);

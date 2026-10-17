@@ -17,6 +17,8 @@
 #include "ui/layout/Grid.hpp"
 #include "ui/layout/StackPanel.hpp"
 #include "ui/theme/ThemeManager.hpp"
+#include "ui/designer/toolbox/ToolboxPanel.hpp"
+#include "ui/designer/preview/CodePreviewWindow.hpp"
 #include <vector>
 #include <string>
 
@@ -37,7 +39,8 @@ struct DesignerMainWindow::Impl {
     FormDocumentNode m_doc{ CreateInitialSettings() };
     CommandHistoryManager m_history;
     std::shared_ptr<surface::DesignSurface> m_surface;
-    std::shared_ptr<preview::LiveCodePreviewPanel> m_preview;
+    std::shared_ptr<toolbox::ToolboxPanel> m_toolbox;
+    std::shared_ptr<preview::CodePreviewWindow> m_codeWindow;
     std::shared_ptr<inspector::InspectorPanel> m_inspector;
     std::shared_ptr<controls::Label> m_statusLabel;
 
@@ -154,27 +157,37 @@ DesignerMainWindow::DesignerMainWindow()
     using namespace cppui::dsl;
 
     SetTitle("CPPUI Visual Form Designer - 視覺化表單設計器 (v1.0)");
-    SetFormSize(1240, 800);
+    SetFormSize(1280, 820);
 
-    // 實例化畫布、預覽面板與檢查器
+    // 實例化畫布與檢查器
     m_impl->m_surface = std::make_shared<surface::DesignSurface>(&m_impl->m_doc, &m_impl->m_history);
-    m_impl->m_surface->SetWidth(660.0f);
-    m_impl->m_surface->SetHeight(410.0f);
-
-    m_impl->m_preview = std::make_shared<preview::LiveCodePreviewPanel>(
-        &m_impl->m_doc,
-        &m_impl->m_surface->GetSelectionModel()
-    );
-    m_impl->m_preview->SetWidth(660.0f);
-    m_impl->m_preview->SetHeight(230.0f);
-    m_impl->m_preview->SetViewMode(preview::PreviewViewMode::FluentDsl);
+    m_impl->m_surface->SetWidth(680.0f);
+    m_impl->m_surface->SetHeight(700.0f);
 
     m_impl->m_inspector = std::make_shared<inspector::InspectorPanel>(
         &m_impl->m_doc,
         &m_impl->m_history,
         &m_impl->m_surface->GetSelectionModel()
     );
-    m_impl->m_inspector->SetWidth(310.0f);
+    m_impl->m_inspector->SetWidth(320.0f);
+    m_impl->m_inspector->SetHeight(700.0f);
+
+    // 實例化垂直分類折疊式工具箱
+    m_impl->m_toolbox = std::make_shared<toolbox::ToolboxPanel>();
+    m_impl->m_toolbox->SetWidth(230.0f);
+    m_impl->m_toolbox->SetHeight(400.0f);
+
+    // 雙擊項目或拖曳放置新增至畫布
+    m_impl->m_toolbox->OnItemDoubleClicked([this](NodeType type) {
+        if (m_impl->m_surface) {
+            (void)m_impl->m_surface->AddNewWidget(type, core::Point(60.0f, 60.0f));
+        }
+    });
+    m_impl->m_toolbox->OnItemDropped([this](NodeType type, const core::Point& pt) {
+        if (m_impl->m_surface) {
+            (void)m_impl->m_surface->AddNewWidget(type, pt);
+        }
+    });
 
     // 建立 AST 拓撲
     m_impl->BuildDefaultAst();
@@ -203,11 +216,18 @@ DesignerMainWindow::DesignerMainWindow()
     deleteBtn->OnClick([this]() { (void)m_impl->m_surface->DeleteSelected(); });
 
     auto runBtn = std::make_shared<controls::Button>("▶ 預覽執行 (Live Run)");
-    runBtn->SetPadding(core::Thickness(14.0f, 5.0f, 14.0f, 5.0f));
-    runBtn->SetMargin(core::Thickness(12.0f, 2.0f, 2.0f, 2.0f));
+    runBtn->SetPadding(core::Thickness(12.0f, 5.0f, 12.0f, 5.0f));
+    runBtn->SetMargin(core::Thickness(8.0f, 2.0f, 2.0f, 2.0f));
     runBtn->SetBackground(core::Color(24, 134, 75));
     runBtn->SetForeground(core::Color(255, 255, 255));
     runBtn->OnClick([this]() { TriggerLiveRun(); });
+
+    auto codeBtn = std::make_shared<controls::Button>("⚡ 程式碼預覽 (Code)");
+    codeBtn->SetPadding(core::Thickness(12.0f, 5.0f, 12.0f, 5.0f));
+    codeBtn->SetMargin(core::Thickness(2.0f));
+    codeBtn->SetBackground(core::Color(0, 122, 204));
+    codeBtn->SetForeground(core::Color(255, 255, 255));
+    codeBtn->OnClick([this]() { TriggerCodePreview(); });
 
     auto themeBtn = std::make_shared<controls::Button>("🎨 切換主題");
     themeBtn->SetPadding(core::Thickness(10.0f, 5.0f, 10.0f, 5.0f));
@@ -227,6 +247,7 @@ DesignerMainWindow::DesignerMainWindow()
         redoBtn,
         deleteBtn,
         runBtn,
+        codeBtn,
         themeBtn,
         exportBtn
     })
@@ -239,28 +260,15 @@ DesignerMainWindow::DesignerMainWindow()
     auto toolboxHeader = std::make_shared<controls::TextBlock>("🛠 控制項工具箱 (Toolbox)");
     toolboxHeader->SetFontSize(13.0f);
     toolboxHeader->SetFontWeight(text::FontWeight::Bold);
-    toolboxHeader->SetMargin(core::Thickness(4.0f, 8.0f, 4.0f, 6.0f));
-
-    auto makeToolBtn = [](compat::string_view label) {
-        auto b = std::make_shared<controls::Button>(label);
-        b->SetPadding(core::Thickness(8.0f, 4.0f, 8.0f, 4.0f));
-        b->SetMargin(core::Thickness(2.0f));
-        return b;
-    };
-
-    auto toolGrid1 = HStack({ makeToolBtn("🔲 Grid"), makeToolBtn("📑 Stack") }).Spacing(4).Get();
-    auto toolGrid2 = HStack({ makeToolBtn("🖼 Border"), makeToolBtn("🎨 Canvas") }).Spacing(4).Get();
-    auto toolGrid3 = HStack({ makeToolBtn("🔘 Button"), makeToolBtn("🔤 TextBox") }).Spacing(4).Get();
-    auto toolGrid4 = HStack({ makeToolBtn("☑ Check"), makeToolBtn("🏷 Label") }).Spacing(4).Get();
-    auto toolGrid5 = HStack({ makeToolBtn("▾ Combo"), makeToolBtn("📊 DataGrid") }).Spacing(4).Get();
+    toolboxHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 4.0f));
 
     auto treeHeader = std::make_shared<controls::TextBlock>("🌳 元件層級樹 (Hierarchy)");
     treeHeader->SetFontSize(13.0f);
     treeHeader->SetFontWeight(text::FontWeight::Bold);
-    treeHeader->SetMargin(core::Thickness(4.0f, 14.0f, 4.0f, 6.0f));
+    treeHeader->SetMargin(core::Thickness(4.0f, 10.0f, 4.0f, 4.0f));
 
     auto hierarchyBox = std::make_shared<controls::ListBox>();
-    hierarchyBox->SetHeight(320.0f);
+    hierarchyBox->SetHeight(270.0f);
     hierarchyBox->AddItem("▾ 📄 AccountSettingsForm (Form)");
     hierarchyBox->AddItem("   ▾ 🎨 mainCanvas (Canvas)");
     hierarchyBox->AddItem("      🏷 titleLabel (Label)");
@@ -275,36 +283,25 @@ DesignerMainWindow::DesignerMainWindow()
 
     auto leftSidebar = VStack({
         toolboxHeader,
-        toolGrid1,
-        toolGrid2,
-        toolGrid3,
-        toolGrid4,
-        toolGrid5,
+        m_impl->m_toolbox,
         treeHeader,
         hierarchyBox
     })
-    .Width(220)
-    .Padding(8)
+    .Width(230)
+    .Padding(6)
     .Get();
 
-    // 3. 中央主工作區 (畫布 + 即時代碼預覽)
+    // 3. 中央主工作區 (純畫布表面 - 完整開展不被預覽壓縮)
     auto surfaceHeader = std::make_shared<controls::TextBlock>("🎨 設計畫布表面 (Design Surface - 800 x 520)");
     surfaceHeader->SetFontSize(13.0f);
     surfaceHeader->SetFontWeight(text::FontWeight::Bold);
-    surfaceHeader->SetMargin(core::Thickness(4.0f, 8.0f, 4.0f, 4.0f));
-
-    auto previewHeader = std::make_shared<controls::TextBlock>("⚡ 即時代碼預覽 (Live Code Preview - Fluent DSL)");
-    previewHeader->SetFontSize(13.0f);
-    previewHeader->SetFontWeight(text::FontWeight::Bold);
-    previewHeader->SetMargin(core::Thickness(4.0f, 10.0f, 4.0f, 4.0f));
+    surfaceHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 4.0f));
 
     auto centerArea = VStack({
         surfaceHeader,
-        m_impl->m_surface,
-        previewHeader,
-        m_impl->m_preview
+        m_impl->m_surface
     })
-    .Width(660)
+    .Width(680)
     .Padding(6)
     .Get();
 
@@ -312,14 +309,14 @@ DesignerMainWindow::DesignerMainWindow()
     auto inspectorHeader = std::make_shared<controls::TextBlock>("⚙ 屬性與事件檢查器 (Inspector)");
     inspectorHeader->SetFontSize(13.0f);
     inspectorHeader->SetFontWeight(text::FontWeight::Bold);
-    inspectorHeader->SetMargin(core::Thickness(4.0f, 8.0f, 4.0f, 4.0f));
+    inspectorHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 4.0f));
 
     auto rightSidebar = VStack({
         inspectorHeader,
         m_impl->m_inspector
     })
-    .Width(310)
-    .Padding(8)
+    .Width(320)
+    .Padding(6)
     .Get();
 
     // 5. 底部狀態列 (Bottom Status Bar)
@@ -361,6 +358,17 @@ void DesignerMainWindow::TriggerLiveRun() {
         liveForm->SetTitle("【試運行 (Live Run)】" + m_impl->m_doc.GetSettings().className);
         liveForm->Show();
     }
+}
+
+void DesignerMainWindow::TriggerCodePreview() {
+    if (!m_impl->m_codeWindow) {
+        m_impl->m_codeWindow = std::make_shared<preview::CodePreviewWindow>(
+            &m_impl->m_doc,
+            &m_impl->m_surface->GetSelectionModel()
+        );
+    }
+    m_impl->m_codeWindow->RefreshCode();
+    m_impl->m_codeWindow->Show();
 }
 
 void DesignerMainWindow::ToggleTheme() {
