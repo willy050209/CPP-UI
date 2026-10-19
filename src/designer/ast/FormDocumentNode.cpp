@@ -60,6 +60,10 @@ void FormDocumentNode::SetRoot(std::unique_ptr<WidgetNode> root) {
     m_impl->m_root = std::move(root);
 }
 
+std::unique_ptr<WidgetNode> FormDocumentNode::TakeRoot() noexcept {
+    return std::move(m_impl->m_root);
+}
+
 WidgetNode* FormDocumentNode::FindByUuid(compat::string_view uuid) noexcept {
     if (m_impl->m_root) {
         return m_impl->m_root->FindByUuid(uuid);

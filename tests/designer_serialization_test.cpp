@@ -86,6 +86,10 @@ static void TestRoundTripLossless() {
     // 驗證 AST2 屬性與拓撲完全正確
     assert(doc2->GetSettings().className == "ComplexForm");
     assert(doc2->GetSettings().initialSize.width == 1024.0f);
+    assert(doc2->GetSettings().startPosition == "CenterScreen");
+    assert(doc2->GetSettings().windowState == "Normal");
+    assert(!doc2->GetSettings().topmost);
+    assert(doc2->GetSettings().showInTaskbar);
     assert(doc2->GetRoot()->GetType() == NodeType::Grid);
     assert(doc2->GetRoot()->GetRowDefinitions().size() == 3);
     assert(doc2->GetRoot()->GetColumnDefinitions().size() == 2);

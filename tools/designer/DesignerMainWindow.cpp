@@ -19,11 +19,16 @@
 #include "ui/theme/ThemeManager.hpp"
 #include "ui/designer/toolbox/ToolboxPanel.hpp"
 #include "ui/designer/preview/CodePreviewWindow.hpp"
+#include "ui/designer/serialization/FormSerializer.hpp"
+#include "ui/dialogs/SaveFileDialog.hpp"
+#include "ui/dialogs/OpenFileDialog.hpp"
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 
 namespace cppui {
 namespace designer {
@@ -31,10 +36,10 @@ namespace tool {
 
 static FormSettings CreateInitialSettings() {
     FormSettings s;
-    s.className = "AccountSettingsForm";
-    s.targetNamespace = "EnterpriseApp";
-    s.initialSize = core::Size(800.0f, 520.0f);
-    s.title = "使用者帳戶與安全性設定";
+    s.className = "MainForm";
+    s.targetNamespace = "MyAPP";
+    s.initialSize = core::Size(800.0f, 600.0f);
+    s.title = "MainForm";
     return s;
 }
 
@@ -239,102 +244,14 @@ struct DesignerMainWindow::Impl {
         rootGrid->SetProperty("Background", PropertyValue(core::Color(28, 30, 36)));
         rootGrid->SetProperty("Padding", PropertyValue(core::Thickness(16.0f)));
 
-        // 1. 標題文字
-        auto titleLabel = std::make_unique<WidgetNode>(NodeType::Label, "titleLabel");
-        titleLabel->SetProperty("Content", PropertyValue(std::string("使用者帳戶與安全性設定")));
-        titleLabel->SetProperty("FontSize", PropertyValue(18.0f));
-        titleLabel->SetProperty("Foreground", PropertyValue(core::Color(255, 255, 255)));
-        titleLabel->SetAttachedProperty("Canvas.Left", PropertyValue(20.0));
-        titleLabel->SetAttachedProperty("Canvas.Top", PropertyValue(20.0));
-        std::string titleUuid = titleLabel->GetUuid();
-        (void)rootGrid->AddChild(std::move(titleLabel));
-
-        // 2. 帳號名稱標籤與輸入框
-        auto userLabel = std::make_unique<WidgetNode>(NodeType::Label, "userLabel");
-        userLabel->SetProperty("Content", PropertyValue(std::string("帳號名稱 (Username):")));
-        userLabel->SetProperty("FontSize", PropertyValue(12.0f));
-        userLabel->SetAttachedProperty("Canvas.Left", PropertyValue(20.0));
-        userLabel->SetAttachedProperty("Canvas.Top", PropertyValue(65.0));
-        std::string userLabelUuid = userLabel->GetUuid();
-        (void)rootGrid->AddChild(std::move(userLabel));
-
-        auto userInput = std::make_unique<WidgetNode>(NodeType::TextBox, "usernameInput");
-        userInput->SetProperty("Text", PropertyValue(std::string("administrator")));
-        userInput->SetProperty("Width", PropertyValue(260.0f));
-        userInput->SetProperty("Height", PropertyValue(32.0f));
-        userInput->SetAttachedProperty("Canvas.Left", PropertyValue(170.0));
-        userInput->SetAttachedProperty("Canvas.Top", PropertyValue(62.0));
-        m_userInputUuid = userInput->GetUuid();
-        (void)rootGrid->AddChild(std::move(userInput));
-
-        // 3. 電子郵件標籤與輸入框
-        auto emailLabel = std::make_unique<WidgetNode>(NodeType::Label, "emailLabel");
-        emailLabel->SetProperty("Content", PropertyValue(std::string("電子郵件 (Email):")));
-        emailLabel->SetProperty("FontSize", PropertyValue(12.0f));
-        emailLabel->SetAttachedProperty("Canvas.Left", PropertyValue(20.0));
-        emailLabel->SetAttachedProperty("Canvas.Top", PropertyValue(105.0));
-        std::string emailLabelUuid = emailLabel->GetUuid();
-        (void)rootGrid->AddChild(std::move(emailLabel));
-
-        auto emailInput = std::make_unique<WidgetNode>(NodeType::TextBox, "emailInput");
-        emailInput->SetProperty("Text", PropertyValue(std::string("admin@enterprise.internal")));
-        emailInput->SetProperty("Width", PropertyValue(260.0f));
-        emailInput->SetProperty("Height", PropertyValue(32.0f));
-        emailInput->SetAttachedProperty("Canvas.Left", PropertyValue(170.0));
-        emailInput->SetAttachedProperty("Canvas.Top", PropertyValue(102.0));
-        std::string emailInputUuid = emailInput->GetUuid();
-        (void)rootGrid->AddChild(std::move(emailInput));
-
-        // 4. 雙重驗證核取方塊
-        auto authCheck = std::make_unique<WidgetNode>(NodeType::CheckBox, "authCheck");
-        authCheck->SetProperty("Content", PropertyValue(std::string("強制啟用雙重驗證 (2FA Authentication)")));
-        authCheck->SetProperty("IsChecked", PropertyValue(true));
-        authCheck->SetAttachedProperty("Canvas.Left", PropertyValue(170.0));
-        authCheck->SetAttachedProperty("Canvas.Top", PropertyValue(145.0));
-        std::string authCheckUuid = authCheck->GetUuid();
-        (void)rootGrid->AddChild(std::move(authCheck));
-
-        // 5. 儲存設定按鈕
-        auto saveBtn = std::make_unique<WidgetNode>(NodeType::Button, "saveBtn");
-        saveBtn->SetProperty("Content", PropertyValue(std::string("儲存設定 (Save)")));
-        saveBtn->SetProperty("Width", PropertyValue(130.0f));
-        saveBtn->SetProperty("Height", PropertyValue(34.0f));
-        saveBtn->SetProperty("Background", PropertyValue(core::Color(14, 110, 210)));
-        saveBtn->SetProperty("Foreground", PropertyValue(core::Color(255, 255, 255)));
-        saveBtn->SetAttachedProperty("Canvas.Left", PropertyValue(170.0));
-        saveBtn->SetAttachedProperty("Canvas.Top", PropertyValue(190.0));
-        saveBtn->AddEventBinding(EventBindingDescriptor{ "Click", "OnSaveSettingsClick" });
-        m_saveBtnUuid = saveBtn->GetUuid();
-        (void)rootGrid->AddChild(std::move(saveBtn));
-
-        // 6. 取消按鈕
-        auto cancelBtn = std::make_unique<WidgetNode>(NodeType::Button, "cancelBtn");
-        cancelBtn->SetProperty("Content", PropertyValue(std::string("取消 (Cancel)")));
-        cancelBtn->SetProperty("Width", PropertyValue(100.0f));
-        cancelBtn->SetProperty("Height", PropertyValue(34.0f));
-        cancelBtn->SetProperty("Background", PropertyValue(core::Color(60, 64, 75)));
-        cancelBtn->SetAttachedProperty("Canvas.Left", PropertyValue(310.0));
-        cancelBtn->SetAttachedProperty("Canvas.Top", PropertyValue(190.0));
-        cancelBtn->AddEventBinding(EventBindingDescriptor{ "Click", "OnCancelClick" });
-        m_cancelBtnUuid = cancelBtn->GetUuid();
-        (void)rootGrid->AddChild(std::move(cancelBtn));
-
         std::string rootUuid = rootGrid->GetUuid();
         m_doc.SetRoot(std::move(rootGrid));
 
         // 佈局座標快取映射 (提供畫布渲染與選取)
-        m_surface->SetNodeBounds(rootUuid, core::Rect(0.0f, 0.0f, 540.0f, 360.0f));
-        m_surface->SetNodeBounds(titleUuid, core::Rect(20.0f, 20.0f, 320.0f, 28.0f));
-        m_surface->SetNodeBounds(userLabelUuid, core::Rect(20.0f, 65.0f, 140.0f, 24.0f));
-        m_surface->SetNodeBounds(m_userInputUuid, core::Rect(170.0f, 62.0f, 260.0f, 30.0f));
-        m_surface->SetNodeBounds(emailLabelUuid, core::Rect(20.0f, 105.0f, 140.0f, 24.0f));
-        m_surface->SetNodeBounds(emailInputUuid, core::Rect(170.0f, 102.0f, 260.0f, 30.0f));
-        m_surface->SetNodeBounds(authCheckUuid, core::Rect(170.0f, 145.0f, 280.0f, 26.0f));
-        m_surface->SetNodeBounds(m_saveBtnUuid, core::Rect(170.0f, 190.0f, 130.0f, 34.0f));
-        m_surface->SetNodeBounds(m_cancelBtnUuid, core::Rect(310.0f, 190.0f, 100.0f, 34.0f));
+        m_surface->SetNodeBounds(rootUuid, core::Rect(0.0f, 0.0f, 800.0f, 600.0f));
 
-        // 預設選取「儲存設定 (saveBtn)」元件，立即呈現 8 向控制點與導引線
-        m_surface->GetSelectionModel().SetSelection(m_saveBtnUuid);
+        // 初始狀態為空表單，清除所有選取 (檢查器預設聚焦表單本身)
+        m_surface->GetSelectionModel().ClearSelection();
     }
 };
 
@@ -498,7 +415,7 @@ DesignerMainWindow::DesignerMainWindow()
     fontPlusBtn->SetMargin(core::Thickness(2.0f));
 
     auto updateFontZoom = [this, fontResetBtn](float newScale) {
-        m_impl->m_fontScale = compat::clamp(newScale, 0.8f, 1.5f);
+        m_impl->m_fontScale = compat::clamp(newScale, 0.5f, 5.0f);
         int32_t pct = static_cast<int32_t>(std::round(m_impl->m_fontScale * 100.0f));
         fontResetBtn->SetContent(std::to_string(pct) + "%");
 
@@ -556,6 +473,91 @@ DesignerMainWindow::DesignerMainWindow()
         updateFontZoom(m_impl->m_fontScale + 0.1f);
     });
 
+    auto openBtn = std::make_shared<controls::Button>("📂 載入");
+    openBtn->SetPadding(core::Thickness(12.0f, 5.0f, 12.0f, 5.0f));
+    openBtn->SetMargin(core::Thickness(2.0f));
+    openBtn->OnClick([this]() {
+        dialogs::OpenFileDialog dlg;
+        dlg.SetTitle("載入表單 AST 模型");
+        dlg.SetFilter("Form JSON (*.form.json;*.json)|*.form.json;*.json|All Files (*.*)|*.*");
+        dlg.SetDefaultExt("form.json");
+        if (dlg.ShowDialog() == app::DialogResult::OK) {
+            std::string path(dlg.GetFileName());
+            std::ifstream ifs(path);
+            if (ifs.is_open()) {
+                std::stringstream buffer;
+                buffer << ifs.rdbuf();
+                std::string content = buffer.str();
+                ifs.close();
+                auto docRes = FormSerializer::Deserialize(content);
+                if (docRes.has_value()) {
+                    auto newDoc = std::move(docRes.value());
+                    m_impl->m_doc.SetSettings(newDoc->GetSettings());
+                    m_impl->m_doc.SetRoot(newDoc->TakeRoot());
+                    m_impl->m_history.Clear();
+
+                    if (m_impl->m_doc.GetRoot()) {
+                        m_impl->m_surface->SetNodeBounds(
+                            m_impl->m_doc.GetRoot()->GetUuid(),
+                            core::Rect(0.0f, 0.0f, m_impl->m_doc.GetSettings().initialSize.width, m_impl->m_doc.GetSettings().initialSize.height)
+                        );
+                    }
+
+                    m_impl->RebuildHierarchyTree();
+                    m_impl->m_surface->GetSelectionModel().ClearSelection();
+                    m_impl->m_surface->InvalidateVisual();
+                    m_impl->m_inspector->InvalidateVisual();
+                    InvalidateVisual();
+                    if (m_impl->m_statusLabel) {
+                        m_impl->m_statusLabel->SetText("已成功載入表單: " + path);
+                    }
+                } else {
+                    if (m_impl->m_statusLabel) {
+                        m_impl->m_statusLabel->SetText("載入反序列化失敗: " + docRes.error().message);
+                    }
+                }
+            } else {
+                if (m_impl->m_statusLabel) {
+                    m_impl->m_statusLabel->SetText("載入失敗: 無法開啟檔案 " + path);
+                }
+            }
+        }
+    });
+
+    auto saveBtn = std::make_shared<controls::Button>("💾 儲存");
+    saveBtn->SetPadding(core::Thickness(12.0f, 5.0f, 12.0f, 5.0f));
+    saveBtn->SetMargin(core::Thickness(2.0f));
+    saveBtn->OnClick([this]() {
+        dialogs::SaveFileDialog dlg;
+        dlg.SetTitle("儲存表單 AST 模型");
+        dlg.SetFilter("Form JSON (*.form.json;*.json)|*.form.json;*.json|All Files (*.*)|*.*");
+        dlg.SetDefaultExt("form.json");
+        std::string defName = m_impl->m_doc.GetSettings().className + ".form.json";
+        dlg.SetFileName(defName);
+        if (dlg.ShowDialog() == app::DialogResult::OK) {
+            std::string path(dlg.GetFileName());
+            auto jsonRes = FormSerializer::Serialize(m_impl->m_doc);
+            if (jsonRes.has_value()) {
+                std::ofstream ofs(path, std::ios::out | std::ios::trunc);
+                if (ofs.is_open()) {
+                    ofs << jsonRes.value();
+                    ofs.close();
+                    if (m_impl->m_statusLabel) {
+                        m_impl->m_statusLabel->SetText("表單已成功儲存至: " + path);
+                    }
+                } else {
+                    if (m_impl->m_statusLabel) {
+                        m_impl->m_statusLabel->SetText("儲存失敗: 無法寫入檔案 " + path);
+                    }
+                }
+            } else {
+                if (m_impl->m_statusLabel) {
+                    m_impl->m_statusLabel->SetText("序列化失敗: " + jsonRes.error().message);
+                }
+            }
+        }
+    });
+
     auto runBtn = std::make_shared<controls::Button>("▶ 預覽執行 (Live Run)");
     runBtn->SetPadding(core::Thickness(12.0f, 5.0f, 12.0f, 5.0f));
     runBtn->SetMargin(core::Thickness(6.0f, 2.0f, 2.0f, 2.0f));
@@ -584,6 +586,8 @@ DesignerMainWindow::DesignerMainWindow()
 
     auto toolbar = HStack({
         m_impl->m_titleBlock,
+        openBtn,
+        saveBtn,
         undoBtn,
         redoBtn,
         deleteBtn,

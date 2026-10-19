@@ -217,7 +217,7 @@ compat::string_view ToolboxPanel::GetFilterText() const noexcept {
 }
 
 void ToolboxPanel::SetFontScale(float scale) {
-    m_impl->fontScale = compat::clamp(scale, 0.5f, 2.5f);
+    m_impl->fontScale = compat::clamp(scale, 0.5f, 5.0f);
     InvalidateVisual();
 }
 

@@ -22,12 +22,16 @@ namespace designer {
 /// </summary>
 struct FormSettings {
     std::string className = "MainForm";
-    std::string targetNamespace = "MyApp";
+    std::string targetNamespace = "MyAPP";
     core::Size initialSize{ 800.0f, 600.0f };
-    std::string title = "CPPUI Form";
+    std::string title = "MainForm";
     std::string defaultTheme = "Dark";
+    std::string startPosition = "CenterScreen";
+    std::string windowState = "Normal";
     bool useMvvm = true;
     bool useIoC = true;
+    bool topmost = false;
+    bool showInTaskbar = true;
 
     COMPAT_NODISCARD bool operator==(const FormSettings& other) const noexcept {
         return className == other.className &&
@@ -35,8 +39,12 @@ struct FormSettings {
                initialSize == other.initialSize &&
                title == other.title &&
                defaultTheme == other.defaultTheme &&
+               startPosition == other.startPosition &&
+               windowState == other.windowState &&
                useMvvm == other.useMvvm &&
-               useIoC == other.useIoC;
+               useIoC == other.useIoC &&
+               topmost == other.topmost &&
+               showInTaskbar == other.showInTaskbar;
     }
 
     COMPAT_NODISCARD bool operator!=(const FormSettings& other) const noexcept {
@@ -170,6 +178,7 @@ public:
     COMPAT_NODISCARD WidgetNode* GetRoot() noexcept;
     COMPAT_NODISCARD const WidgetNode* GetRoot() const noexcept;
     void SetRoot(std::unique_ptr<WidgetNode> root);
+    std::unique_ptr<WidgetNode> TakeRoot() noexcept;
 
     // --- 全域節點檢索 ---
 

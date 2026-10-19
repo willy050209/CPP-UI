@@ -54,11 +54,21 @@ struct InspectorPanel::Impl {
     size_t caretPos = 0;
     core::Rect editingRect;
 
+    // 列舉浮動下拉選單狀態
+    struct ActiveDropdown {
+        std::string propName;
+        bool isAttached = false;
+        core::Rect popupRect;
+        std::vector<std::string> options;
+    };
+    compat::optional<ActiveDropdown> activeDropdown;
+
     void CommitInlineEdit();
     void CancelInlineEdit() {
         editingPropName.clear();
         editingBuffer.clear();
         caretPos = 0;
+        activeDropdown = compat::nullopt;
     }
 
     DesignerEvent<PropertyChangePayload> propertyChangedSignal;
@@ -155,7 +165,7 @@ const std::string& InspectorPanel::GetFilterText() const noexcept {
 }
 
 void InspectorPanel::SetFontScale(float scale) {
-    m_impl->fontScale = compat::clamp(scale, 0.5f, 2.5f);
+    m_impl->fontScale = compat::clamp(scale, 0.5f, 5.0f);
     InvalidateVisual();
 }
 
@@ -288,6 +298,14 @@ std::vector<InspectedProperty> InspectorPanel::GetInspectedProperties() const {
                 } else {
                     p.currentValue = desc.defaultValue;
                 }
+            } else if (desc.name == "StartPosition") {
+                p.currentValue = PropertyValue(s.startPosition);
+            } else if (desc.name == "WindowState") {
+                p.currentValue = PropertyValue(s.windowState);
+            } else if (desc.name == "Topmost") {
+                p.currentValue = PropertyValue(s.topmost);
+            } else if (desc.name == "ShowInTaskbar") {
+                p.currentValue = PropertyValue(s.showInTaskbar);
             } else {
                 p.currentValue = desc.defaultValue;
             }
@@ -530,7 +548,17 @@ bool InspectorPanel::ChangeProperty(compat::string_view propName, const Property
         } else if (propName == "Padding" && m_impl->document->GetRoot()) {
             m_impl->document->GetRoot()->SetProperty("Padding", newValue);
             handled = true;
-        } else if (propName == "StartPosition" || propName == "WindowState" || propName == "Topmost" || propName == "ShowInTaskbar") {
+        } else if (propName == "StartPosition" && newValue.Is<std::string>()) {
+            s.startPosition = newValue.Get<std::string>().value();
+            handled = true;
+        } else if (propName == "WindowState" && newValue.Is<std::string>()) {
+            s.windowState = newValue.Get<std::string>().value();
+            handled = true;
+        } else if (propName == "Topmost" && newValue.Is<bool>()) {
+            s.topmost = newValue.Get<bool>().value();
+            handled = true;
+        } else if (propName == "ShowInTaskbar" && newValue.Is<bool>()) {
+            s.showInTaskbar = newValue.Get<bool>().value();
             handled = true;
         }
 
@@ -885,6 +913,12 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
                             }
                             dc.DrawText(val ? "True (點擊切換)" : "False (點擊切換)", core::Point(valRect.x + 26.0f, valRect.y + 4.0f * m_impl->fontScale),
                                         text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
+                        } else if (!p->enumOptions.empty()) {
+                            std::string valStr = FormatValueString(p->currentValue);
+                            dc.DrawText(valStr, core::Point(valRect.x + 6.0f, valRect.y + 4.0f * m_impl->fontScale),
+                                        text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
+                            dc.DrawText("▼", core::Point(valRect.x + valRect.width - 16.0f, valRect.y + 4.0f * m_impl->fontScale),
+                                        text::FontDescriptor("Segoe UI", 9.0f * m_impl->fontScale), colors.textSecondary);
                         } else {
                             std::string valStr = FormatValueString(p->currentValue);
                             dc.DrawText(valStr, core::Point(valRect.x + 6.0f, valRect.y + 4.0f * m_impl->fontScale),
@@ -925,6 +959,13 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
                     dc.DrawText("⚡ " + evt.boundHandlerOrCommand, core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
                                 text::FontDescriptor("Segoe UI", 11.5f, text::FontWeight::Bold),
                                 core::Color(30, 160, 90));
+                    // 繪製解除綁定按鈕 [✕]
+                    core::Rect delRect(valRect.x + valRect.width - 22.0f, valRect.y + 2.0f, 18.0f, valRect.height - 4.0f);
+                    dc.DrawRoundedRectangle(delRect, 2.0f, core::Color(65, 30, 30));
+                    DrawRectOutline(dc, delRect, core::Color(180, 50, 50), 1.0f);
+                    dc.DrawText("✕", core::Point(delRect.x + 4.0f, delRect.y + 1.0f),
+                                text::FontDescriptor("Segoe UI", 10.0f, text::FontWeight::Bold),
+                                core::Color(255, 100, 100));
                 } else {
                     dc.DrawText("[+ 點擊建立常式]", core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
                                 text::FontDescriptor("Segoe UI", 11.0f),
@@ -1012,6 +1053,25 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
     core::Color filterClr = m_impl->filterText.empty() ? colors.textPlaceholder : colors.textPrimary;
     dc.DrawText(filterDisp, core::Point(14.0f, filterY + 4.0f),
                 text::FontDescriptor("Segoe UI", 11.5f), filterClr);
+
+    // 4. 浮動下拉選單 (Dropdown Overlay)
+    if (m_impl->activeDropdown.has_value()) {
+        const auto& dd = m_impl->activeDropdown.value();
+        dc.DrawRectangle(dd.popupRect, colors.cardBackground);
+        DrawRectOutline(dc, dd.popupRect, colors.accentPrimary, 1.5f);
+
+        float itemY = dd.popupRect.y + 2.0f;
+        float itemH = 24.0f * m_impl->fontScale;
+        for (const auto& opt : dd.options) {
+            core::Rect itemRect(dd.popupRect.x + 2.0f, itemY, dd.popupRect.width - 4.0f, itemH);
+            dc.DrawText(opt, core::Point(itemRect.x + 8.0f, itemRect.y + 3.0f * m_impl->fontScale),
+                        text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
+            dc.DrawLine(core::Point(itemRect.x + 4.0f, itemY + itemH),
+                        core::Point(itemRect.x + itemRect.width - 4.0f, itemY + itemH),
+                        colors.controlBorder, 0.5f);
+            itemY += itemH;
+        }
+    }
 }
 
 void InspectorPanel::OnPointerWheelCore(input::PointerEventArgs& e) {
@@ -1047,6 +1107,31 @@ void InspectorPanel::OnPointerWheelCore(input::PointerEventArgs& e) {
 void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
     core::Point pt = e.GetPosition(this);
     float w = GetActualSize().width > 0.0f ? GetActualSize().width : (GetWidth() > 0.0f ? GetWidth() : 310.0f);
+
+    // 0. 浮動下拉選單選項點擊攔截
+    if (m_impl->activeDropdown.has_value()) {
+        auto dd = m_impl->activeDropdown.value();
+        m_impl->activeDropdown = compat::nullopt; // 關閉下拉選單
+        if (dd.popupRect.Contains(pt)) {
+            float itemH = 24.0f * m_impl->fontScale;
+            float relY = pt.y - dd.popupRect.y - 2.0f;
+            if (relY >= 0.0f) {
+                size_t selIdx = static_cast<size_t>(relY / itemH);
+                if (selIdx < dd.options.size()) {
+                    const std::string& chosen = dd.options[selIdx];
+                    if (dd.isAttached) {
+                        ChangeAttachedProperty(dd.propName, PropertyValue(chosen));
+                    } else {
+                        ChangeProperty(dd.propName, PropertyValue(chosen));
+                    }
+                }
+            }
+            InvalidateVisual();
+            e.SetHandled(true);
+            return;
+        }
+        InvalidateVisual();
+    }
 
     // 1. 分頁切換
     const float tabY = 42.0f;
@@ -1103,8 +1188,11 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
             curY += catHeight + 2.0f;
 
             for (const auto* p : groupProps) {
+                core::Rect rowRect(0.0f, curY, w, rowHeight);
                 core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
-                if (valRect.Contains(pt)) {
+
+                if (rowRect.Contains(pt)) {
+                    // 布林值屬性支援整列點擊切換
                     if (p->currentValue.Is<bool>()) {
                         m_impl->CommitInlineEdit();
                         bool curVal = p->currentValue.Get<bool>().value_or(false);
@@ -1113,50 +1201,52 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
                         } else {
                             ChangeProperty(p->name, PropertyValue(!curVal));
                         }
-                    } else if (!p->enumOptions.empty()) {
-                        m_impl->CommitInlineEdit();
-                        std::string curStr = p->currentValue.Get<std::string>().value_or("");
-                        size_t nextIdx = 0;
-                        for (size_t optIdx = 0; optIdx < p->enumOptions.size(); ++optIdx) {
-                            if (p->enumOptions[optIdx] == curStr) {
-                                nextIdx = (optIdx + 1) % p->enumOptions.size();
-                                break;
-                            }
-                        }
-                        if (p->isAttached) {
-                            ChangeAttachedProperty(p->name, PropertyValue(p->enumOptions[nextIdx]));
-                        } else {
-                            ChangeProperty(p->name, PropertyValue(p->enumOptions[nextIdx]));
-                        }
-                    } else if (p->currentValue.Is<core::Color>()) {
-                        m_impl->CommitInlineEdit();
-                        static const core::Color s_presetColors[] = {
-                            core::Color(14, 110, 210),
-                            core::Color(24, 134, 75),
-                            core::Color(210, 50, 45),
-                            core::Color(130, 70, 210),
-                            core::Color(60, 64, 75)
-                        };
-                        static size_t s_colorIdx = 0;
-                        s_colorIdx = (s_colorIdx + 1) % 5;
-                        if (p->isAttached) {
-                            ChangeAttachedProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
-                        } else {
-                            ChangeProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
-                        }
-                    } else {
-                        // 啟動行內鍵盤文字編輯模式
-                        m_impl->CommitInlineEdit();
-                        m_impl->editingPropName = p->name;
-                        m_impl->isEditingAttached = p->isAttached;
-                        m_impl->editingBuffer = FormatValueString(p->currentValue);
-                        m_impl->caretPos = m_impl->editingBuffer.size();
-                        m_impl->editingRect = valRect;
-                        Focus();
+                        InvalidateVisual();
+                        e.SetHandled(true);
+                        return;
                     }
-                    InvalidateVisual();
-                    e.SetHandled(true);
-                    return;
+
+                    if (valRect.Contains(pt)) {
+                        if (!p->enumOptions.empty()) {
+                            m_impl->CommitInlineEdit();
+                            // 展開或收合浮動下拉選單
+                            Impl::ActiveDropdown dd;
+                            dd.propName = p->name;
+                            dd.isAttached = p->isAttached;
+                            dd.options = p->enumOptions;
+                            float popH = static_cast<float>(p->enumOptions.size()) * 24.0f * m_impl->fontScale + 4.0f;
+                            dd.popupRect = core::Rect(valRect.x, valRect.y + valRect.height + 2.0f, valRect.width, popH);
+                            m_impl->activeDropdown = std::move(dd);
+                        } else if (p->currentValue.Is<core::Color>()) {
+                            m_impl->CommitInlineEdit();
+                            static const core::Color s_presetColors[] = {
+                                core::Color(14, 110, 210),
+                                core::Color(24, 134, 75),
+                                core::Color(210, 50, 45),
+                                core::Color(130, 70, 210),
+                                core::Color(60, 64, 75)
+                            };
+                            static size_t s_colorIdx = 0;
+                            s_colorIdx = (s_colorIdx + 1) % 5;
+                            if (p->isAttached) {
+                                ChangeAttachedProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
+                            } else {
+                                ChangeProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
+                            }
+                        } else {
+                            // 啟動行內鍵盤文字編輯模式
+                            m_impl->CommitInlineEdit();
+                            m_impl->editingPropName = p->name;
+                            m_impl->isEditingAttached = p->isAttached;
+                            m_impl->editingBuffer = FormatValueString(p->currentValue);
+                            m_impl->caretPos = m_impl->editingBuffer.size();
+                            m_impl->editingRect = valRect;
+                            Focus();
+                        }
+                        InvalidateVisual();
+                        e.SetHandled(true);
+                        return;
+                    }
                 }
                 curY += rowHeight;
             }
@@ -1168,7 +1258,7 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
         InvalidateVisual();
     }
 
-    // 3. 點擊事件自動綁定
+    // 3. 點擊事件自動綁定與解除
     if (m_impl->currentTab == InspectorTab::Events) {
         auto events = GetInspectedEvents();
         float curY = contentTop + catHeight + 2.0f - m_impl->scrollY;
@@ -1176,12 +1266,20 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
         for (const auto& evt : events) {
             core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
             if (valRect.Contains(pt)) {
-                if (!evt.isBound) {
+                if (evt.isBound) {
+                    core::Rect delRect(valRect.x + valRect.width - 24.0f, valRect.y + 2.0f, 22.0f, valRect.height - 4.0f);
+                    if (delRect.Contains(pt)) {
+                        UnbindEvent(evt.descriptor.eventName);
+                        InvalidateVisual();
+                        e.SetHandled(true);
+                        return;
+                    }
+                } else {
                     AutoBindEvent(evt.descriptor.eventName);
                     InvalidateVisual();
+                    e.SetHandled(true);
+                    return;
                 }
-                e.SetHandled(true);
-                return;
             }
             curY += rowHeight;
         }
@@ -1240,29 +1338,6 @@ void InspectorPanel::OnKeyDownCore(input::KeyEventArgs& e) {
         return;
     }
 
-    uint32_t vk = e.GetVirtualKey();
-    char ch = 0;
-    if (vk >= 'A' && vk <= 'Z') {
-        ch = (e.GetModifiers() == pal::KeyModifiers::Shift) ? static_cast<char>(vk) : static_cast<char>(vk + 32);
-    } else if (vk >= '0' && vk <= '9') {
-        ch = static_cast<char>(vk);
-    } else if (vk == 189 || vk == 109) {
-        ch = '-';
-    } else if (vk == 190 || vk == 110) {
-        ch = '.';
-    } else if (vk == 32) {
-        ch = ' ';
-    } else if (vk == 188) {
-        ch = ',';
-    }
-    if (ch != 0) {
-        if (m_impl->caretPos > m_impl->editingBuffer.size()) m_impl->caretPos = m_impl->editingBuffer.size();
-        m_impl->editingBuffer.insert(m_impl->caretPos, 1, ch);
-        m_impl->caretPos++;
-        InvalidateVisual();
-        e.SetHandled(true);
-        return;
-    }
 }
 
 void InspectorPanel::OnTextInputCore(input::TextInputEventArgs& e) {

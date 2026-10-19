@@ -475,8 +475,12 @@ compat::expected<std::string, DesignerError> FormSerializer::Serialize(const For
     settingsObj["targetNamespace"] = JsonValue(s.targetNamespace);
     settingsObj["title"] = JsonValue(s.title);
     settingsObj["defaultTheme"] = JsonValue(s.defaultTheme);
+    settingsObj["startPosition"] = JsonValue(s.startPosition);
+    settingsObj["windowState"] = JsonValue(s.windowState);
     settingsObj["useMvvm"] = JsonValue(s.useMvvm);
     settingsObj["useIoC"] = JsonValue(s.useIoC);
+    settingsObj["topmost"] = JsonValue(s.topmost);
+    settingsObj["showInTaskbar"] = JsonValue(s.showInTaskbar);
 
     JsonValue::ObjectType sizeObj;
     sizeObj["width"] = JsonValue(s.initialSize.width);
@@ -528,8 +532,12 @@ compat::expected<std::unique_ptr<FormDocumentNode>, DesignerError> FormSerialize
             if (const auto* ns = setVal->Find("targetNamespace")) settings.targetNamespace = ns->AsString();
             if (const auto* tl = setVal->Find("title")) settings.title = tl->AsString();
             if (const auto* dt = setVal->Find("defaultTheme")) settings.defaultTheme = dt->AsString();
+            if (const auto* sp = setVal->Find("startPosition")) settings.startPosition = sp->AsString();
+            if (const auto* ws = setVal->Find("windowState")) settings.windowState = ws->AsString();
             if (const auto* mv = setVal->Find("useMvvm")) settings.useMvvm = mv->AsBool();
             if (const auto* ic = setVal->Find("useIoC")) settings.useIoC = ic->AsBool();
+            if (const auto* tm = setVal->Find("topmost")) settings.topmost = tm->AsBool();
+            if (const auto* tb = setVal->Find("showInTaskbar")) settings.showInTaskbar = tb->AsBool();
             if (const auto* sz = setVal->Find("initialSize")) {
                 if (sz->IsObject()) {
                     if (const auto* w = sz->Find("width")) settings.initialSize.width = static_cast<float>(w->AsDouble());
