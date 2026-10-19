@@ -173,6 +173,19 @@ void Grid::ArrangeOverride(core::Size finalSize) {
     std::vector<ColumnDefinition> cols = m_columnDefinitions;
     if (cols.empty()) cols.emplace_back(GridLength::Star(1.0f));
 
+    // 計算 Auto 單元格尺寸 (使用子元件的 DesiredSize)
+    for (auto& child : m_children) {
+        if (!child || child->GetVisibility() == Visibility::Collapsed) continue;
+        size_t r = (std::min)(GetRow(*child), rows.size() - 1);
+        size_t c = (std::min)(GetColumn(*child), cols.size() - 1);
+        if (rows[r].height.type == GridUnitType::Auto) {
+            rows[r].actualHeight = (std::max)(rows[r].actualHeight, child->GetDesiredSize().height);
+        }
+        if (cols[c].width.type == GridUnitType::Auto) {
+            cols[c].actualWidth = (std::max)(cols[c].actualWidth, child->GetDesiredSize().width);
+        }
+    }
+
     // 計算最終欄寬與列高
     float allocatedW = 0.0f;
     float totalStarW = 0.0f;

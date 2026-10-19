@@ -162,10 +162,24 @@ public:
     /// <summary>分頁切換通知事件通道。</summary>
     DesignerEvent<InspectorTab>& TabChangedSignal() noexcept;
 
+    /// <summary>
+    /// 設定檢查器字體縮放比例。
+    /// </summary>
+    /// <param name="scale">縮放倍率 (預設 1.0f)。</param>
+    void SetFontScale(float scale);
+
+    /// <summary>
+    /// 取得檢查器當前字體縮放比例。
+    /// </summary>
+    /// <returns>縮放倍率。</returns>
+    COMPAT_NODISCARD float GetFontScale() const noexcept;
+
 protected:
     void OnRender(rendering::DrawingContext& dc) override;
     void OnPointerPressedCore(input::PointerEventArgs& e) override;
     void OnPointerWheelCore(input::PointerEventArgs& e) override;
+    void OnKeyDownCore(input::KeyEventArgs& e) override;
+    void OnTextInputCore(input::TextInputEventArgs& e) override;
 
 private:
     struct Impl;

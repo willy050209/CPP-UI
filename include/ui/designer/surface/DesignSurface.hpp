@@ -62,6 +62,18 @@ public:
     COMPAT_NODISCARD const SurfaceOptions& GetOptions() const noexcept;
     void SetOptions(const SurfaceOptions& options);
 
+    /// <summary>
+    /// 設定畫布字體縮放比例。
+    /// </summary>
+    /// <param name="scale">縮放倍率 (預設 1.0f)。</param>
+    void SetFontScale(float scale);
+
+    /// <summary>
+    /// 取得畫布當前字體縮放比例。
+    /// </summary>
+    /// <returns>縮放倍率。</returns>
+    COMPAT_NODISCARD float GetFontScale() const noexcept;
+
     // --- 邊界快取管理 ---
 
     void SetNodeBounds(const std::string& nodeUuid, const core::Rect& bounds);

@@ -68,14 +68,38 @@ public:
 
         if (x0 >= x1 || y0 >= y1) return;
 
-        uint32_t pixelValue = (static_cast<uint32_t>(color.a) << 24) |
-                              (static_cast<uint32_t>(color.r) << 16) |
-                              (static_cast<uint32_t>(color.g) << 8)  |
-                              (static_cast<uint32_t>(color.b));
+        if (color.a == 0) return;
 
-        for (int32_t y = y0; y < y1; ++y) {
-            uint32_t* row = &m_pixels[static_cast<size_t>(y) * m_width + x0];
-            std::fill(row, row + (x1 - x0), pixelValue);
+        if (color.a == 255) {
+            uint32_t pixelValue = (static_cast<uint32_t>(color.a) << 24) |
+                                  (static_cast<uint32_t>(color.r) << 16) |
+                                  (static_cast<uint32_t>(color.g) << 8)  |
+                                  (static_cast<uint32_t>(color.b));
+
+            for (int32_t y = y0; y < y1; ++y) {
+                uint32_t* row = &m_pixels[static_cast<size_t>(y) * m_width + x0];
+                std::fill(row, row + (x1 - x0), pixelValue);
+            }
+        } else {
+            const uint32_t sa = color.a;
+            const uint32_t sr = color.r;
+            const uint32_t sg = color.g;
+            const uint32_t sb = color.b;
+            const uint32_t invA = 255 - sa;
+
+            for (int32_t y = y0; y < y1; ++y) {
+                uint32_t* row = &m_pixels[static_cast<size_t>(y) * m_width + x0];
+                for (int32_t x = 0; x < (x1 - x0); ++x) {
+                    uint32_t dst = row[x];
+                    uint32_t dr = (dst >> 16) & 0xFF;
+                    uint32_t dg = (dst >> 8) & 0xFF;
+                    uint32_t db = dst & 0xFF;
+                    uint32_t outR = (sr * sa + dr * invA) / 255;
+                    uint32_t outG = (sg * sa + dg * invA) / 255;
+                    uint32_t outB = (sb * sa + db * invA) / 255;
+                    row[x] = 0xFF000000 | (outR << 16) | (outG << 8) | outB;
+                }
+            }
         }
     }
 

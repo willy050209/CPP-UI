@@ -81,7 +81,7 @@ struct SurfaceOptions {
     bool showGrid = true;
     core::Color gridColor{ 200, 200, 200, 60 };
     core::Color selectionBorderColor{ 0, 120, 215, 255 };
-    core::Color selectionFillColor{ 0, 120, 215, 25 };
+    core::Color selectionFillColor{ 0, 0, 0, 0 };
     core::Color handleColor{ 255, 255, 255, 255 };
     core::Color handleBorderColor{ 0, 120, 215, 255 };
     float handleSize = 6.0f;

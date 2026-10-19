@@ -109,6 +109,18 @@ public:
     COMPAT_NODISCARD compat::string_view GetFilterText() const noexcept;
 
     /// <summary>
+    /// 設定工具箱字體縮放比例。
+    /// </summary>
+    /// <param name="scale">縮放倍率 (預設 1.0f)。</param>
+    void SetFontScale(float scale);
+
+    /// <summary>
+    /// 取得工具箱當前字體縮放比例。
+    /// </summary>
+    /// <returns>縮放倍率。</returns>
+    COMPAT_NODISCARD float GetFontScale() const noexcept;
+
+    /// <summary>
     /// 註冊雙擊項目回呼 (快捷新增至中央畫布)。
     /// </summary>
     /// <param name="callback">回呼常式。</param>

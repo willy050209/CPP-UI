@@ -5,6 +5,7 @@
 
 #include "ui/designer/inspector/InspectorPanel.hpp"
 #include "ui/designer/inspector/InheritanceMetadataRegistry.hpp"
+#include "ui/designer/inspector/PropertyEditors.hpp"
 #include "ui/designer/commands/PropertyCommands.hpp"
 #include "ui/designer/commands/MacroCommand.hpp"
 #include "ui/theme/ThemeManager.hpp"
@@ -36,6 +37,7 @@ bool ContainsIgnoreCase(compat::string_view haystack, compat::string_view needle
 } // anonymous namespace
 
 struct InspectorPanel::Impl {
+    InspectorPanel* owner = nullptr;
     FormDocumentNode* document = nullptr;
     CommandHistoryManager* historyManager = nullptr;
     surface::SelectionModel* selectionModel = nullptr;
@@ -43,10 +45,26 @@ struct InspectorPanel::Impl {
     InspectorTab currentTab = InspectorTab::Properties;
     std::string filterText;
     float scrollY = 0.0f;
+    float fontScale = 1.0f;
+
+    // 行內鍵盤文字編輯狀態機
+    std::string editingPropName;
+    bool isEditingAttached = false;
+    std::string editingBuffer;
+    size_t caretPos = 0;
+    core::Rect editingRect;
+
+    void CommitInlineEdit();
+    void CancelInlineEdit() {
+        editingPropName.clear();
+        editingBuffer.clear();
+        caretPos = 0;
+    }
 
     DesignerEvent<PropertyChangePayload> propertyChangedSignal;
     DesignerEvent<EventChangePayload> eventChangedSignal;
     DesignerEvent<InspectorTab> tabChangedSignal;
+    reactive::Connection selectionConn;
 
     std::vector<WidgetNode*> GetSelectedNodes() const {
         if (!document || !selectionModel) {
@@ -67,9 +85,19 @@ InspectorPanel::InspectorPanel(
     CommandHistoryManager* historyManager,
     surface::SelectionModel* selectionModel
 ) : m_impl(std::make_unique<Impl>()) {
+    m_impl->owner = this;
     m_impl->document = document;
     m_impl->historyManager = historyManager;
     m_impl->selectionModel = selectionModel;
+    if (m_impl->selectionModel) {
+        m_impl->selectionConn = m_impl->selectionModel->SelectionChangedSignal().Connect([this](const std::vector<std::string>&) {
+            m_impl->scrollY = 0.0f;
+            m_impl->CancelInlineEdit();
+            InvalidateVisual();
+        });
+    }
+    SetClipToBounds(true);
+    SetFocusable(true);
 }
 
 InspectorPanel::~InspectorPanel() = default;
@@ -92,6 +120,13 @@ CommandHistoryManager* InspectorPanel::GetHistoryManager() const noexcept {
 
 void InspectorPanel::SetSelectionModel(surface::SelectionModel* selectionModel) {
     m_impl->selectionModel = selectionModel;
+    if (m_impl->selectionModel) {
+        m_impl->selectionConn = m_impl->selectionModel->SelectionChangedSignal().Connect([this](const std::vector<std::string>&) {
+            m_impl->scrollY = 0.0f;
+            m_impl->CancelInlineEdit();
+            InvalidateVisual();
+        });
+    }
 }
 
 surface::SelectionModel* InspectorPanel::GetSelectionModel() const noexcept {
@@ -119,6 +154,85 @@ const std::string& InspectorPanel::GetFilterText() const noexcept {
     return m_impl->filterText;
 }
 
+void InspectorPanel::SetFontScale(float scale) {
+    m_impl->fontScale = compat::clamp(scale, 0.5f, 2.5f);
+    InvalidateVisual();
+}
+
+float InspectorPanel::GetFontScale() const noexcept {
+    return m_impl->fontScale;
+}
+
+void InspectorPanel::Impl::CommitInlineEdit() {
+    if (editingPropName.empty() || !owner) {
+        return;
+    }
+    std::string name = editingPropName;
+    bool attached = isEditingAttached;
+    std::string buf = editingBuffer;
+    editingPropName.clear();
+    editingBuffer.clear();
+    caretPos = 0;
+
+    auto p = owner->FindProperty(name);
+    if (!p) {
+        return;
+    }
+
+    if (p->currentValue.Is<double>()) {
+        try {
+            double val = std::stod(buf);
+            if (attached) {
+                (void)owner->ChangeAttachedProperty(name, PropertyValue(val));
+            } else {
+                (void)owner->ChangeProperty(name, PropertyValue(val));
+            }
+        } catch (...) {}
+    } else if (p->currentValue.Is<int32_t>()) {
+        try {
+            int32_t val = std::stoi(buf);
+            if (attached) {
+                (void)owner->ChangeAttachedProperty(name, PropertyValue(val));
+            } else {
+                (void)owner->ChangeProperty(name, PropertyValue(val));
+            }
+        } catch (...) {}
+    } else if (p->currentValue.Is<bool>()) {
+        auto res = PropertyEditorModel::ParseBool(buf);
+        if (res.has_value()) {
+            if (attached) {
+                (void)owner->ChangeAttachedProperty(name, res.value());
+            } else {
+                (void)owner->ChangeProperty(name, res.value());
+            }
+        }
+    } else if (p->currentValue.Is<core::Thickness>()) {
+        auto res = PropertyEditorModel::ParseThickness(buf);
+        if (res.has_value()) {
+            if (attached) {
+                (void)owner->ChangeAttachedProperty(name, res.value());
+            } else {
+                (void)owner->ChangeProperty(name, res.value());
+            }
+        }
+    } else if (p->currentValue.Is<core::Color>()) {
+        auto res = PropertyEditorModel::ParseColor(buf);
+        if (res.has_value()) {
+            if (attached) {
+                (void)owner->ChangeAttachedProperty(name, res.value());
+            } else {
+                (void)owner->ChangeProperty(name, res.value());
+            }
+        }
+    } else {
+        if (attached) {
+            (void)owner->ChangeAttachedProperty(name, PropertyValue(buf));
+        } else {
+            (void)owner->ChangeProperty(name, PropertyValue(buf));
+        }
+    }
+}
+
 std::vector<InspectedProperty> InspectorPanel::GetInspectedProperties() const {
     if (!m_impl->document) {
         return {};
@@ -143,13 +257,37 @@ std::vector<InspectedProperty> InspectorPanel::GetInspectedProperties() const {
             p.isAttached = false;
             p.isReadOnly = desc.isReadOnly;
             p.valueState = MultiValueState::SingleValue;
+            p.enumOptions = InheritanceMetadataRegistry::GetEnumOptions(desc.name);
 
-            if (desc.name == "Title") {
-                p.currentValue = PropertyValue(m_impl->document->GetSettings().title);
+            const auto& s = m_impl->document->GetSettings();
+            if (desc.name == "ClassName") {
+                p.currentValue = PropertyValue(s.className);
+            } else if (desc.name == "TargetNamespace") {
+                p.currentValue = PropertyValue(s.targetNamespace);
+            } else if (desc.name == "Title") {
+                p.currentValue = PropertyValue(s.title);
             } else if (desc.name == "Width") {
-                p.currentValue = PropertyValue(static_cast<double>(m_impl->document->GetSettings().initialSize.width));
+                p.currentValue = PropertyValue(static_cast<double>(s.initialSize.width));
             } else if (desc.name == "Height") {
-                p.currentValue = PropertyValue(static_cast<double>(m_impl->document->GetSettings().initialSize.height));
+                p.currentValue = PropertyValue(static_cast<double>(s.initialSize.height));
+            } else if (desc.name == "DefaultTheme") {
+                p.currentValue = PropertyValue(s.defaultTheme);
+            } else if (desc.name == "UseMvvm") {
+                p.currentValue = PropertyValue(s.useMvvm);
+            } else if (desc.name == "UseIoC") {
+                p.currentValue = PropertyValue(s.useIoC);
+            } else if (desc.name == "Background") {
+                if (m_impl->document->GetRoot()) {
+                    p.currentValue = m_impl->document->GetRoot()->GetProperty("Background").value_or(desc.defaultValue);
+                } else {
+                    p.currentValue = desc.defaultValue;
+                }
+            } else if (desc.name == "Padding") {
+                if (m_impl->document->GetRoot()) {
+                    p.currentValue = m_impl->document->GetRoot()->GetProperty("Padding").value_or(desc.defaultValue);
+                } else {
+                    p.currentValue = desc.defaultValue;
+                }
             } else {
                 p.currentValue = desc.defaultValue;
             }
@@ -257,7 +395,31 @@ std::vector<EventBindingState> InspectorPanel::GetInspectedEvents() const {
 
     auto selectedNodes = m_impl->GetSelectedNodes();
     if (selectedNodes.empty()) {
-        return {};
+        const auto& formEvents = InheritanceMetadataRegistry::GetEventDescriptorsForType(NodeType::FormDocument);
+        std::vector<EventBindingState> results;
+        for (const auto& evDesc : formEvents) {
+            if (!m_impl->filterText.empty() && !ContainsIgnoreCase(evDesc.eventName, m_impl->filterText)) {
+                continue;
+            }
+
+            EventBindingState state;
+            state.descriptor = evDesc;
+            state.isMvvmCommand = false;
+
+            if (m_impl->document->GetRoot()) {
+                const auto& bindings = m_impl->document->GetRoot()->GetEventBindings();
+                for (const auto& b : bindings) {
+                    if (b.eventName == evDesc.eventName) {
+                        state.boundHandlerOrCommand = b.handlerName;
+                        state.isBound = true;
+                        break;
+                    }
+                }
+            }
+
+            results.push_back(std::move(state));
+        }
+        return results;
     }
 
     std::vector<NodeType> nodeTypes;
@@ -324,35 +486,55 @@ bool InspectorPanel::ChangeProperty(compat::string_view propName, const Property
 
     // 1. 若無選取節點，修改 FormDocument 根視窗屬性
     if (selectedNodes.empty()) {
-        if (propName == "Title" && newValue.Is<std::string>()) {
-            auto s = m_impl->document->GetSettings();
+        auto s = m_impl->document->GetSettings();
+        bool handled = false;
+        if (propName == "ClassName" && newValue.Is<std::string>()) {
+            s.className = newValue.Get<std::string>().value();
+            handled = true;
+        } else if (propName == "TargetNamespace" && newValue.Is<std::string>()) {
+            s.targetNamespace = newValue.Get<std::string>().value();
+            handled = true;
+        } else if (propName == "Title" && newValue.Is<std::string>()) {
             s.title = newValue.Get<std::string>().value();
-            m_impl->document->SetSettings(s);
-            m_impl->propertyChangedSignal.Notify({ std::string(propName), newValue });
-            return true;
-        }
-        if (propName == "Width") {
+            handled = true;
+        } else if (propName == "Width") {
             double w = 0.0;
             if (newValue.Is<double>()) w = newValue.Get<double>().value();
             else if (newValue.Is<int32_t>()) w = newValue.Get<int32_t>().value();
             else return false;
 
             if (w < 0.0) return false;
-            auto s = m_impl->document->GetSettings();
             s.initialSize.width = static_cast<float>(w);
-            m_impl->document->SetSettings(s);
-            m_impl->propertyChangedSignal.Notify({ std::string(propName), newValue });
-            return true;
-        }
-        if (propName == "Height") {
+            handled = true;
+        } else if (propName == "Height") {
             double h = 0.0;
             if (newValue.Is<double>()) h = newValue.Get<double>().value();
             else if (newValue.Is<int32_t>()) h = newValue.Get<int32_t>().value();
             else return false;
 
             if (h < 0.0) return false;
-            auto s = m_impl->document->GetSettings();
             s.initialSize.height = static_cast<float>(h);
+            handled = true;
+        } else if (propName == "DefaultTheme" && newValue.Is<std::string>()) {
+            s.defaultTheme = newValue.Get<std::string>().value();
+            handled = true;
+        } else if (propName == "UseMvvm" && newValue.Is<bool>()) {
+            s.useMvvm = newValue.Get<bool>().value();
+            handled = true;
+        } else if (propName == "UseIoC" && newValue.Is<bool>()) {
+            s.useIoC = newValue.Get<bool>().value();
+            handled = true;
+        } else if (propName == "Background" && m_impl->document->GetRoot()) {
+            m_impl->document->GetRoot()->SetProperty("Background", newValue);
+            handled = true;
+        } else if (propName == "Padding" && m_impl->document->GetRoot()) {
+            m_impl->document->GetRoot()->SetProperty("Padding", newValue);
+            handled = true;
+        } else if (propName == "StartPosition" || propName == "WindowState" || propName == "Topmost" || propName == "ShowInTaskbar") {
+            handled = true;
+        }
+
+        if (handled) {
             m_impl->document->SetSettings(s);
             m_impl->propertyChangedSignal.Notify({ std::string(propName), newValue });
             return true;
@@ -475,6 +657,15 @@ bool InspectorPanel::BindEvent(compat::string_view eventName, compat::string_vie
 
     auto selectedNodes = m_impl->GetSelectedNodes();
     if (selectedNodes.empty()) {
+        if (m_impl->document->GetRoot()) {
+            m_impl->document->GetRoot()->RemoveEventBinding(eventName);
+            m_impl->document->GetRoot()->AddEventBinding(EventBindingDescriptor{
+                std::string(eventName),
+                std::string(handlerName)
+            });
+            m_impl->eventChangedSignal.Notify({ std::string(eventName), std::string(handlerName) });
+            return true;
+        }
         return false;
     }
 
@@ -497,6 +688,11 @@ bool InspectorPanel::UnbindEvent(compat::string_view eventName) {
 
     auto selectedNodes = m_impl->GetSelectedNodes();
     if (selectedNodes.empty()) {
+        if (m_impl->document->GetRoot()) {
+            m_impl->document->GetRoot()->RemoveEventBinding(eventName);
+            m_impl->eventChangedSignal.Notify({ std::string(eventName), "" });
+            return true;
+        }
         return false;
     }
 
@@ -511,7 +707,16 @@ bool InspectorPanel::UnbindEvent(compat::string_view eventName) {
 std::string InspectorPanel::AutoBindEvent(compat::string_view eventName) {
     auto selectedNodes = m_impl->GetSelectedNodes();
     if (selectedNodes.empty()) {
-        return "";
+        std::string handlerName = "On" + m_impl->document->GetSettings().className + std::string(eventName);
+        if (m_impl->document->GetRoot()) {
+            m_impl->document->GetRoot()->RemoveEventBinding(eventName);
+            m_impl->document->GetRoot()->AddEventBinding(EventBindingDescriptor{
+                std::string(eventName),
+                handlerName
+            });
+            m_impl->eventChangedSignal.Notify({ std::string(eventName), handlerName });
+        }
+        return handlerName;
     }
 
     std::string handlerName = InheritanceMetadataRegistry::GenerateDefaultHandlerName(
@@ -569,10 +774,8 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
     const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
     const auto& colors = theme.Colors();
 
-    float w = GetWidth();
-    float h = GetHeight();
-    if (w <= 0.0f) w = 310.0f;
-    if (h <= 0.0f) h = 720.0f;
+    float w = GetActualSize().width > 0.0f ? GetActualSize().width : (GetWidth() > 0.0f ? GetWidth() : 310.0f);
+    float h = GetActualSize().height > 0.0f ? GetActualSize().height : (GetHeight() > 0.0f ? GetHeight() : 720.0f);
 
     // 面板背景與左側邊框線
     dc.DrawRectangle(core::Rect(0.0f, 0.0f, w, h), colors.surfaceBackground);
@@ -632,46 +835,61 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
                     if (p->isAttached) {
                         propName += " *";
                     }
-                    dc.DrawText(propName, core::Point(nameRect.x + 2.0f, curY + 6.0f),
-                                text::FontDescriptor("Segoe UI", 12.0f),
+                    dc.DrawText(propName, core::Point(nameRect.x + 2.0f, curY + 6.0f * m_impl->fontScale),
+                                text::FontDescriptor("Segoe UI", 12.0f * m_impl->fontScale),
                                 p->isAttached ? core::Color(78, 160, 220) : colors.textPrimary);
 
                     // 右欄：屬性值方塊
                     core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
                     dc.DrawRoundedRectangle(valRect, 3.0f, colors.controlBackground);
-                    DrawRectOutline(dc, valRect, colors.controlBorder, 1.0f);
 
-                    if (p->IsMixed()) {
-                        dc.DrawText("<Mixed Values>", core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
-                                    text::FontDescriptor("Segoe UI", 11.5f), colors.textDisabled);
-                    } else if (p->currentValue.Is<core::Color>()) {
-                        auto c = p->currentValue.Get<core::Color>();
-                        if (c.has_value()) {
-                            // 顏色預覽色塊
-                            core::Rect swatch(valRect.x + 4.0f, valRect.y + 4.0f, 16.0f, 16.0f);
-                            dc.DrawRectangle(swatch, *c);
-                            DrawRectOutline(dc, swatch, colors.controlBorder, 1.0f);
+                    if (m_impl->editingPropName == p->name) {
+                        // 作用中行內鍵盤編輯態：繪製強調邊框與文字緩衝區
+                        DrawRectOutline(dc, valRect, colors.accentPrimary, 1.5f);
+                        std::string textToShow = m_impl->editingBuffer;
+                        dc.DrawText(textToShow, core::Point(valRect.x + 6.0f, valRect.y + 4.0f * m_impl->fontScale),
+                                    text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
 
-                            char hexBuf[16];
-                            std::snprintf(hexBuf, sizeof(hexBuf), "#%02X%02X%02X", c->r, c->g, c->b);
-                            dc.DrawText(hexBuf, core::Point(valRect.x + 26.0f, valRect.y + 4.0f),
-                                        text::FontDescriptor("Segoe UI", 11.5f), colors.textPrimary);
-                        }
-                    } else if (p->currentValue.Is<bool>()) {
-                        auto b = p->currentValue.Get<bool>();
-                        bool val = b.has_value() && *b;
-                        core::Rect checkSquare(valRect.x + 6.0f, valRect.y + 5.0f, 14.0f, 14.0f);
-                        DrawRectOutline(dc, checkSquare, colors.controlBorder, 1.0f);
-                        if (val) {
-                            dc.DrawRoundedRectangle(core::Rect(checkSquare.x + 2.0f, checkSquare.y + 2.0f, 10.0f, 10.0f),
-                                                    1.0f, colors.accentPrimary);
-                        }
-                        dc.DrawText(val ? "True (點擊切換)" : "False (點擊切換)", core::Point(valRect.x + 26.0f, valRect.y + 4.0f),
-                                    text::FontDescriptor("Segoe UI", 11.5f), colors.textPrimary);
+                        // 繪製文字光標
+                        float charAdvance = 7.0f * m_impl->fontScale;
+                        float caretX = valRect.x + 6.0f + static_cast<float>(m_impl->caretPos) * charAdvance;
+                        if (caretX > valRect.x + valRect.width - 4.0f) caretX = valRect.x + valRect.width - 4.0f;
+                        dc.DrawLine(core::Point(caretX, valRect.y + 3.0f), core::Point(caretX, valRect.y + valRect.height - 3.0f), colors.accentPrimary, 1.5f);
                     } else {
-                        std::string valStr = FormatValueString(p->currentValue);
-                        dc.DrawText(valStr, core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
-                                    text::FontDescriptor("Segoe UI", 11.5f), colors.textPrimary);
+                        DrawRectOutline(dc, valRect, colors.controlBorder, 1.0f);
+
+                        if (p->IsMixed()) {
+                            dc.DrawText("<Mixed Values>", core::Point(valRect.x + 6.0f, valRect.y + 4.0f * m_impl->fontScale),
+                                        text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textDisabled);
+                        } else if (p->currentValue.Is<core::Color>()) {
+                            auto c = p->currentValue.Get<core::Color>();
+                            if (c.has_value()) {
+                                // 顏色預覽色塊
+                                core::Rect swatch(valRect.x + 4.0f, valRect.y + 4.0f, 16.0f, 16.0f);
+                                dc.DrawRectangle(swatch, *c);
+                                DrawRectOutline(dc, swatch, colors.controlBorder, 1.0f);
+
+                                char hexBuf[16];
+                                std::snprintf(hexBuf, sizeof(hexBuf), "#%02X%02X%02X", c->r, c->g, c->b);
+                                dc.DrawText(hexBuf, core::Point(valRect.x + 26.0f, valRect.y + 4.0f * m_impl->fontScale),
+                                            text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
+                            }
+                        } else if (p->currentValue.Is<bool>()) {
+                            auto b = p->currentValue.Get<bool>();
+                            bool val = b.has_value() && *b;
+                            core::Rect checkSquare(valRect.x + 6.0f, valRect.y + 5.0f, 14.0f, 14.0f);
+                            DrawRectOutline(dc, checkSquare, colors.controlBorder, 1.0f);
+                            if (val) {
+                                dc.DrawRoundedRectangle(core::Rect(checkSquare.x + 2.0f, checkSquare.y + 2.0f, 10.0f, 10.0f),
+                                                        1.0f, colors.accentPrimary);
+                            }
+                            dc.DrawText(val ? "True (點擊切換)" : "False (點擊切換)", core::Point(valRect.x + 26.0f, valRect.y + 4.0f * m_impl->fontScale),
+                                        text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
+                        } else {
+                            std::string valStr = FormatValueString(p->currentValue);
+                            dc.DrawText(valStr, core::Point(valRect.x + 6.0f, valRect.y + 4.0f * m_impl->fontScale),
+                                        text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
+                        }
                     }
                 }
                 curY += rowHeight;
@@ -741,8 +959,10 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
 
     auto selectedNodes = m_impl->GetSelectedNodes();
     if (selectedNodes.empty()) {
-        dc.DrawText("(未選取任何控制項 / No Selection)", core::Point(10.0f, 11.0f),
-                    text::FontDescriptor("Segoe UI", 12.0f), colors.textDisabled);
+        std::string formName = (m_impl->document ? m_impl->document->GetSettings().className : "Form");
+        std::string headerTitle = "📄 " + formName + " : FormDocument";
+        dc.DrawText(headerTitle, core::Point(10.0f, 10.0f),
+                    text::FontDescriptor("Segoe UI", 12.5f, text::FontWeight::Bold), colors.textPrimary);
     } else {
         WidgetNode* primary = selectedNodes[0];
         std::string headerTitle = "🎯 " + primary->GetName() + " : " + std::string(NodeTypeName(primary->GetType()));
@@ -826,8 +1046,7 @@ void InspectorPanel::OnPointerWheelCore(input::PointerEventArgs& e) {
 
 void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
     core::Point pt = e.GetPosition(this);
-    float w = GetWidth();
-    if (w <= 0.0f) w = 310.0f;
+    float w = GetActualSize().width > 0.0f ? GetActualSize().width : (GetWidth() > 0.0f ? GetWidth() : 310.0f);
 
     // 1. 分頁切換
     const float tabY = 42.0f;
@@ -887,30 +1106,30 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
                 core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
                 if (valRect.Contains(pt)) {
                     if (p->currentValue.Is<bool>()) {
+                        m_impl->CommitInlineEdit();
                         bool curVal = p->currentValue.Get<bool>().value_or(false);
                         if (p->isAttached) {
                             ChangeAttachedProperty(p->name, PropertyValue(!curVal));
                         } else {
                             ChangeProperty(p->name, PropertyValue(!curVal));
                         }
-                    } else if (p->currentValue.Is<double>()) {
-                        double curVal = p->currentValue.Get<double>().value_or(0.0);
-                        double newVal = curVal >= 300.0 ? 50.0 : (curVal + 10.0);
-                        if (p->isAttached) {
-                            ChangeAttachedProperty(p->name, PropertyValue(newVal));
-                        } else {
-                            ChangeProperty(p->name, PropertyValue(newVal));
+                    } else if (!p->enumOptions.empty()) {
+                        m_impl->CommitInlineEdit();
+                        std::string curStr = p->currentValue.Get<std::string>().value_or("");
+                        size_t nextIdx = 0;
+                        for (size_t optIdx = 0; optIdx < p->enumOptions.size(); ++optIdx) {
+                            if (p->enumOptions[optIdx] == curStr) {
+                                nextIdx = (optIdx + 1) % p->enumOptions.size();
+                                break;
+                            }
                         }
-                    } else if (p->currentValue.Is<std::string>()) {
-                        std::string curVal = p->currentValue.Get<std::string>().value_or("");
-                        std::string newVal = curVal.empty() ? "Hello CPPUI" : (curVal + "!");
-                        if (newVal.size() > 32) newVal = "Custom Value";
                         if (p->isAttached) {
-                            ChangeAttachedProperty(p->name, PropertyValue(newVal));
+                            ChangeAttachedProperty(p->name, PropertyValue(p->enumOptions[nextIdx]));
                         } else {
-                            ChangeProperty(p->name, PropertyValue(newVal));
+                            ChangeProperty(p->name, PropertyValue(p->enumOptions[nextIdx]));
                         }
                     } else if (p->currentValue.Is<core::Color>()) {
+                        m_impl->CommitInlineEdit();
                         static const core::Color s_presetColors[] = {
                             core::Color(14, 110, 210),
                             core::Color(24, 134, 75),
@@ -925,6 +1144,15 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
                         } else {
                             ChangeProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
                         }
+                    } else {
+                        // 啟動行內鍵盤文字編輯模式
+                        m_impl->CommitInlineEdit();
+                        m_impl->editingPropName = p->name;
+                        m_impl->isEditingAttached = p->isAttached;
+                        m_impl->editingBuffer = FormatValueString(p->currentValue);
+                        m_impl->caretPos = m_impl->editingBuffer.size();
+                        m_impl->editingRect = valRect;
+                        Focus();
                     }
                     InvalidateVisual();
                     e.SetHandled(true);
@@ -934,6 +1162,10 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
             }
             curY += 4.0f;
         }
+
+        // 點擊其他空白處，提交當前文字編輯
+        m_impl->CommitInlineEdit();
+        InvalidateVisual();
     }
 
     // 3. 點擊事件自動綁定
@@ -953,6 +1185,97 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
             }
             curY += rowHeight;
         }
+    }
+}
+
+void InspectorPanel::OnKeyDownCore(input::KeyEventArgs& e) {
+    if (m_impl->editingPropName.empty()) {
+        return;
+    }
+
+    auto key = e.GetKey();
+    if (key == input::Key::Enter || key == input::Key::Return) {
+        m_impl->CommitInlineEdit();
+        InvalidateVisual();
+        e.SetHandled(true);
+        return;
+    }
+    if (key == input::Key::Escape) {
+        m_impl->CancelInlineEdit();
+        InvalidateVisual();
+        e.SetHandled(true);
+        return;
+    }
+    if (key == input::Key::Back) {
+        if (m_impl->caretPos > 0 && m_impl->caretPos <= m_impl->editingBuffer.size()) {
+            m_impl->editingBuffer.erase(m_impl->caretPos - 1, 1);
+            m_impl->caretPos--;
+            InvalidateVisual();
+        }
+        e.SetHandled(true);
+        return;
+    }
+    if (key == input::Key::Delete) {
+        if (m_impl->caretPos < m_impl->editingBuffer.size()) {
+            m_impl->editingBuffer.erase(m_impl->caretPos, 1);
+            InvalidateVisual();
+        }
+        e.SetHandled(true);
+        return;
+    }
+    if (key == input::Key::Left) {
+        if (m_impl->caretPos > 0) {
+            m_impl->caretPos--;
+            InvalidateVisual();
+        }
+        e.SetHandled(true);
+        return;
+    }
+    if (key == input::Key::Right) {
+        if (m_impl->caretPos < m_impl->editingBuffer.size()) {
+            m_impl->caretPos++;
+            InvalidateVisual();
+        }
+        e.SetHandled(true);
+        return;
+    }
+
+    uint32_t vk = e.GetVirtualKey();
+    char ch = 0;
+    if (vk >= 'A' && vk <= 'Z') {
+        ch = (e.GetModifiers() == pal::KeyModifiers::Shift) ? static_cast<char>(vk) : static_cast<char>(vk + 32);
+    } else if (vk >= '0' && vk <= '9') {
+        ch = static_cast<char>(vk);
+    } else if (vk == 189 || vk == 109) {
+        ch = '-';
+    } else if (vk == 190 || vk == 110) {
+        ch = '.';
+    } else if (vk == 32) {
+        ch = ' ';
+    } else if (vk == 188) {
+        ch = ',';
+    }
+    if (ch != 0) {
+        if (m_impl->caretPos > m_impl->editingBuffer.size()) m_impl->caretPos = m_impl->editingBuffer.size();
+        m_impl->editingBuffer.insert(m_impl->caretPos, 1, ch);
+        m_impl->caretPos++;
+        InvalidateVisual();
+        e.SetHandled(true);
+        return;
+    }
+}
+
+void InspectorPanel::OnTextInputCore(input::TextInputEventArgs& e) {
+    if (m_impl->editingPropName.empty()) {
+        return;
+    }
+    auto txt = e.GetText();
+    if (!txt.empty() && static_cast<unsigned char>(txt[0]) >= 32) {
+        if (m_impl->caretPos > m_impl->editingBuffer.size()) m_impl->caretPos = m_impl->editingBuffer.size();
+        m_impl->editingBuffer.insert(m_impl->caretPos, txt.data(), txt.size());
+        m_impl->caretPos += txt.size();
+        InvalidateVisual();
+        e.SetHandled(true);
     }
 }
 

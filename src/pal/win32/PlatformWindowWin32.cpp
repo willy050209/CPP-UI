@@ -114,6 +114,12 @@ PlatformWindowWin32::PlatformWindowWin32(const WindowDesc& desc)
         SetWindowLongPtrW(m_hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
         UpdateDpiScale();
 
+        RECT clientRc = {};
+        if (GetClientRect(m_hwnd, &clientRc)) {
+            m_width = static_cast<uint32_t>(clientRc.right - clientRc.left);
+            m_height = static_cast<uint32_t>(clientRc.bottom - clientRc.top);
+        }
+
         if (desc.visible) {
             Show();
         }
@@ -293,6 +299,14 @@ void PlatformWindowWin32::DispatchEvent(const RawInputEvent& event) {
 }
 
 LRESULT CALLBACK PlatformWindowWin32::WndProcThunk(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if (msg == WM_NCCREATE) {
+        auto* cs = reinterpret_cast<CREATESTRUCTW*>(lParam);
+        if (cs && cs->lpCreateParams) {
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
+            auto* self = reinterpret_cast<PlatformWindowWin32*>(cs->lpCreateParams);
+            self->m_hwnd = hwnd;
+        }
+    }
     auto* self = reinterpret_cast<PlatformWindowWin32*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     if (self) {
         return self->HandleMessage(msg, wParam, lParam);

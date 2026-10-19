@@ -194,9 +194,20 @@ std::vector<PropertyDescriptor> BuildDescriptors(NodeType type) {
         }
         case NodeType::FormDocument: {
             return {
+                { "ClassName", PropertyValue(std::string("MainForm")), PropertyCategory::Common, false },
+                { "TargetNamespace", PropertyValue(std::string("MyApp")), PropertyCategory::Common, false },
                 { "Title", PropertyValue(std::string("Form")), PropertyCategory::Common, false },
                 { "Width", PropertyValue(800.0), PropertyCategory::Layout, false },
-                { "Height", PropertyValue(600.0), PropertyCategory::Layout, false }
+                { "Height", PropertyValue(600.0), PropertyCategory::Layout, false },
+                { "StartPosition", PropertyValue(std::string("CenterScreen")), PropertyCategory::Layout, false },
+                { "WindowState", PropertyValue(std::string("Normal")), PropertyCategory::Layout, false },
+                { "Background", PropertyValue(core::Color(28, 30, 36)), PropertyCategory::Appearance, false },
+                { "Padding", PropertyValue(core::Thickness(16.0f)), PropertyCategory::Layout, false },
+                { "DefaultTheme", PropertyValue(std::string("Dark")), PropertyCategory::Appearance, false },
+                { "UseMvvm", PropertyValue(true), PropertyCategory::Behavior, false },
+                { "UseIoC", PropertyValue(true), PropertyCategory::Behavior, false },
+                { "Topmost", PropertyValue(false), PropertyCategory::Behavior, false },
+                { "ShowInTaskbar", PropertyValue(true), PropertyCategory::Behavior, false }
             };
         }
     }
@@ -216,6 +227,19 @@ std::vector<EventDescriptor> CreateUIElementEvents() {
 }
 
 std::vector<EventDescriptor> BuildEvents(NodeType type) {
+    if (type == NodeType::FormDocument) {
+        return {
+            { "Load", "Load (表單載入初始化)", "Action", "void(EventArgs&)", "OnLoad", false },
+            { "Shown", "Shown (表單初次顯示)", "Action", "void(EventArgs&)", "OnShown", false },
+            { "Closing", "Closing (表單即將關閉)", "Action", "void(FormClosingEventArgs&)", "OnClosing", false },
+            { "Closed", "Closed (表單已關閉)", "Action", "void(FormClosedEventArgs&)", "OnClosed", false },
+            { "Activated", "Activated (表單獲得焦點作用中)", "Focus", "void(EventArgs&)", "OnActivated", false },
+            { "Deactivated", "Deactivated (表單失去焦點)", "Focus", "void(EventArgs&)", "OnDeactivate", false },
+            { "Resize", "Resize (表單尺寸變更)", "Layout", "void(EventArgs&)", "OnResize", false },
+            { "KeyDown", "KeyDown (視窗鍵盤按下)", "Keyboard", "void(KeyEventArgs&)", "OnKeyDown", false },
+            { "KeyUp", "KeyUp (視窗鍵盤釋放)", "Keyboard", "void(KeyEventArgs&)", "OnKeyUp", false }
+        };
+    }
     if (type == NodeType::Timer) {
         return {
             { "Tick", "Tick (計時器觸發)", "Behavior", "void(EventArgs&)", "OnTick", false }
@@ -464,6 +488,15 @@ std::vector<std::string> InheritanceMetadataRegistry::GetEnumOptions(compat::str
     }
     if (propName == "Visibility") {
         return { "Visible", "Hidden", "Collapsed" };
+    }
+    if (propName == "StartPosition") {
+        return { "CenterScreen", "Manual", "WindowsDefaultLocation" };
+    }
+    if (propName == "WindowState") {
+        return { "Normal", "Maximized", "Minimized" };
+    }
+    if (propName == "DefaultTheme") {
+        return { "Dark", "Light" };
     }
     return {};
 }

@@ -25,6 +25,12 @@ public class WinCap {
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
     [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetProcessDpiAwarenessContext(IntPtr dpiContext);
+
+    [DllImport("user32.dll", SetLastError = true)]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [DllImport("user32.dll")]
@@ -87,8 +93,14 @@ public class WinCap {
 
     public static bool Capture(IntPtr hWnd, string savePath) {
         if (hWnd == IntPtr.Zero) return false;
+        try {
+            SetProcessDpiAwarenessContext(new IntPtr(-4));
+        } catch {}
+
         RECT r;
-        if (!GetWindowRect(hWnd, out r)) return false;
+        if (!GetClientRect(hWnd, out r)) {
+            if (!GetWindowRect(hWnd, out r)) return false;
+        }
         int w = r.Right - r.Left;
         int h = r.Bottom - r.Top;
         if (w <= 0 || h <= 0) return false;

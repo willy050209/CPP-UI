@@ -100,6 +100,7 @@ struct ToolboxPanel::Impl {
     compat::optional<NodeType> selectedType;
     std::string filterText;
     float scrollY = 0.0f;
+    float fontScale = 1.0f;
 
     std::function<void(NodeType)> onDoubleClicked;
     ItemDropCallback onDropped;
@@ -117,8 +118,8 @@ struct ToolboxPanel::Impl {
     std::vector<LayoutRow> ComputeLayout(float width) const {
         std::vector<LayoutRow> rows;
         float y = 4.0f; // 頂部微調留白
-        const float headerHeight = 27.0f;
-        const float itemHeight = 29.0f;
+        const float headerHeight = 27.0f * fontScale;
+        const float itemHeight = 29.0f * fontScale;
 
         for (size_t c = 0; c < categories.size(); ++c) {
             const auto& cat = categories[c];
@@ -215,6 +216,15 @@ compat::string_view ToolboxPanel::GetFilterText() const noexcept {
     return m_impl->filterText;
 }
 
+void ToolboxPanel::SetFontScale(float scale) {
+    m_impl->fontScale = compat::clamp(scale, 0.5f, 2.5f);
+    InvalidateVisual();
+}
+
+float ToolboxPanel::GetFontScale() const noexcept {
+    return m_impl->fontScale;
+}
+
 void ToolboxPanel::OnItemDoubleClicked(std::function<void(NodeType)> callback) {
     m_impl->onDoubleClicked = std::move(callback);
 }
@@ -269,8 +279,8 @@ void ToolboxPanel::OnRender(rendering::DrawingContext& dc) {
                 headerBg = colors.controlHoverBackground;
             }
             dc.DrawRoundedRectangle(screenRect, 3.0f, headerBg);
-            dc.DrawText(r.text, core::Point(screenRect.x + 6.0f, screenRect.y + 5.0f),
-                        text::FontDescriptor("Segoe UI", 12.0f, text::FontWeight::Bold),
+            dc.DrawText(r.text, core::Point(screenRect.x + 6.0f, screenRect.y + 5.0f * m_impl->fontScale),
+                        text::FontDescriptor("Segoe UI", 12.0f * m_impl->fontScale, text::FontWeight::Bold),
                         colors.textPrimary);
         } else {
             // 控制項項目列
@@ -278,23 +288,32 @@ void ToolboxPanel::OnRender(rendering::DrawingContext& dc) {
             bool isHovered = (static_cast<int32_t>(i) == m_impl->hoveredRowIndex);
 
             if (isSelected) {
-                dc.DrawRoundedRectangle(screenRect, 4.0f, colors.accentPrimary);
+                // 輕微背景底色搭配強調色外框，清楚保留圖示與文字辨識度，杜絕全藍遮蔽
+                dc.DrawRoundedRectangle(screenRect, 4.0f, colors.controlHoverBackground);
+                float x1 = screenRect.x;
+                float y1 = screenRect.y;
+                float x2 = screenRect.x + screenRect.width;
+                float y2 = screenRect.y + screenRect.height;
+                dc.DrawLine(core::Point(x1, y1), core::Point(x2, y1), colors.accentPrimary, 1.5f);
+                dc.DrawLine(core::Point(x2, y1), core::Point(x2, y2), colors.accentPrimary, 1.5f);
+                dc.DrawLine(core::Point(x2, y2), core::Point(x1, y2), colors.accentPrimary, 1.5f);
+                dc.DrawLine(core::Point(x1, y2), core::Point(x1, y1), colors.accentPrimary, 1.5f);
             } else if (isHovered) {
                 dc.DrawRoundedRectangle(screenRect, 4.0f, colors.controlHoverBackground);
             }
 
-            core::Color itemTextColor = isSelected ? colors.textOnAccent : colors.textPrimary;
+            core::Color itemTextColor = isSelected ? colors.accentPrimary : colors.textPrimary;
 
-            // 圖示與名稱
+            // 圖示與名稱 (依 fontScale 動態縮放)
             std::string label = r.icon + " " + r.text;
-            dc.DrawText(label, core::Point(screenRect.x + 8.0f, screenRect.y + 6.0f),
-                        text::FontDescriptor("Segoe UI", 12.5f),
+            dc.DrawText(label, core::Point(screenRect.x + 8.0f, screenRect.y + 6.0f * m_impl->fontScale),
+                        text::FontDescriptor("Segoe UI", 12.5f * m_impl->fontScale),
                         itemTextColor);
 
             // 若選取中，右側繪製武裝提示點
             if (isSelected) {
-                core::Rect dot(screenRect.x + screenRect.width - 16.0f, screenRect.y + 10.0f, 8.0f, 8.0f);
-                dc.DrawRoundedRectangle(dot, 4.0f, colors.textOnAccent);
+                core::Rect dot(screenRect.x + screenRect.width - 16.0f, screenRect.y + 10.0f * m_impl->fontScale, 8.0f, 8.0f);
+                dc.DrawRoundedRectangle(dot, 4.0f, colors.accentPrimary);
             }
         }
     }

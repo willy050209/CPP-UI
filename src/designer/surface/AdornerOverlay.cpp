@@ -47,10 +47,10 @@ void AdornerOverlay::RenderSelection(
     float right = bounds.x + bounds.width;
     float bottom = bounds.y + bounds.height;
 
-    dc.DrawLine(core::Point(left, top), core::Point(right, top), options.selectionBorderColor, 1.0f);
-    dc.DrawLine(core::Point(right, top), core::Point(right, bottom), options.selectionBorderColor, 1.0f);
-    dc.DrawLine(core::Point(right, bottom), core::Point(left, bottom), options.selectionBorderColor, 1.0f);
-    dc.DrawLine(core::Point(left, bottom), core::Point(left, top), options.selectionBorderColor, 1.0f);
+    dc.DrawLine(core::Point(left, top), core::Point(right, top), options.selectionBorderColor, 1.5f);
+    dc.DrawLine(core::Point(right, top), core::Point(right, bottom), options.selectionBorderColor, 1.5f);
+    dc.DrawLine(core::Point(right, bottom), core::Point(left, bottom), options.selectionBorderColor, 1.5f);
+    dc.DrawLine(core::Point(left, bottom), core::Point(left, top), options.selectionBorderColor, 1.5f);
 
     // 3. 八向控制點方塊
     if (showHandles) {

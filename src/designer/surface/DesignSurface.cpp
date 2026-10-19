@@ -33,6 +33,8 @@ struct DesignSurface::Impl {
     core::Rect rubberBandRect;
     std::vector<SnapLine> activeGuides;
     std::string draggedNodeUuid;
+    float fontScale = 1.0f;
+    reactive::Connection selectionConn;
 
     void SyncBoundsFromDocument() {
         if (!document) return;
@@ -57,10 +59,23 @@ DesignSurface::DesignSurface(
 ) : m_impl(std::make_unique<Impl>()) {
     m_impl->document = document;
     m_impl->historyManager = historyManager;
+    m_impl->selectionConn = m_impl->selectionModel.SelectionChangedSignal().Connect([this](const std::vector<std::string>&) {
+        InvalidateVisual();
+    });
+    SetClipToBounds(true);
     SetFocusable(true);
 }
 
 DesignSurface::~DesignSurface() = default;
+
+void DesignSurface::SetFontScale(float scale) {
+    m_impl->fontScale = compat::clamp(scale, 0.5f, 2.5f);
+    InvalidateVisual();
+}
+
+float DesignSurface::GetFontScale() const noexcept {
+    return m_impl->fontScale;
+}
 
 void DesignSurface::SetDocument(FormDocumentNode* document) {
     m_impl->document = document;
@@ -308,10 +323,15 @@ core::Rect DesignSurface::GetRubberBandRect() const noexcept {
 }
 
 void DesignSurface::OnRender(rendering::DrawingContext& dc) {
+    float curW = GetActualSize().width > 0.0f ? GetActualSize().width : GetWidth();
+    float curH = GetActualSize().height > 0.0f ? GetActualSize().height : GetHeight();
+    if (curW <= 0.0f) curW = 800.0f;
+    if (curH <= 0.0f) curH = 520.0f;
+    core::Size sz(curW, curH);
+
+    dc.PushClip(core::Rect(0.0f, 0.0f, curW, curH));
+
     if (m_impl->options.showGrid) {
-        core::Size sz(GetWidth(), GetHeight());
-        if (sz.width <= 0.0f) sz.width = 1920.0f;
-        if (sz.height <= 0.0f) sz.height = 1080.0f;
         AdornerOverlay::RenderGrid(dc, sz, m_impl->options.gridSize, m_impl->options.gridColor);
     }
 
@@ -344,7 +364,7 @@ void DesignSurface::OnRender(rendering::DrawingContext& dc) {
             } else if (node->GetType() == NodeType::ComboBox) {
                 dc.DrawRoundedRectangle(rect, 3.0f, core::Color(45, 50, 62));
                 dc.DrawText("▾", core::Point(rect.x + rect.width - 18.0f, rect.y + 6.0f),
-                            text::FontDescriptor("Segoe UI", 12.0f), core::Color(200, 200, 200));
+                            text::FontDescriptor("Segoe UI", 12.0f * m_impl->fontScale), core::Color(200, 200, 200));
             } else if (node->GetType() == NodeType::Slider) {
                 float midY = rect.y + rect.height / 2.0f;
                 dc.DrawLine(core::Point(rect.x + 6.0f, midY), core::Point(rect.x + rect.width - 6.0f, midY),
@@ -358,7 +378,7 @@ void DesignSurface::OnRender(rendering::DrawingContext& dc) {
             } else if (node->GetType() == NodeType::PictureBox) {
                 dc.DrawRoundedRectangle(rect, 4.0f, core::Color(32, 36, 44));
                 dc.DrawText("🖼 [PictureBox]", core::Point(rect.x + 12.0f, rect.y + rect.height / 2.0f - 8.0f),
-                            text::FontDescriptor("Segoe UI", 11.5f), core::Color(140, 145, 160));
+                            text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), core::Color(140, 145, 160));
             } else if (node->GetType() == NodeType::Separator) {
                 float midY = rect.y + rect.height / 2.0f;
                 dc.DrawLine(core::Point(rect.x, midY), core::Point(rect.x + rect.width, midY),
@@ -387,14 +407,23 @@ void DesignSurface::OnRender(rendering::DrawingContext& dc) {
                     origin.x = rect.x + 24.0f;
                     origin.y = rect.y + 4.0f;
                 }
-                text::FontDescriptor fontDesc("Segoe UI", fontSize);
+                text::FontDescriptor fontDesc("Segoe UI", fontSize * m_impl->fontScale);
                 dc.DrawText(text, origin, fontDesc, textColor);
             }
         }
     }
+
+    dc.PopClip();
 }
 
 void DesignSurface::OnPostRender(rendering::DrawingContext& dc) {
+    float curW = GetActualSize().width > 0.0f ? GetActualSize().width : GetWidth();
+    float curH = GetActualSize().height > 0.0f ? GetActualSize().height : GetHeight();
+    if (curW <= 0.0f) curW = 800.0f;
+    if (curH <= 0.0f) curH = 520.0f;
+
+    dc.PushClip(core::Rect(0.0f, 0.0f, curW, curH));
+
     // 1. 繪製所有被選取節點的飾條與 Handle
     auto primary = m_impl->selectionModel.GetPrimarySelection();
     for (const auto& uuid : m_impl->selectionModel.GetSelectedUuids()) {
@@ -417,6 +446,8 @@ void DesignSurface::OnPostRender(rendering::DrawingContext& dc) {
     if (!m_impl->activeGuides.empty()) {
         AdornerOverlay::RenderSnapGuides(dc, m_impl->activeGuides);
     }
+
+    dc.PopClip();
 }
 
 void DesignSurface::OnPointerPressed(input::PointerEventArgs& e) {

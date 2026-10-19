@@ -8,6 +8,7 @@
 #include "ui/controls/OverlayLayer.hpp"
 #include "ui/input/InputManager.hpp"
 #include "ui/layout/LayoutManager.hpp"
+#include "ui/layout/Grid.hpp"
 #include "ui/pal/PlatformWindowFactory.hpp"
 #include "ui/theme/ThemeManager.hpp"
 #include "ui/theme/Theme.hpp"
@@ -16,6 +17,13 @@
 #include "ui/graphics/Bitmap.hpp"
 #include <algorithm>
 #include <cmath>
+
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
 
 namespace cppui {
 namespace app {
@@ -216,6 +224,18 @@ void Form::SetContent(compat::string_view text) {
 
 void Form::SetWindowState(WindowState state) {
     m_windowState = state;
+#if defined(_WIN32)
+    if (m_window && m_window->GetNativeHandle()) {
+        HWND hwnd = static_cast<HWND>(m_window->GetNativeHandle());
+        if (state == WindowState::Maximized) {
+            ::ShowWindow(hwnd, SW_MAXIMIZE);
+        } else if (state == WindowState::Minimized) {
+            ::ShowWindow(hwnd, SW_MINIMIZE);
+        } else if (state == WindowState::Normal) {
+            ::ShowWindow(hwnd, SW_RESTORE);
+        }
+    }
+#endif
 }
 
 void Form::Show() {
@@ -231,7 +251,27 @@ void Form::Show() {
     }
 
     if (m_window) {
+#if defined(_WIN32)
+        if (m_windowState == WindowState::Maximized) {
+            HWND hwnd = static_cast<HWND>(m_window->GetNativeHandle());
+            if (hwnd) {
+                ::ShowWindow(hwnd, SW_MAXIMIZE);
+            } else {
+                m_window->Show();
+            }
+        } else if (m_windowState == WindowState::Minimized) {
+            HWND hwnd = static_cast<HWND>(m_window->GetNativeHandle());
+            if (hwnd) {
+                ::ShowWindow(hwnd, SW_MINIMIZE);
+            } else {
+                m_window->Show();
+            }
+        } else {
+            m_window->Show();
+        }
+#else
         m_window->Show();
+#endif
     }
 
     if (!m_isShown) {
@@ -298,13 +338,6 @@ void Form::Close() {
 
     Application::UnregisterForm(this);
 }
-
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#endif
 
 DialogResult Form::ShowDialog(std::shared_ptr<Form> owner) {
     if (owner) {
@@ -425,6 +458,16 @@ void Form::EnsurePlatformWindow() {
     desc.centerScreen = (m_startPosition == FormStartPosition::CenterScreen);
 
     m_window = pal::PlatformWindowFactory::Create(desc);
+    core::Size actualFb = m_window->GetFramebufferSize();
+    if (actualFb.width > 0.0f && actualFb.height > 0.0f) {
+        m_width = static_cast<uint32_t>(actualFb.width);
+        m_height = static_cast<uint32_t>(actualFb.height);
+        if (m_sizeToContent == SizeToContent::Manual) {
+            core::UIElement::SetWidth(static_cast<float>(m_width));
+            core::UIElement::SetHeight(static_cast<float>(m_height));
+        }
+    }
+
     if (Application::GetPlatformBackend() == PlatformBackend::Skia) {
         auto skiaCtx = std::make_unique<rendering::SkiaRenderContext>();
         skiaCtx->Init(m_window->GetNativeHandle(), m_width, m_height);
@@ -511,6 +554,10 @@ void Form::RenderFrame() {
 void Form::HandleWindowResize(uint32_t width, uint32_t height) {
     m_width = width;
     m_height = height;
+    if (m_sizeToContent == SizeToContent::Manual) {
+        core::UIElement::SetWidth(static_cast<float>(width));
+        core::UIElement::SetHeight(static_cast<float>(height));
+    }
     if (m_overlayLayer) {
         m_overlayLayer->SetWidth(static_cast<float>(width));
         m_overlayLayer->SetHeight(static_cast<float>(height));

@@ -8,6 +8,7 @@
 #include "ui/designer/preview/LiveFormRunner.hpp"
 #include "ui/designer/preview/CodePreviewWindow.hpp"
 #include "ui/designer/ast/FormDocumentNode.hpp"
+#include "ui/graphics/Bitmap.hpp"
 #include <memory>
 #include <string>
 
@@ -27,6 +28,19 @@ int main(int argc, char* argv[]) {
     if (argc > 1 && std::string(argv[1]) == "--preview-code") {
         auto codeWin = std::make_shared<cppui::designer::preview::CodePreviewWindow>(&mainWindow->GetDocument());
         return cppui::app::Application::Run(codeWin);
+    }
+
+    if (argc > 1 && std::string(argv[1]) == "--dump-layout") {
+        std::string outPath = (argc > 2) ? argv[2] : "designer_dump.bmp";
+        if (argc > 3 && std::string(argv[3]) == "--resize") {
+            mainWindow->SetFormSize(1280, 729);
+        }
+        auto bmp = mainWindow->CaptureToBitmap();
+        if (bmp) {
+            bool ok = bmp->Save(outPath);
+            compat::println("Captured to {}: {}", outPath, ok ? "SUCCESS" : "FAILED");
+        }
+        return 0;
     }
 
     return cppui::app::Application::Run(mainWindow);
