@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include "ui/theme/ThemeManager.hpp"
 #include "ui/rendering/DrawingContext.hpp"
 
@@ -98,6 +99,7 @@ struct ToolboxPanel::Impl {
     std::vector<ToolboxCategory> categories = BuildDefaultCategories();
     compat::optional<NodeType> selectedType;
     std::string filterText;
+    float scrollY = 0.0f;
 
     std::function<void(NodeType)> onDoubleClicked;
     ItemDropCallback onDropped;
@@ -114,9 +116,9 @@ struct ToolboxPanel::Impl {
 
     std::vector<LayoutRow> ComputeLayout(float width) const {
         std::vector<LayoutRow> rows;
-        float y = 34.0f; // 頂部預留搜尋/過濾提示區
-        const float headerHeight = 26.0f;
-        const float itemHeight = 28.0f;
+        float y = 4.0f; // 頂部微調留白
+        const float headerHeight = 27.0f;
+        const float itemHeight = 29.0f;
 
         for (size_t c = 0; c < categories.size(); ++c) {
             const auto& cat = categories[c];
@@ -139,7 +141,7 @@ struct ToolboxPanel::Impl {
             hRow.isHeader = true;
             hRow.categoryIndex = c;
             hRow.text = (cat.isExpanded ? "▼ " : "▶ ") + cat.name + " (" + std::to_string(visibleCount) + ")";
-            hRow.rect = core::Rect(4.0f, y, width - 8.0f, headerHeight);
+            hRow.rect = core::Rect(4.0f, y, width - 12.0f, headerHeight);
             rows.push_back(hRow);
             y += headerHeight + 2.0f;
 
@@ -205,6 +207,7 @@ void ToolboxPanel::SetSelectedType(compat::optional<NodeType> type) {
 
 void ToolboxPanel::SetFilterText(compat::string_view filter) {
     m_impl->filterText = std::string(filter);
+    m_impl->scrollY = 0.0f;
     InvalidateVisual();
 }
 
@@ -232,13 +235,6 @@ void ToolboxPanel::HandlePointerReleased(input::PointerEventArgs& e) {
     OnPointerReleasedCore(e);
 }
 
-static void DrawRectOutline(rendering::DrawingContext& dc, const core::Rect& rect, core::Color color, float stroke = 1.0f) {
-    dc.DrawLine(core::Point(rect.x, rect.y), core::Point(rect.x + rect.width, rect.y), color, stroke);
-    dc.DrawLine(core::Point(rect.x + rect.width, rect.y), core::Point(rect.x + rect.width, rect.y + rect.height), color, stroke);
-    dc.DrawLine(core::Point(rect.x + rect.width, rect.y + rect.height), core::Point(rect.x, rect.y + rect.height), color, stroke);
-    dc.DrawLine(core::Point(rect.x, rect.y + rect.height), core::Point(rect.x, rect.y), color, stroke);
-}
-
 void ToolboxPanel::OnRender(rendering::DrawingContext& dc) {
     const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
     const auto& colors = theme.Colors();
@@ -246,25 +242,25 @@ void ToolboxPanel::OnRender(rendering::DrawingContext& dc) {
     float w = GetWidth();
     float h = GetHeight();
     if (w <= 0.0f) w = 230.0f;
-    if (h <= 0.0f) h = 700.0f;
+    if (h <= 0.0f) h = 340.0f;
 
     // 背景底色與邊框
     dc.DrawRectangle(core::Rect(0.0f, 0.0f, w, h), colors.surfaceBackground);
     dc.DrawLine(core::Point(w - 1.0f, 0.0f), core::Point(w - 1.0f, h), colors.surfaceBorder, 1.0f);
 
-    // 頂部搜尋欄與標題
-    core::Rect searchRect(6.0f, 6.0f, w - 12.0f, 24.0f);
-    dc.DrawRoundedRectangle(searchRect, 3.0f, colors.controlBackground);
-    DrawRectOutline(dc, searchRect, colors.controlBorder, 1.0f);
-
-    std::string searchDisplay = m_impl->filterText.empty() ? "🔍 搜尋控制項 (Filter)..." : ("🔍 " + m_impl->filterText);
-    core::Color searchTextColor = m_impl->filterText.empty() ? colors.textPlaceholder : colors.textPrimary;
-    dc.DrawText(searchDisplay, core::Point(12.0f, 10.0f), text::FontDescriptor("Segoe UI", 11.0f), searchTextColor);
-
     auto rows = m_impl->ComputeLayout(w);
+    float totalContentH = rows.empty() ? 0.0f : (rows.back().rect.y + rows.back().rect.height + 8.0f);
 
+    // 逐筆渲染 (以 scrollY 偏移，並嚴格視區剪裁，絕不溢出重疊下方 Hierarchy)
     for (size_t i = 0; i < rows.size(); ++i) {
         const auto& r = rows[i];
+        float rowY = r.rect.y - m_impl->scrollY;
+
+        if (rowY + r.rect.height < 0.0f || rowY > h) {
+            continue; // 超出邊界略過
+        }
+
+        core::Rect screenRect(r.rect.x, rowY, r.rect.width, r.rect.height);
 
         if (r.isHeader) {
             // 分類群組標頭
@@ -272,9 +268,9 @@ void ToolboxPanel::OnRender(rendering::DrawingContext& dc) {
             if (static_cast<int32_t>(i) == m_impl->hoveredRowIndex) {
                 headerBg = colors.controlHoverBackground;
             }
-            dc.DrawRoundedRectangle(r.rect, 3.0f, headerBg);
-            dc.DrawText(r.text, core::Point(r.rect.x + 6.0f, r.rect.y + 5.0f),
-                        text::FontDescriptor("Segoe UI", 11.5f, text::FontWeight::Bold),
+            dc.DrawRoundedRectangle(screenRect, 3.0f, headerBg);
+            dc.DrawText(r.text, core::Point(screenRect.x + 6.0f, screenRect.y + 5.0f),
+                        text::FontDescriptor("Segoe UI", 12.0f, text::FontWeight::Bold),
                         colors.textPrimary);
         } else {
             // 控制項項目列
@@ -282,35 +278,68 @@ void ToolboxPanel::OnRender(rendering::DrawingContext& dc) {
             bool isHovered = (static_cast<int32_t>(i) == m_impl->hoveredRowIndex);
 
             if (isSelected) {
-                dc.DrawRoundedRectangle(r.rect, 4.0f, colors.accentPrimary);
+                dc.DrawRoundedRectangle(screenRect, 4.0f, colors.accentPrimary);
             } else if (isHovered) {
-                dc.DrawRoundedRectangle(r.rect, 4.0f, colors.controlHoverBackground);
+                dc.DrawRoundedRectangle(screenRect, 4.0f, colors.controlHoverBackground);
             }
 
             core::Color itemTextColor = isSelected ? colors.textOnAccent : colors.textPrimary;
 
             // 圖示與名稱
             std::string label = r.icon + " " + r.text;
-            dc.DrawText(label, core::Point(r.rect.x + 8.0f, r.rect.y + 6.0f),
-                        text::FontDescriptor("Segoe UI", 12.0f),
+            dc.DrawText(label, core::Point(screenRect.x + 8.0f, screenRect.y + 6.0f),
+                        text::FontDescriptor("Segoe UI", 12.5f),
                         itemTextColor);
 
             // 若選取中，右側繪製武裝提示點
             if (isSelected) {
-                core::Rect dot(r.rect.x + r.rect.width - 16.0f, r.rect.y + 9.0f, 8.0f, 8.0f);
+                core::Rect dot(screenRect.x + screenRect.width - 16.0f, screenRect.y + 10.0f, 8.0f, 8.0f);
                 dc.DrawRoundedRectangle(dot, 4.0f, colors.textOnAccent);
             }
         }
     }
+
+    // 右側垂直滾動條 (Scrollbar)
+    if (totalContentH > h && h > 20.0f) {
+        const float barW = 6.0f;
+        float thumbH = (std::max)(24.0f, (h / totalContentH) * (h - 4.0f));
+        float maxScroll = totalContentH - h;
+        float ratio = m_impl->scrollY / maxScroll;
+        ratio = compat::clamp(ratio, 0.0f, 1.0f);
+        float thumbY = 2.0f + ratio * (h - 4.0f - thumbH);
+        core::Rect thumbRect(w - barW - 2.0f, thumbY, barW, thumbH);
+        dc.DrawRoundedRectangle(thumbRect, 3.0f, core::Color(100, 100, 105));
+    }
+}
+
+void ToolboxPanel::OnPointerWheelCore(input::PointerEventArgs& e) {
+    int32_t delta = e.GetWheelDeltaY();
+    if (delta == 0) return;
+
+    float h = GetHeight();
+    if (h <= 0.0f) h = 340.0f;
+    auto rows = m_impl->ComputeLayout(GetWidth());
+    float totalH = rows.empty() ? 0.0f : (rows.back().rect.y + rows.back().rect.height + 8.0f);
+    float maxScroll = (std::max)(0.0f, totalH - h);
+
+    float step = 32.0f * 1.5f;
+    if (delta > 0) {
+        m_impl->scrollY = (std::max)(0.0f, m_impl->scrollY - step);
+    } else {
+        m_impl->scrollY = (std::min)(maxScroll, m_impl->scrollY + step);
+    }
+    InvalidateVisual();
+    e.SetHandled(true);
 }
 
 void ToolboxPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
     core::Point pt = e.GetPosition(this);
+    core::Point localPt(pt.x, pt.y + m_impl->scrollY);
     auto rows = m_impl->ComputeLayout(GetWidth());
 
     for (size_t i = 0; i < rows.size(); ++i) {
         const auto& r = rows[i];
-        if (r.rect.Contains(pt)) {
+        if (r.rect.Contains(localPt)) {
             if (r.isHeader) {
                 ToggleCategory(r.categoryIndex);
                 e.SetHandled(true);
@@ -345,11 +374,12 @@ void ToolboxPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
 
 void ToolboxPanel::OnPointerMovedCore(input::PointerEventArgs& e) {
     core::Point pt = e.GetPosition(this);
+    core::Point localPt(pt.x, pt.y + m_impl->scrollY);
     auto rows = m_impl->ComputeLayout(GetWidth());
 
     int32_t hitIndex = -1;
     for (size_t i = 0; i < rows.size(); ++i) {
-        if (rows[i].rect.Contains(pt)) {
+        if (rows[i].rect.Contains(localPt)) {
             hitIndex = static_cast<int32_t>(i);
             break;
         }

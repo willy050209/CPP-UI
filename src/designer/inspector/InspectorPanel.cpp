@@ -42,6 +42,7 @@ struct InspectorPanel::Impl {
 
     InspectorTab currentTab = InspectorTab::Properties;
     std::string filterText;
+    float scrollY = 0.0f;
 
     DesignerEvent<PropertyChangePayload> propertyChangedSignal;
     DesignerEvent<EventChangePayload> eventChangedSignal;
@@ -100,6 +101,7 @@ surface::SelectionModel* InspectorPanel::GetSelectionModel() const noexcept {
 void InspectorPanel::SetCurrentTab(InspectorTab tab) {
     if (m_impl->currentTab != tab) {
         m_impl->currentTab = tab;
+        m_impl->scrollY = 0.0f;
         m_impl->tabChangedSignal.Notify(tab);
     }
 }
@@ -110,6 +112,7 @@ InspectorTab InspectorPanel::GetCurrentTab() const noexcept {
 
 void InspectorPanel::SetFilterText(compat::string_view filter) {
     m_impl->filterText = std::string(filter);
+    m_impl->scrollY = 0.0f;
 }
 
 const std::string& InspectorPanel::GetFilterText() const noexcept {
@@ -575,6 +578,162 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
     dc.DrawRectangle(core::Rect(0.0f, 0.0f, w, h), colors.surfaceBackground);
     dc.DrawLine(core::Point(0.0f, 0.0f), core::Point(0.0f, h), colors.surfaceBorder, 1.0f);
 
+    const float contentTop = 104.0f;
+    const float rowHeight = 28.0f;
+    const float catHeight = 26.0f;
+    const float col1Width = 125.0f;
+
+    float curY = contentTop - m_impl->scrollY;
+    float totalContentH = 0.0f;
+    bool isPropTab = (m_impl->currentTab == InspectorTab::Properties);
+
+    if (isPropTab) {
+        auto props = GetInspectedProperties();
+
+        struct CatGroup {
+            PropertyCategory cat;
+            const char* title;
+        };
+        const CatGroup catGroups[] = {
+            { PropertyCategory::Common,     "一般屬性 (Common)" },
+            { PropertyCategory::Layout,     "版面與尺寸 (Layout)" },
+            { PropertyCategory::Appearance, "外觀與色彩 (Appearance)" },
+            { PropertyCategory::Text,       "文字排版 (Text)" },
+            { PropertyCategory::Behavior,   "行為狀態 (Behavior)" }
+        };
+
+        for (const auto& group : catGroups) {
+            std::vector<const InspectedProperty*> groupProps;
+            for (const auto& p : props) {
+                if (p.category == group.cat) {
+                    groupProps.push_back(&p);
+                }
+            }
+
+            if (groupProps.empty()) continue;
+
+            // 分類標頭
+            if (curY + catHeight >= contentTop && curY <= h) {
+                core::Rect catRect(4.0f, curY, w - 8.0f, catHeight);
+                dc.DrawRoundedRectangle(catRect, 2.0f, colors.controlBackground);
+                std::string catTitle = std::string("▼ ") + group.title + " (" + std::to_string(groupProps.size()) + ")";
+                dc.DrawText(catTitle, core::Point(8.0f, curY + 5.0f),
+                            text::FontDescriptor("Segoe UI", 12.0f, text::FontWeight::Bold),
+                            colors.textPrimary);
+            }
+            curY += catHeight + 2.0f;
+
+            // 逐筆屬性列
+            for (const auto* p : groupProps) {
+                if (curY + rowHeight >= contentTop && curY <= h) {
+                    // 左欄：屬性名稱
+                    core::Rect nameRect(8.0f, curY, col1Width, rowHeight);
+                    std::string propName = p->name;
+                    if (p->isAttached) {
+                        propName += " *";
+                    }
+                    dc.DrawText(propName, core::Point(nameRect.x + 2.0f, curY + 6.0f),
+                                text::FontDescriptor("Segoe UI", 12.0f),
+                                p->isAttached ? core::Color(78, 160, 220) : colors.textPrimary);
+
+                    // 右欄：屬性值方塊
+                    core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
+                    dc.DrawRoundedRectangle(valRect, 3.0f, colors.controlBackground);
+                    DrawRectOutline(dc, valRect, colors.controlBorder, 1.0f);
+
+                    if (p->IsMixed()) {
+                        dc.DrawText("<Mixed Values>", core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
+                                    text::FontDescriptor("Segoe UI", 11.5f), colors.textDisabled);
+                    } else if (p->currentValue.Is<core::Color>()) {
+                        auto c = p->currentValue.Get<core::Color>();
+                        if (c.has_value()) {
+                            // 顏色預覽色塊
+                            core::Rect swatch(valRect.x + 4.0f, valRect.y + 4.0f, 16.0f, 16.0f);
+                            dc.DrawRectangle(swatch, *c);
+                            DrawRectOutline(dc, swatch, colors.controlBorder, 1.0f);
+
+                            char hexBuf[16];
+                            std::snprintf(hexBuf, sizeof(hexBuf), "#%02X%02X%02X", c->r, c->g, c->b);
+                            dc.DrawText(hexBuf, core::Point(valRect.x + 26.0f, valRect.y + 4.0f),
+                                        text::FontDescriptor("Segoe UI", 11.5f), colors.textPrimary);
+                        }
+                    } else if (p->currentValue.Is<bool>()) {
+                        auto b = p->currentValue.Get<bool>();
+                        bool val = b.has_value() && *b;
+                        core::Rect checkSquare(valRect.x + 6.0f, valRect.y + 5.0f, 14.0f, 14.0f);
+                        DrawRectOutline(dc, checkSquare, colors.controlBorder, 1.0f);
+                        if (val) {
+                            dc.DrawRoundedRectangle(core::Rect(checkSquare.x + 2.0f, checkSquare.y + 2.0f, 10.0f, 10.0f),
+                                                    1.0f, colors.accentPrimary);
+                        }
+                        dc.DrawText(val ? "True (點擊切換)" : "False (點擊切換)", core::Point(valRect.x + 26.0f, valRect.y + 4.0f),
+                                    text::FontDescriptor("Segoe UI", 11.5f), colors.textPrimary);
+                    } else {
+                        std::string valStr = FormatValueString(p->currentValue);
+                        dc.DrawText(valStr, core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
+                                    text::FontDescriptor("Segoe UI", 11.5f), colors.textPrimary);
+                    }
+                }
+                curY += rowHeight;
+            }
+            curY += 4.0f;
+        }
+        totalContentH = (curY + m_impl->scrollY) - contentTop;
+    } else {
+        // 事件分頁
+        auto events = GetInspectedEvents();
+        if (curY + catHeight >= contentTop && curY <= h) {
+            core::Rect catRect(4.0f, curY, w - 8.0f, catHeight);
+            dc.DrawRoundedRectangle(catRect, 2.0f, colors.controlBackground);
+            std::string catTitle = "▼ 控制項事件綁定 (Events & Commands - " + std::to_string(events.size()) + ")";
+            dc.DrawText(catTitle, core::Point(8.0f, curY + 5.0f),
+                        text::FontDescriptor("Segoe UI", 12.0f, text::FontWeight::Bold),
+                        colors.textPrimary);
+        }
+        curY += catHeight + 2.0f;
+
+        for (const auto& evt : events) {
+            if (curY + rowHeight >= contentTop && curY <= h) {
+                // 事件名稱
+                dc.DrawText(evt.descriptor.eventName, core::Point(10.0f, curY + 6.0f),
+                            text::FontDescriptor("Segoe UI", 12.0f), colors.textPrimary);
+
+                // 處理常式名稱方塊
+                core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
+                dc.DrawRoundedRectangle(valRect, 3.0f, colors.controlBackground);
+                DrawRectOutline(dc, valRect, colors.controlBorder, 1.0f);
+
+                if (evt.isBound) {
+                    dc.DrawText("⚡ " + evt.boundHandlerOrCommand, core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
+                                text::FontDescriptor("Segoe UI", 11.5f, text::FontWeight::Bold),
+                                core::Color(30, 160, 90));
+                } else {
+                    dc.DrawText("[+ 點擊建立常式]", core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
+                                text::FontDescriptor("Segoe UI", 11.0f),
+                                colors.accentPrimary);
+                }
+            }
+            curY += rowHeight;
+        }
+        totalContentH = (curY + m_impl->scrollY) - contentTop;
+    }
+
+    // 右側垂直滾動條 (Scrollbar)
+    const float scrollTrackH = h - contentTop - 2.0f;
+    if (totalContentH > scrollTrackH && scrollTrackH > 20.0f) {
+        const float barW = 6.0f;
+        float thumbH = (std::max)(24.0f, (scrollTrackH / totalContentH) * scrollTrackH);
+        float maxScroll = totalContentH - scrollTrackH;
+        float ratio = m_impl->scrollY / maxScroll;
+        ratio = compat::clamp(ratio, 0.0f, 1.0f);
+        float thumbY = contentTop + ratio * (scrollTrackH - thumbH);
+        core::Rect thumbRect(w - barW - 2.0f, thumbY, barW, thumbH);
+        dc.DrawRoundedRectangle(thumbRect, 3.0f, core::Color(100, 100, 105));
+    }
+
+    // 頂部固定區域遮罩與渲染 (防止滾動內容滲透標頭)
+    dc.DrawRectangle(core::Rect(0.0f, 0.0f, w, contentTop), colors.surfaceBackground);
+
     // 1. 選取元件標頭 (Selected Component Header)
     core::Rect headerRect(0.0f, 0.0f, w, 38.0f);
     dc.DrawRectangle(headerRect, colors.controlBackground);
@@ -602,7 +761,6 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
     core::Rect propTabRect(8.0f, tabY, tabW, tabH);
     core::Rect eventTabRect(8.0f + tabW, tabY, tabW, tabH);
 
-    bool isPropTab = (m_impl->currentTab == InspectorTab::Properties);
     dc.DrawRoundedRectangle(propTabRect, 3.0f, isPropTab ? colors.controlHoverBackground : colors.controlBackground);
     dc.DrawRoundedRectangle(eventTabRect, 3.0f, !isPropTab ? colors.controlHoverBackground : colors.controlBackground);
 
@@ -617,157 +775,53 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
     }
 
     dc.DrawText("屬性 (Properties)", core::Point(propTabRect.x + 18.0f, tabY + 6.0f),
-                text::FontDescriptor("Segoe UI", 11.5f, isPropTab ? text::FontWeight::Bold : text::FontWeight::Normal),
+                text::FontDescriptor("Segoe UI", 12.0f, isPropTab ? text::FontWeight::Bold : text::FontWeight::Normal),
                 isPropTab ? colors.accentPrimary : colors.textSecondary);
 
     dc.DrawText("事件 (Events)", core::Point(eventTabRect.x + 24.0f, tabY + 6.0f),
-                text::FontDescriptor("Segoe UI", 11.5f, !isPropTab ? text::FontWeight::Bold : text::FontWeight::Normal),
+                text::FontDescriptor("Segoe UI", 12.0f, !isPropTab ? text::FontWeight::Bold : text::FontWeight::Normal),
                 !isPropTab ? colors.accentPrimary : colors.textSecondary);
 
     // 3. 搜尋篩選列 (Filter Box)
     const float filterY = 74.0f;
-    core::Rect filterRect(8.0f, filterY, w - 16.0f, 24.0f);
+    core::Rect filterRect(8.0f, filterY, w - 16.0f, 25.0f);
     dc.DrawRoundedRectangle(filterRect, 3.0f, colors.controlBackground);
     DrawRectOutline(dc, filterRect, colors.controlBorder, 1.0f);
 
     std::string filterDisp = m_impl->filterText.empty() ? "🔍 搜尋屬性或事件 (Filter)..." : ("🔍 " + m_impl->filterText);
     core::Color filterClr = m_impl->filterText.empty() ? colors.textPlaceholder : colors.textPrimary;
     dc.DrawText(filterDisp, core::Point(14.0f, filterY + 4.0f),
-                text::FontDescriptor("Segoe UI", 11.0f), filterClr);
+                text::FontDescriptor("Segoe UI", 11.5f), filterClr);
+}
 
-    // 4. 主要網格內容渲染 (Grid Content)
-    float curY = 104.0f;
-    const float rowHeight = 26.0f;
-    const float catHeight = 24.0f;
-    const float col1Width = 125.0f;
+void InspectorPanel::OnPointerWheelCore(input::PointerEventArgs& e) {
+    int32_t delta = e.GetWheelDeltaY();
+    if (delta == 0) return;
 
-    if (isPropTab) {
+    float h = GetHeight();
+    if (h <= 0.0f) h = 720.0f;
+    const float contentTop = 104.0f;
+    const float scrollTrackH = h - contentTop - 2.0f;
+
+    float totalContentH = 0.0f;
+    if (m_impl->currentTab == InspectorTab::Properties) {
         auto props = GetInspectedProperties();
-
-        // 依分類組織
-        struct CatGroup {
-            PropertyCategory cat;
-            const char* title;
-        };
-        const CatGroup catGroups[] = {
-            { PropertyCategory::Common,     "一般屬性 (Common)" },
-            { PropertyCategory::Layout,     "版面與尺寸 (Layout)" },
-            { PropertyCategory::Appearance, "外觀與色彩 (Appearance)" },
-            { PropertyCategory::Text,       "文字排版 (Text)" },
-            { PropertyCategory::Behavior,   "行為狀態 (Behavior)" }
-        };
-
-        for (const auto& group : catGroups) {
-            std::vector<const InspectedProperty*> groupProps;
-            for (const auto& p : props) {
-                if (p.category == group.cat) {
-                    groupProps.push_back(&p);
-                }
-            }
-
-            if (groupProps.empty()) continue;
-
-            // 分類標頭
-            core::Rect catRect(4.0f, curY, w - 8.0f, catHeight);
-            dc.DrawRoundedRectangle(catRect, 2.0f, colors.controlBackground);
-            std::string catTitle = std::string("▼ ") + group.title + " (" + std::to_string(groupProps.size()) + ")";
-            dc.DrawText(catTitle, core::Point(8.0f, curY + 4.0f),
-                        text::FontDescriptor("Segoe UI", 11.0f, text::FontWeight::Bold),
-                        colors.textPrimary);
-            curY += catHeight + 2.0f;
-
-            // 逐筆屬性列
-            for (const auto* p : groupProps) {
-                if (curY + rowHeight > h) break;
-
-                // 左欄：屬性名稱
-                core::Rect nameRect(8.0f, curY, col1Width, rowHeight);
-                std::string propName = p->name;
-                if (p->isAttached) {
-                    propName += " *";
-                }
-                dc.DrawText(propName, core::Point(nameRect.x + 2.0f, curY + 5.0f),
-                            text::FontDescriptor("Segoe UI", 11.5f),
-                            p->isAttached ? core::Color(78, 160, 220) : colors.textPrimary);
-
-                // 右欄：屬性值方塊
-                core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 20.0f, rowHeight - 4.0f);
-                dc.DrawRoundedRectangle(valRect, 3.0f, colors.controlBackground);
-                DrawRectOutline(dc, valRect, colors.controlBorder, 1.0f);
-
-                if (p->IsMixed()) {
-                    dc.DrawText("<Mixed Values>", core::Point(valRect.x + 6.0f, valRect.y + 3.0f),
-                                text::FontDescriptor("Segoe UI", 11.0f), colors.textDisabled);
-                } else if (p->currentValue.Is<core::Color>()) {
-                    auto c = p->currentValue.Get<core::Color>();
-                    if (c.has_value()) {
-                        // 顏色預覽色塊
-                        core::Rect swatch(valRect.x + 4.0f, valRect.y + 3.0f, 14.0f, 14.0f);
-                        dc.DrawRectangle(swatch, *c);
-                        DrawRectOutline(dc, swatch, colors.controlBorder, 1.0f);
-
-                        char hexBuf[16];
-                        std::snprintf(hexBuf, sizeof(hexBuf), "#%02X%02X%02X", c->r, c->g, c->b);
-                        dc.DrawText(hexBuf, core::Point(valRect.x + 24.0f, valRect.y + 3.0f),
-                                    text::FontDescriptor("Segoe UI", 11.0f), colors.textPrimary);
-                    }
-                } else if (p->currentValue.Is<bool>()) {
-                    auto b = p->currentValue.Get<bool>();
-                    bool val = b.has_value() && *b;
-                    core::Rect checkSquare(valRect.x + 6.0f, valRect.y + 4.0f, 12.0f, 12.0f);
-                    DrawRectOutline(dc, checkSquare, colors.controlBorder, 1.0f);
-                    if (val) {
-                        dc.DrawRoundedRectangle(core::Rect(checkSquare.x + 2.0f, checkSquare.y + 2.0f, 8.0f, 8.0f),
-                                                1.0f, colors.accentPrimary);
-                    }
-                    dc.DrawText(val ? "True" : "False", core::Point(valRect.x + 24.0f, valRect.y + 3.0f),
-                                text::FontDescriptor("Segoe UI", 11.0f), colors.textPrimary);
-                } else {
-                    std::string valStr = FormatValueString(p->currentValue);
-                    dc.DrawText(valStr, core::Point(valRect.x + 6.0f, valRect.y + 3.0f),
-                                text::FontDescriptor("Segoe UI", 11.0f), colors.textPrimary);
-                }
-
-                curY += rowHeight;
-            }
-            curY += 4.0f;
-        }
+        totalContentH = static_cast<float>(props.size()) * 28.0f + 5.0f * 26.0f + 20.0f;
     } else {
-        // 事件分頁
         auto events = GetInspectedEvents();
-        core::Rect catRect(4.0f, curY, w - 8.0f, catHeight);
-        dc.DrawRoundedRectangle(catRect, 2.0f, colors.controlBackground);
-        std::string catTitle = "▼ 控制項事件綁定 (Events & Commands - " + std::to_string(events.size()) + ")";
-        dc.DrawText(catTitle, core::Point(8.0f, curY + 4.0f),
-                    text::FontDescriptor("Segoe UI", 11.0f, text::FontWeight::Bold),
-                    colors.textPrimary);
-        curY += catHeight + 2.0f;
-
-        for (const auto& evt : events) {
-            if (curY + rowHeight > h) break;
-
-            // 事件名稱
-            dc.DrawText(evt.descriptor.eventName, core::Point(10.0f, curY + 5.0f),
-                        text::FontDescriptor("Segoe UI", 11.5f), colors.textPrimary);
-
-            // 處理常式名稱方塊
-            core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 20.0f, rowHeight - 4.0f);
-            dc.DrawRoundedRectangle(valRect, 3.0f, colors.controlBackground);
-            DrawRectOutline(dc, valRect, colors.controlBorder, 1.0f);
-
-            if (evt.isBound) {
-                dc.DrawText("⚡ " + evt.boundHandlerOrCommand, core::Point(valRect.x + 6.0f, valRect.y + 3.0f),
-                            text::FontDescriptor("Segoe UI", 11.0f, text::FontWeight::Bold),
-                            core::Color(30, 160, 90));
-            } else {
-                dc.DrawText("[+ 點擊建立常式]", core::Point(valRect.x + 6.0f, valRect.y + 3.0f),
-                            text::FontDescriptor("Segoe UI", 10.5f),
-                            colors.accentPrimary);
-            }
-
-            curY += rowHeight;
-        }
+        totalContentH = static_cast<float>(events.size()) * 28.0f + 30.0f;
     }
+
+    float maxScroll = (std::max)(0.0f, totalContentH - scrollTrackH);
+    float step = 28.0f * 2.0f;
+
+    if (delta > 0) {
+        m_impl->scrollY = (std::max)(0.0f, m_impl->scrollY - step);
+    } else {
+        m_impl->scrollY = (std::min)(maxScroll, m_impl->scrollY + step);
+    }
+    InvalidateVisual();
+    e.SetHandled(true);
 }
 
 void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
@@ -796,15 +850,99 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
         return;
     }
 
-    // 2. 點擊事件自動綁定
+    const float contentTop = 104.0f;
+    const float rowHeight = 28.0f;
+    const float catHeight = 26.0f;
+    const float col1Width = 125.0f;
+
+    // 2. 屬性互動與就地修改 (Inline Editing & Toggling)
+    if (m_impl->currentTab == InspectorTab::Properties) {
+        auto props = GetInspectedProperties();
+        float curY = contentTop - m_impl->scrollY;
+
+        struct CatGroup {
+            PropertyCategory cat;
+            const char* title;
+        };
+        const CatGroup catGroups[] = {
+            { PropertyCategory::Common,     "一般屬性 (Common)" },
+            { PropertyCategory::Layout,     "版面與尺寸 (Layout)" },
+            { PropertyCategory::Appearance, "外觀與色彩 (Appearance)" },
+            { PropertyCategory::Text,       "文字排版 (Text)" },
+            { PropertyCategory::Behavior,   "行為狀態 (Behavior)" }
+        };
+
+        for (const auto& group : catGroups) {
+            std::vector<const InspectedProperty*> groupProps;
+            for (const auto& p : props) {
+                if (p.category == group.cat) {
+                    groupProps.push_back(&p);
+                }
+            }
+            if (groupProps.empty()) continue;
+
+            curY += catHeight + 2.0f;
+
+            for (const auto* p : groupProps) {
+                core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
+                if (valRect.Contains(pt)) {
+                    if (p->currentValue.Is<bool>()) {
+                        bool curVal = p->currentValue.Get<bool>().value_or(false);
+                        if (p->isAttached) {
+                            ChangeAttachedProperty(p->name, PropertyValue(!curVal));
+                        } else {
+                            ChangeProperty(p->name, PropertyValue(!curVal));
+                        }
+                    } else if (p->currentValue.Is<double>()) {
+                        double curVal = p->currentValue.Get<double>().value_or(0.0);
+                        double newVal = curVal >= 300.0 ? 50.0 : (curVal + 10.0);
+                        if (p->isAttached) {
+                            ChangeAttachedProperty(p->name, PropertyValue(newVal));
+                        } else {
+                            ChangeProperty(p->name, PropertyValue(newVal));
+                        }
+                    } else if (p->currentValue.Is<std::string>()) {
+                        std::string curVal = p->currentValue.Get<std::string>().value_or("");
+                        std::string newVal = curVal.empty() ? "Hello CPPUI" : (curVal + "!");
+                        if (newVal.size() > 32) newVal = "Custom Value";
+                        if (p->isAttached) {
+                            ChangeAttachedProperty(p->name, PropertyValue(newVal));
+                        } else {
+                            ChangeProperty(p->name, PropertyValue(newVal));
+                        }
+                    } else if (p->currentValue.Is<core::Color>()) {
+                        static const core::Color s_presetColors[] = {
+                            core::Color(14, 110, 210),
+                            core::Color(24, 134, 75),
+                            core::Color(210, 50, 45),
+                            core::Color(130, 70, 210),
+                            core::Color(60, 64, 75)
+                        };
+                        static size_t s_colorIdx = 0;
+                        s_colorIdx = (s_colorIdx + 1) % 5;
+                        if (p->isAttached) {
+                            ChangeAttachedProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
+                        } else {
+                            ChangeProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
+                        }
+                    }
+                    InvalidateVisual();
+                    e.SetHandled(true);
+                    return;
+                }
+                curY += rowHeight;
+            }
+            curY += 4.0f;
+        }
+    }
+
+    // 3. 點擊事件自動綁定
     if (m_impl->currentTab == InspectorTab::Events) {
         auto events = GetInspectedEvents();
-        float curY = 104.0f + 26.0f; // 略過標頭
-        const float rowHeight = 26.0f;
-        const float col1Width = 125.0f;
+        float curY = contentTop + catHeight + 2.0f - m_impl->scrollY;
 
         for (const auto& evt : events) {
-            core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 20.0f, rowHeight - 4.0f);
+            core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
             if (valRect.Contains(pt)) {
                 if (!evt.isBound) {
                     AutoBindEvent(evt.descriptor.eventName);

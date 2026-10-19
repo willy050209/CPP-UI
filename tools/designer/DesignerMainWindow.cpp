@@ -43,6 +43,7 @@ struct DesignerMainWindow::Impl {
     std::shared_ptr<preview::CodePreviewWindow> m_codeWindow;
     std::shared_ptr<inspector::InspectorPanel> m_inspector;
     std::shared_ptr<controls::Label> m_statusLabel;
+    float m_fontScale = 1.0f;
 
     std::string m_saveBtnUuid;
     std::string m_cancelBtnUuid;
@@ -194,7 +195,7 @@ DesignerMainWindow::DesignerMainWindow()
 
     // 1. 頂部工具列 (Top Toolbar)
     auto titleBlock = std::make_shared<controls::TextBlock>("💠 CPPUI Designer");
-    titleBlock->SetFontSize(15.0f);
+    titleBlock->SetFontSize(16.0f);
     titleBlock->SetFontWeight(text::FontWeight::Bold);
     titleBlock->SetForeground(core::Color(80, 160, 255));
     titleBlock->SetVerticalAlignment(layout::VerticalAlignment::Center);
@@ -210,14 +211,45 @@ DesignerMainWindow::DesignerMainWindow()
     redoBtn->SetMargin(core::Thickness(2.0f));
     redoBtn->OnClick([this]() { (void)m_impl->m_surface->Redo(); });
 
-    auto deleteBtn = std::make_shared<controls::Button>("🗑 刪除元件");
+    auto deleteBtn = std::make_shared<controls::Button>("🗑 刪除");
     deleteBtn->SetPadding(core::Thickness(10.0f, 5.0f, 10.0f, 5.0f));
     deleteBtn->SetMargin(core::Thickness(2.0f));
     deleteBtn->OnClick([this]() { (void)m_impl->m_surface->DeleteSelected(); });
 
+    // 字型縮放控制組 (A- / 100% / A+)
+    auto fontMinusBtn = std::make_shared<controls::Button>("A-");
+    fontMinusBtn->SetPadding(core::Thickness(8.0f, 5.0f, 8.0f, 5.0f));
+    fontMinusBtn->SetMargin(core::Thickness(2.0f));
+
+    auto fontResetBtn = std::make_shared<controls::Button>("100%");
+    fontResetBtn->SetPadding(core::Thickness(8.0f, 5.0f, 8.0f, 5.0f));
+    fontResetBtn->SetMargin(core::Thickness(2.0f));
+
+    auto fontPlusBtn = std::make_shared<controls::Button>("A+");
+    fontPlusBtn->SetPadding(core::Thickness(8.0f, 5.0f, 8.0f, 5.0f));
+    fontPlusBtn->SetMargin(core::Thickness(2.0f));
+
+    auto updateFontZoom = [this, fontResetBtn](float newScale) {
+        m_impl->m_fontScale = compat::clamp(newScale, 0.8f, 1.5f);
+        int32_t pct = static_cast<int32_t>(std::round(m_impl->m_fontScale * 100.0f));
+        fontResetBtn->SetContent(std::to_string(pct) + "%");
+        InvalidateVisual();
+        InvalidateForm();
+    };
+
+    fontMinusBtn->OnClick([this, updateFontZoom]() {
+        updateFontZoom(m_impl->m_fontScale - 0.1f);
+    });
+    fontResetBtn->OnClick([updateFontZoom]() {
+        updateFontZoom(1.0f);
+    });
+    fontPlusBtn->OnClick([this, updateFontZoom]() {
+        updateFontZoom(m_impl->m_fontScale + 0.1f);
+    });
+
     auto runBtn = std::make_shared<controls::Button>("▶ 預覽執行 (Live Run)");
     runBtn->SetPadding(core::Thickness(12.0f, 5.0f, 12.0f, 5.0f));
-    runBtn->SetMargin(core::Thickness(8.0f, 2.0f, 2.0f, 2.0f));
+    runBtn->SetMargin(core::Thickness(6.0f, 2.0f, 2.0f, 2.0f));
     runBtn->SetBackground(core::Color(24, 134, 75));
     runBtn->SetForeground(core::Color(255, 255, 255));
     runBtn->OnClick([this]() { TriggerLiveRun(); });
@@ -229,12 +261,12 @@ DesignerMainWindow::DesignerMainWindow()
     codeBtn->SetForeground(core::Color(255, 255, 255));
     codeBtn->OnClick([this]() { TriggerCodePreview(); });
 
-    auto themeBtn = std::make_shared<controls::Button>("🎨 切換主題");
+    auto themeBtn = std::make_shared<controls::Button>("🎨 主題");
     themeBtn->SetPadding(core::Thickness(10.0f, 5.0f, 10.0f, 5.0f));
     themeBtn->SetMargin(core::Thickness(2.0f));
     themeBtn->OnClick([this]() { ToggleTheme(); });
 
-    auto exportBtn = std::make_shared<controls::Button>("📦 匯出 CMake 專案");
+    auto exportBtn = std::make_shared<controls::Button>("📦 匯出 CMake");
     exportBtn->SetPadding(core::Thickness(12.0f, 5.0f, 12.0f, 5.0f));
     exportBtn->SetMargin(core::Thickness(2.0f));
     exportBtn->SetBackground(core::Color(130, 70, 210));
@@ -246,29 +278,53 @@ DesignerMainWindow::DesignerMainWindow()
         undoBtn,
         redoBtn,
         deleteBtn,
+        fontMinusBtn,
+        fontResetBtn,
+        fontPlusBtn,
         runBtn,
         codeBtn,
         themeBtn,
         exportBtn
     })
-    .Spacing(4)
-    .Height(42)
+    .Spacing(3)
+    .Height(44)
     .Padding(8, 4)
     .Get();
 
-    // 2. 左側欄 (工具箱與元件層級樹)
+    // 2. 左側欄 (工具箱與元件層級樹 - 具有獨立搜尋輸入框與清晰滾動視區)
     auto toolboxHeader = std::make_shared<controls::TextBlock>("🛠 控制項工具箱 (Toolbox)");
-    toolboxHeader->SetFontSize(13.0f);
+    toolboxHeader->SetFontSize(14.5f);
     toolboxHeader->SetFontWeight(text::FontWeight::Bold);
-    toolboxHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 4.0f));
+    toolboxHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 2.0f));
+
+    auto toolboxSearch = std::make_shared<controls::TextBox>();
+    toolboxSearch->SetPlaceholder("🔍 搜尋控制項...");
+    toolboxSearch->SetFontSize(12.0f);
+    toolboxSearch->SetHeight(28.0f);
+    toolboxSearch->SetMargin(core::Thickness(2.0f, 2.0f, 2.0f, 4.0f));
+    toolboxSearch->OnTextChanged([this](compat::string_view text) {
+        if (m_impl->m_toolbox) {
+            m_impl->m_toolbox->SetFilterText(text);
+        }
+    });
+
+    m_impl->m_toolbox->SetWidth(240.0f);
+    m_impl->m_toolbox->SetHeight(310.0f);
+    m_impl->m_toolbox->SetMargin(core::Thickness(0.0f, 0.0f, 0.0f, 6.0f));
 
     auto treeHeader = std::make_shared<controls::TextBlock>("🌳 元件層級樹 (Hierarchy)");
-    treeHeader->SetFontSize(13.0f);
+    treeHeader->SetFontSize(14.5f);
     treeHeader->SetFontWeight(text::FontWeight::Bold);
-    treeHeader->SetMargin(core::Thickness(4.0f, 10.0f, 4.0f, 4.0f));
+    treeHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 2.0f));
+
+    auto treeSearch = std::make_shared<controls::TextBox>();
+    treeSearch->SetPlaceholder("🔍 篩選元件樹...");
+    treeSearch->SetFontSize(12.0f);
+    treeSearch->SetHeight(28.0f);
+    treeSearch->SetMargin(core::Thickness(2.0f, 2.0f, 2.0f, 4.0f));
 
     auto hierarchyBox = std::make_shared<controls::ListBox>();
-    hierarchyBox->SetHeight(270.0f);
+    hierarchyBox->SetHeight(230.0f);
     hierarchyBox->AddItem("▾ 📄 AccountSettingsForm (Form)");
     hierarchyBox->AddItem("   ▾ 🎨 mainCanvas (Canvas)");
     hierarchyBox->AddItem("      🏷 titleLabel (Label)");
@@ -283,17 +339,19 @@ DesignerMainWindow::DesignerMainWindow()
 
     auto leftSidebar = VStack({
         toolboxHeader,
+        toolboxSearch,
         m_impl->m_toolbox,
         treeHeader,
+        treeSearch,
         hierarchyBox
     })
-    .Width(230)
+    .Width(240)
     .Padding(6)
     .Get();
 
     // 3. 中央主工作區 (純畫布表面 - 完整開展不被預覽壓縮)
     auto surfaceHeader = std::make_shared<controls::TextBlock>("🎨 設計畫布表面 (Design Surface - 800 x 520)");
-    surfaceHeader->SetFontSize(13.0f);
+    surfaceHeader->SetFontSize(14.5f);
     surfaceHeader->SetFontWeight(text::FontWeight::Bold);
     surfaceHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 4.0f));
 
@@ -305,17 +363,20 @@ DesignerMainWindow::DesignerMainWindow()
     .Padding(6)
     .Get();
 
-    // 4. 右側欄 (屬性與事件檢查器)
+    // 4. 右側欄 (屬性與事件檢查器 - 具備搜尋與獨立滾動軸)
     auto inspectorHeader = std::make_shared<controls::TextBlock>("⚙ 屬性與事件檢查器 (Inspector)");
-    inspectorHeader->SetFontSize(13.0f);
+    inspectorHeader->SetFontSize(14.5f);
     inspectorHeader->SetFontWeight(text::FontWeight::Bold);
     inspectorHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 4.0f));
+
+    m_impl->m_inspector->SetWidth(330.0f);
+    m_impl->m_inspector->SetHeight(680.0f);
 
     auto rightSidebar = VStack({
         inspectorHeader,
         m_impl->m_inspector
     })
-    .Width(320)
+    .Width(330)
     .Padding(6)
     .Get();
 
@@ -323,7 +384,7 @@ DesignerMainWindow::DesignerMainWindow()
     m_impl->m_statusLabel = std::make_shared<controls::Label>(
         "狀態: 就緒 | 當前選取: saveBtn (Button) | 位置: (170, 190) 尺寸: 130 x 34 | 導引線: 啟用 | 歷史: 0 步"
     );
-    m_impl->m_statusLabel->SetFontSize(11.0f);
+    m_impl->m_statusLabel->SetFontSize(12.0f);
     m_impl->m_statusLabel->SetForeground(core::Color(160, 164, 175));
     m_impl->m_statusLabel->SetMargin(core::Thickness(12.0f, 4.0f, 12.0f, 4.0f));
 

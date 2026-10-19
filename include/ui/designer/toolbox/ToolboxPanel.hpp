@@ -132,6 +132,7 @@ protected:
     void OnPointerPressedCore(input::PointerEventArgs& e) override;
     void OnPointerMovedCore(input::PointerEventArgs& e) override;
     void OnPointerReleasedCore(input::PointerEventArgs& e) override;
+    void OnPointerWheelCore(input::PointerEventArgs& e) override;
 
 private:
     struct Impl;

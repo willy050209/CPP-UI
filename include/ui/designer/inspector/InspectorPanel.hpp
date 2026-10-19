@@ -165,6 +165,7 @@ public:
 protected:
     void OnRender(rendering::DrawingContext& dc) override;
     void OnPointerPressedCore(input::PointerEventArgs& e) override;
+    void OnPointerWheelCore(input::PointerEventArgs& e) override;
 
 private:
     struct Impl;
