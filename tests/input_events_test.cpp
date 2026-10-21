@@ -419,6 +419,95 @@ int main() {
         compat::println("  [PASS] RawInputEvent end-to-end pipeline correctly dispatched.");
     }
 
+    // -------------------------------------------------------------------------
+    // [Test 9] Virtual Hooks Single Dispatch (No Double-Dispatch)
+    // -------------------------------------------------------------------------
+    compat::println("[Test 9] Virtual Hooks Single Dispatch (No Double-Dispatch)...");
+    {
+        class HookSpyElement : public UIElement {
+        public:
+            int32_t pressedCount = 0;
+            int32_t releasedCount = 0;
+            int32_t movedCount = 0;
+            int32_t keyDownCount = 0;
+            int32_t keyUpCount = 0;
+
+        protected:
+            void OnPointerPressedCore(input::PointerEventArgs& e) override {
+                pressedCount++;
+                UIElement::OnPointerPressedCore(e);
+            }
+            void OnPointerReleasedCore(input::PointerEventArgs& e) override {
+                releasedCount++;
+                UIElement::OnPointerReleasedCore(e);
+            }
+            void OnPointerMovedCore(input::PointerEventArgs& e) override {
+                movedCount++;
+                UIElement::OnPointerMovedCore(e);
+            }
+            void OnKeyDownCore(input::KeyEventArgs& e) override {
+                keyDownCount++;
+                UIElement::OnKeyDownCore(e);
+            }
+            void OnKeyUpCore(input::KeyEventArgs& e) override {
+                keyUpCount++;
+                UIElement::OnKeyUpCore(e);
+            }
+        };
+
+        auto root = std::make_shared<HookSpyElement>();
+        auto child = std::make_shared<HookSpyElement>();
+        root->AddVisualChild(child);
+
+        // 1. PointerPressed route dispatch (Preview -> Bubble)
+        PointerEventArgs pressArgs(StandardEvents::PointerPressed, child.get(), Point(10.0f, 10.0f));
+        EventRoute pressRoute(child.get());
+        pressRoute.Dispatch(StandardEvents::PreviewPointerPressed, StandardEvents::PointerPressed, pressArgs);
+
+        // Child and root should only have their virtual hook invoked EXACTLY ONCE (during bubble)
+        assert(child->pressedCount == 1);
+        assert(root->pressedCount == 1);
+
+        // 2. PointerReleased route dispatch
+        PointerEventArgs relArgs(StandardEvents::PointerReleased, child.get(), Point(10.0f, 10.0f));
+        EventRoute relRoute(child.get());
+        relRoute.Dispatch(StandardEvents::PreviewPointerReleased, StandardEvents::PointerReleased, relArgs);
+        assert(child->releasedCount == 1);
+        assert(root->releasedCount == 1);
+
+        // 3. PointerMoved route dispatch
+        PointerEventArgs moveArgs(StandardEvents::PointerMoved, child.get(), Point(15.0f, 15.0f));
+        EventRoute moveRoute(child.get());
+        moveRoute.Dispatch(StandardEvents::PreviewPointerMoved, StandardEvents::PointerMoved, moveArgs);
+        assert(child->movedCount == 1);
+        assert(root->movedCount == 1);
+
+        // 4. KeyDown & KeyUp route dispatch
+        KeyEventArgs keyArgs(StandardEvents::KeyDown, child.get(), Key::Return);
+        EventRoute keyRoute(child.get());
+        keyRoute.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, keyArgs);
+        assert(child->keyDownCount == 1);
+        assert(root->keyDownCount == 1);
+
+        KeyEventArgs keyUpArgs(StandardEvents::KeyUp, child.get(), Key::Return);
+        EventRoute keyUpRoute(child.get());
+        keyUpRoute.Dispatch(StandardEvents::PreviewKeyUp, StandardEvents::KeyUp, keyUpArgs);
+        assert(child->keyUpCount == 1);
+        assert(root->keyUpCount == 1);
+
+        // 5. Early termination in tunneling: if preview handled, bubbling skipped and virtual hooks never fire!
+        auto previewHandleChild = std::make_shared<HookSpyElement>();
+        previewHandleChild->AddHandler(StandardEvents::PreviewPointerPressed, [](RoutedEventArgs& e) {
+            e.SetHandled(true);
+        });
+        PointerEventArgs handledArgs(StandardEvents::PointerPressed, previewHandleChild.get(), Point(5.0f, 5.0f));
+        EventRoute handledRoute(previewHandleChild.get());
+        handledRoute.Dispatch(StandardEvents::PreviewPointerPressed, StandardEvents::PointerPressed, handledArgs);
+        assert(previewHandleChild->pressedCount == 0);
+
+        compat::println("  [PASS] Single dispatch of virtual hooks verified; preview short-circuiting verified.");
+    }
+
     compat::println("=================================================");
     compat::println(" ALL M5 INPUT & ROUTED EVENTS TESTS PASSED!      ");
     compat::println("=================================================");

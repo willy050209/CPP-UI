@@ -330,15 +330,16 @@ void UIElement::RaiseEventInternal(const input::RoutedEvent& routedEvent, input:
     uint32_t id = routedEvent.GetId();
 
     // 1. 呼叫虛擬掛載點
-    if (id == input::StandardEvents::PointerPressed.GetId() || id == input::StandardEvents::PreviewPointerPressed.GetId()) {
-        if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
-            OnPointerPressedCore(*pe);
-        }
-    } else if (id == input::StandardEvents::PointerReleased.GetId() || id == input::StandardEvents::PreviewPointerReleased.GetId()) {
+    if (!e.IsHandled()) {
+        if (id == input::StandardEvents::PointerPressed.GetId()) {
+            if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
+                OnPointerPressedCore(*pe);
+            }
+        } else if (id == input::StandardEvents::PointerReleased.GetId()) {
         if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
             OnPointerReleasedCore(*pe);
         }
-    } else if (id == input::StandardEvents::PointerMoved.GetId() || id == input::StandardEvents::PreviewPointerMoved.GetId()) {
+    } else if (id == input::StandardEvents::PointerMoved.GetId()) {
         if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
             OnPointerMovedCore(*pe);
         }
@@ -354,11 +355,11 @@ void UIElement::RaiseEventInternal(const input::RoutedEvent& routedEvent, input:
         if (auto* pe = dynamic_cast<input::PointerEventArgs*>(&e)) {
             OnPointerExitedCore(*pe);
         }
-    } else if (id == input::StandardEvents::KeyDown.GetId() || id == input::StandardEvents::PreviewKeyDown.GetId()) {
+    } else if (id == input::StandardEvents::KeyDown.GetId()) {
         if (auto* ke = dynamic_cast<input::KeyEventArgs*>(&e)) {
             OnKeyDownCore(*ke);
         }
-    } else if (id == input::StandardEvents::KeyUp.GetId() || id == input::StandardEvents::PreviewKeyUp.GetId()) {
+    } else if (id == input::StandardEvents::KeyUp.GetId()) {
         if (auto* ke = dynamic_cast<input::KeyEventArgs*>(&e)) {
             OnKeyUpCore(*ke);
         }
@@ -378,6 +379,7 @@ void UIElement::RaiseEventInternal(const input::RoutedEvent& routedEvent, input:
         if (auto* fe = dynamic_cast<input::FocusEventArgs*>(&e)) {
             OnLostFocusCore(*fe);
         }
+    }
     }
 
     // 2. 派發給註冊的監聽器列表 (複製一份避免回呼中修改容器引發迭代器失效)

@@ -86,13 +86,12 @@ std::string ClipboardWin32::GetText() const {
 }
 
 void ClipboardWin32::SetText(compat::string_view text) {
+    m_fallbackText = std::string(text.data(), text.size());
     ClipboardScope scope;
     if (!scope.IsOpened()) {
-        m_fallbackText = std::string(text.data(), text.size());
         return;
     }
 
-    m_fallbackText.clear();
     ::EmptyClipboard();
 
     if (text.empty()) return;

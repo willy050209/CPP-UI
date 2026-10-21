@@ -270,6 +270,18 @@ public:
     /// <param name="handler">事件回呼常式。</param>
     void AddClosedHandler(FormClosedHandler handler);
 
+    /// <summary>
+    /// 註冊表單即將關閉事件監聽常式 (便利方法)。
+    /// </summary>
+    /// <param name="handler">事件回呼常式。</param>
+    void OnClosing(FormClosingHandler handler) { AddClosingHandler(std::move(handler)); }
+
+    /// <summary>
+    /// 註冊表單已關閉事件監聽常式 (便利方法)。
+    /// </summary>
+    /// <param name="handler">事件回呼常式。</param>
+    void OnClosed(FormClosedHandler handler) { AddClosedHandler(std::move(handler)); }
+
     // --- 原生視窗與底層存取 ---
 
     /// <summary>

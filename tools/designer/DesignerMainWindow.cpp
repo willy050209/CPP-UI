@@ -342,12 +342,29 @@ DesignerMainWindow::DesignerMainWindow()
             if (p.propertyName == "Name") {
                 m_impl->RebuildHierarchyTree();
             }
+            if (m_impl->m_surface) {
+                m_impl->m_surface->InvalidateVisual();
+            }
+            if (m_impl->m_inspector) {
+                m_impl->m_inspector->InvalidateVisual();
+            }
             m_impl->UpdateStatus();
         })
     );
     m_impl->m_connections.push_back(
         m_impl->m_doc.SettingsChangedSignal().Connect([this](const FormSettingsChangedPayload&) {
             m_impl->RebuildHierarchyTree();
+            if (m_impl->m_surface) {
+                m_impl->m_surface->InvalidateVisual();
+            }
+            if (m_impl->m_inspector) {
+                m_impl->m_inspector->InvalidateVisual();
+            }
+            m_impl->UpdateStatus();
+        })
+    );
+    m_impl->m_connections.push_back(
+        m_impl->m_inspector->EventChangedSignal().Connect([this](const inspector::EventChangePayload&) {
             m_impl->UpdateStatus();
         })
     );
@@ -756,11 +773,14 @@ void DesignerMainWindow::TriggerLiveRun() {
 }
 
 void DesignerMainWindow::TriggerCodePreview() {
-    if (!m_impl->m_codeWindow) {
+    if (!m_impl->m_codeWindow || m_impl->m_codeWindow->IsDisposed()) {
         m_impl->m_codeWindow = std::make_shared<preview::CodePreviewWindow>(
             &m_impl->m_doc,
             &m_impl->m_surface->GetSelectionModel()
         );
+        m_impl->m_codeWindow->OnClosed([this](app::Form&, const app::FormClosedEventArgs&) {
+            m_impl->m_codeWindow = nullptr;
+        });
     }
     m_impl->m_codeWindow->RefreshCode();
     m_impl->m_codeWindow->Show();

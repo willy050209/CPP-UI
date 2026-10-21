@@ -463,6 +463,105 @@ static void TestResetToDefaultIntegrity() {
     compat::println("  [PASS] Reset to Default integrity verified.");
 }
 
+static void TestDefectFixesRegression() {
+    compat::println("[Test 9] Phase 8 Defect Fixes Regression Tests...");
+
+    // a) Verify Color Property Parsing & Editing
+    // 1. Valid hex '#336699'
+    auto c1 = PropertyEditorModel::ParseColor("#336699");
+    assert(c1.has_value());
+    auto color1 = c1->Get<core::Color>().value();
+    assert(color1.r == 0x33);
+    assert(color1.g == 0x66);
+    assert(color1.b == 0x99);
+    assert(color1.a == 255);
+    assert(color1 == (core::Color{ 0x33, 0x66, 0x99, 255 }));
+
+    // 2. Valid hex '336699' (without # prefix)
+    auto c2 = PropertyEditorModel::ParseColor("336699");
+    assert(c2.has_value());
+    auto color2 = c2->Get<core::Color>().value();
+    assert(color2.r == 0x33);
+    assert(color2.g == 0x66);
+    assert(color2.b == 0x99);
+    assert(color2.a == 255);
+    assert(color2 == (core::Color{ 0x33, 0x66, 0x99, 255 }));
+
+    // 3. Valid hex '#AABBCCDD' (with alpha component)
+    auto c3 = PropertyEditorModel::ParseColor("#AABBCCDD");
+    assert(c3.has_value());
+    auto color3 = c3->Get<core::Color>().value();
+    assert(color3.r == 0xAA);
+    assert(color3.g == 0xBB);
+    assert(color3.b == 0xCC);
+    assert(color3.a == 0xDD);
+    assert(color3 == (core::Color{ 0xAA, 0xBB, 0xCC, 0xDD }));
+
+    // 4. Invalid hex strings
+    auto cInvalid = PropertyEditorModel::ParseColor("#invalid");
+    assert(!cInvalid.has_value());
+
+    auto cEmpty = PropertyEditorModel::ParseColor("");
+    assert(!cEmpty.has_value());
+
+    // AST and Inspector setup for editing tests
+    FormDocumentNode doc;
+    auto root = std::make_unique<WidgetNode>(NodeType::Canvas, "rootCanvas");
+    auto btn = std::make_unique<WidgetNode>(NodeType::Button, "SubmitBtn");
+    std::string btnUuid = btn->GetUuid();
+
+    assert(root->AddChild(std::move(btn)).has_value());
+    doc.SetRoot(std::move(root));
+
+    CommandHistoryManager history;
+    SelectionModel sm;
+    InspectorPanel inspector(&doc, &history, &sm);
+
+    sm.SetSelection(btnUuid);
+
+    // Verify changing a color property on a WidgetNode via inspector.ChangeProperty
+    core::Color expectedColor{ 0x33, 0x66, 0x99, 255 };
+    bool colorChangeOk = inspector.ChangeProperty("Background", PropertyValue(expectedColor));
+    assert(colorChangeOk);
+
+    WidgetNode* btnNode = doc.FindByUuid(btnUuid);
+    assert(btnNode != nullptr);
+    auto bgProp = btnNode->GetProperty("Background");
+    assert(bgProp.has_value());
+    assert(bgProp->Get<core::Color>().value() == expectedColor);
+
+    // b) Verify Event Binding & Unbinding
+    inspector.SetCurrentTab(InspectorTab::Events);
+    std::string autoHandler = inspector.AutoBindEvent("Click");
+    assert(autoHandler == "OnSubmitBtnClick");
+
+    const auto& eventBindings = btnNode->GetEventBindings();
+    assert(eventBindings.size() == 1);
+    assert(eventBindings[0].eventName == "Click");
+    assert(eventBindings[0].handlerName == "OnSubmitBtnClick");
+
+    bool unbindOk = inspector.UnbindEvent("Click");
+    assert(unbindOk);
+    assert(btnNode->GetEventBindings().empty());
+
+    // c) Verify Boolean Property Click Handling
+    inspector.SetCurrentTab(InspectorTab::Properties);
+    bool setFalseOk = inspector.ChangeProperty("IsEnabled", PropertyValue(false));
+    assert(setFalseOk);
+    auto boolProp = btnNode->GetProperty("IsEnabled");
+    assert(boolProp.has_value());
+    assert(boolProp->Get<bool>().value() == false);
+
+    bool currVal = boolProp->Get<bool>().value();
+    bool toggleOk = inspector.ChangeProperty("IsEnabled", PropertyValue(!currVal));
+    assert(toggleOk);
+    auto toggledProp = btnNode->GetProperty("IsEnabled");
+    assert(toggledProp.has_value());
+    assert(toggledProp->Get<bool>().value() == true);
+
+    compat::println("  [PASS] Phase 8 defect fixes regression verified.");
+}
+
 int main() {
     compat::println("=== CPPUI Designer Phase 4 Inspector Test Suite ===");
 
@@ -474,6 +573,7 @@ int main() {
     TestEventAutoNamingAndAstBinding();
     TestBatchMacroCommandUndoRedo();
     TestResetToDefaultIntegrity();
+    TestDefectFixesRegression();
 
     compat::println("=== All Phase 4 Inspector Tests Passed Successfully! ===");
     return 0;

@@ -537,10 +537,10 @@ bool InspectorPanel::ChangeProperty(compat::string_view propName, const Property
             s.defaultTheme = newValue.Get<std::string>().value();
             handled = true;
         } else if (propName == "UseMvvm" && newValue.Is<bool>()) {
-            s.useMvvm = newValue.Get<bool>().value();
+            s.useMvvm = newValue.Get<bool>().value_or(false);
             handled = true;
         } else if (propName == "UseIoC" && newValue.Is<bool>()) {
-            s.useIoC = newValue.Get<bool>().value();
+            s.useIoC = newValue.Get<bool>().value_or(false);
             handled = true;
         } else if (propName == "Background" && m_impl->document->GetRoot()) {
             m_impl->document->GetRoot()->SetProperty("Background", newValue);
@@ -549,16 +549,16 @@ bool InspectorPanel::ChangeProperty(compat::string_view propName, const Property
             m_impl->document->GetRoot()->SetProperty("Padding", newValue);
             handled = true;
         } else if (propName == "StartPosition" && newValue.Is<std::string>()) {
-            s.startPosition = newValue.Get<std::string>().value();
+            s.startPosition = newValue.Get<std::string>().value_or("");
             handled = true;
         } else if (propName == "WindowState" && newValue.Is<std::string>()) {
-            s.windowState = newValue.Get<std::string>().value();
+            s.windowState = newValue.Get<std::string>().value_or("");
             handled = true;
         } else if (propName == "Topmost" && newValue.Is<bool>()) {
-            s.topmost = newValue.Get<bool>().value();
+            s.topmost = newValue.Get<bool>().value_or(false);
             handled = true;
         } else if (propName == "ShowInTaskbar" && newValue.Is<bool>()) {
-            s.showInTaskbar = newValue.Get<bool>().value();
+            s.showInTaskbar = newValue.Get<bool>().value_or(false);
             handled = true;
         }
 
@@ -960,11 +960,11 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
                                 text::FontDescriptor("Segoe UI", 11.5f, text::FontWeight::Bold),
                                 core::Color(30, 160, 90));
                     // 繪製解除綁定按鈕 [✕]
-                    core::Rect delRect(valRect.x + valRect.width - 22.0f, valRect.y + 2.0f, 18.0f, valRect.height - 4.0f);
+                    core::Rect delRect(valRect.x + valRect.width - 30.0f, valRect.y + 2.0f, 26.0f, valRect.height - 4.0f);
                     dc.DrawRoundedRectangle(delRect, 2.0f, core::Color(65, 30, 30));
                     DrawRectOutline(dc, delRect, core::Color(180, 50, 50), 1.0f);
-                    dc.DrawText("✕", core::Point(delRect.x + 4.0f, delRect.y + 1.0f),
-                                text::FontDescriptor("Segoe UI", 10.0f, text::FontWeight::Bold),
+                    dc.DrawText("✕", core::Point(delRect.x + 8.0f, delRect.y + 2.0f),
+                                text::FontDescriptor("Segoe UI", 11.0f, text::FontWeight::Bold),
                                 core::Color(255, 100, 100));
                 } else {
                     dc.DrawText("[+ 點擊建立常式]", core::Point(valRect.x + 6.0f, valRect.y + 4.0f),
@@ -1105,6 +1105,9 @@ void InspectorPanel::OnPointerWheelCore(input::PointerEventArgs& e) {
 }
 
 void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
+    if (e.IsHandled()) {
+        return;
+    }
     core::Point pt = e.GetPosition(this);
     float w = GetActualSize().width > 0.0f ? GetActualSize().width : (GetWidth() > 0.0f ? GetWidth() : 310.0f);
 
@@ -1218,20 +1221,32 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
                             dd.popupRect = core::Rect(valRect.x, valRect.y + valRect.height + 2.0f, valRect.width, popH);
                             m_impl->activeDropdown = std::move(dd);
                         } else if (p->currentValue.Is<core::Color>()) {
-                            m_impl->CommitInlineEdit();
-                            static const core::Color s_presetColors[] = {
-                                core::Color(14, 110, 210),
-                                core::Color(24, 134, 75),
-                                core::Color(210, 50, 45),
-                                core::Color(130, 70, 210),
-                                core::Color(60, 64, 75)
-                            };
-                            static size_t s_colorIdx = 0;
-                            s_colorIdx = (s_colorIdx + 1) % 5;
-                            if (p->isAttached) {
-                                ChangeAttachedProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
+                            core::Rect swatch(valRect.x + 4.0f, valRect.y + 4.0f, 16.0f, 16.0f);
+                            if (swatch.Contains(pt)) {
+                                m_impl->CommitInlineEdit();
+                                static const core::Color s_presetColors[] = {
+                                    core::Color(14, 110, 210),
+                                    core::Color(24, 134, 75),
+                                    core::Color(210, 50, 45),
+                                    core::Color(130, 70, 210),
+                                    core::Color(60, 64, 75)
+                                };
+                                static size_t s_colorIdx = 0;
+                                s_colorIdx = (s_colorIdx + 1) % 5;
+                                if (p->isAttached) {
+                                    ChangeAttachedProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
+                                } else {
+                                    ChangeProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
+                                }
                             } else {
-                                ChangeProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
+                                // 點擊色塊右側文字區域：啟動行內鍵盤文字編輯模式 (#RRGGBB)
+                                m_impl->CommitInlineEdit();
+                                m_impl->editingPropName = p->name;
+                                m_impl->isEditingAttached = p->isAttached;
+                                m_impl->editingBuffer = FormatValueString(p->currentValue);
+                                m_impl->caretPos = m_impl->editingBuffer.size();
+                                m_impl->editingRect = valRect;
+                                Focus();
                             }
                         } else {
                             // 啟動行內鍵盤文字編輯模式
@@ -1267,8 +1282,9 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
             core::Rect valRect(col1Width + 12.0f, curY + 2.0f, w - col1Width - 24.0f, rowHeight - 4.0f);
             if (valRect.Contains(pt)) {
                 if (evt.isBound) {
-                    core::Rect delRect(valRect.x + valRect.width - 24.0f, valRect.y + 2.0f, 22.0f, valRect.height - 4.0f);
-                    if (delRect.Contains(pt)) {
+                    // 擴大解除綁定按鈕命中熱區 (覆蓋右側 40px 及完整列高)
+                    core::Rect delHitRect(valRect.x + valRect.width - 40.0f, curY, 40.0f, rowHeight);
+                    if (delHitRect.Contains(pt)) {
                         UnbindEvent(evt.descriptor.eventName);
                         InvalidateVisual();
                         e.SetHandled(true);

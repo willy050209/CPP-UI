@@ -29,14 +29,19 @@ void EventRoute::Dispatch(const RoutedEvent& tunnelEvent,
     for (auto it = m_branch.rbegin(); it != m_branch.rend(); ++it) {
         if (it->token.IsAlive() && it->element) {
             it->element->RaiseEventInternal(tunnelEvent, args);
+            if (args.IsHandled()) {
+                return;
+            }
         }
     }
 
     // 2. 冒泡階段 (Bubbling: Target -> Root)
-    args.SetRoutedEvent(bubbleEvent);
-    for (auto it = m_branch.begin(); it != m_branch.end(); ++it) {
-        if (it->token.IsAlive() && it->element) {
-            it->element->RaiseEventInternal(bubbleEvent, args);
+    if (!args.IsHandled()) {
+        args.SetRoutedEvent(bubbleEvent);
+        for (auto it = m_branch.begin(); it != m_branch.end(); ++it) {
+            if (it->token.IsAlive() && it->element) {
+                it->element->RaiseEventInternal(bubbleEvent, args);
+            }
         }
     }
 }
