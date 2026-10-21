@@ -28,20 +28,20 @@
 ```mermaid
 flowchart LR
     subgraph Space1 ["1. 視窗排版空間"]
-        Client["clientPos: (36, 120)<br/>UIElement::m_visualBounds"]
+        Client["clientPos: (24, 80)<br/>UIElement::m_visualBounds"]
     end
 
-    subgraph Space2 ["2. 原生物理空間"]
-        Phys["physicalPos: (36, 120)<br/>SoftwareRenderTarget (1180x780)"]
-    end
-
-    subgraph Space3 ["3. 邏輯 DIP 空間"]
+    subgraph Space3 ["2. 邏輯 DIP 空間"]
         Log["logicalPos: (24, 80)<br/>96 DPI 設備無關度量"]
     end
 
-    Space2 -- "ToLogical()" --> Space3
-    Space3 -- "ToPhysical()" --> Space2
-    Client -. "1:1 對齊" .-> Space2
+    subgraph Space2 ["3. 原生物理空間"]
+        Phys["physicalPos: (36, 120)<br/>SoftwareRenderTarget / Framebuffer (1650x1125)"]
+    end
+
+    Client -. "1:1 統一對齊" .-> Space3
+    Space3 -- "DisplayListRenderer / DirectWrite (x DpiScale)" --> Space2
+    Space2 -- "m_coordTransform.ToLogical()" --> Space3
 ```
 
 ### 職責劃分
@@ -49,7 +49,7 @@ flowchart LR
    * `window->GetSize()`：透過 `m_coordTransform.ToLogical` 回傳**邏輯尺寸 (DIP)**。
    * `window->GetFramebufferSize()`：回傳**物理尺寸**，供光柵化畫布配置記憶體使用。
 2. **滑鼠輸入事件 ([`RawMouseEventData`](../classes/pal_rawinputevent.md))**：
-   * `event.mouse.position`：始終為**視窗客戶區排版座標**，與視覺樹排版邊界 1:1 對齊，確保 `HitTest` 0 像素偏差！
+   * `event.mouse.position`：始終為**視窗客戶區排版座標（即邏輯 DIP 空間）**，與視覺樹排版邊界 1:1 對齊，確保 `HitTest` 0 像素偏差！
    * `event.mouse.physicalPosition`：原生未經縮放的**物理像素座標**。
    * `event.mouse.logicalPosition`：由 `CoordinateTransform::ToLogical` 換算之**邏輯 DIP 座標**。
 

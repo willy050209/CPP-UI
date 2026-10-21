@@ -53,7 +53,7 @@ set(ASAN_DLL_DIR "" CACHE INTERNAL "AddressSanitizer runtime DLL directory")
 
 if(CPPUI_ENABLE_ASAN)
     if(MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(/fsanitize=address /Zi)
+        add_compile_options(/fsanitize=address /Z7)
         add_link_options(/INCREMENTAL:NO /DEBUG)
         get_filename_component(_MSVC_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
         find_file(_MSVC_ASAN_DLL
@@ -70,7 +70,7 @@ if(CPPUI_ENABLE_ASAN)
         if(MSVC)
             # clang-cl 驅動程式搭配 MSVC 相容連結器 (lld-link / link.exe)
             # 編譯端啟用 ASan 插樁，鏈結端僅傳遞 MSVC 合法連結參數 (嚴禁傳入 /fsanitize=address)
-            add_compile_options(/fsanitize=address /Zi)
+            add_compile_options(/fsanitize=address /Z7)
             add_link_options(/INCREMENTAL:NO /DEBUG)
 
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)

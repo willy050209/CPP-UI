@@ -21,7 +21,15 @@ namespace {
 
 class ClipboardScope {
 public:
-    ClipboardScope() : m_opened(::OpenClipboard(nullptr) != FALSE) {}
+    ClipboardScope() {
+        for (int32_t retry = 0; retry < 10; ++retry) {
+            if (::OpenClipboard(nullptr) != FALSE) {
+                m_opened = true;
+                break;
+            }
+            ::Sleep(10);
+        }
+    }
     ~ClipboardScope() {
         if (m_opened) {
             ::CloseClipboard();
@@ -36,31 +44,38 @@ private:
 } // namespace
 
 bool ClipboardWin32::ContainsText() const {
-    ClipboardScope scope;
-    if (!scope.IsOpened()) return false;
-    return ::IsClipboardFormatAvailable(CF_UNICODETEXT) != FALSE;
+    if (::IsClipboardFormatAvailable(CF_UNICODETEXT) != FALSE) {
+        return true;
+    }
+    return !m_fallbackText.empty();
 }
 
 std::string ClipboardWin32::GetText() const {
     ClipboardScope scope;
-    if (!scope.IsOpened()) return {};
+    if (!scope.IsOpened()) {
+        return m_fallbackText;
+    }
 
     HANDLE hData = ::GetClipboardData(CF_UNICODETEXT);
-    if (!hData) return {};
+    if (!hData) {
+        return m_fallbackText;
+    }
 
     const wchar_t* wstr = static_cast<const wchar_t*>(::GlobalLock(hData));
-    if (!wstr) return {};
+    if (!wstr) {
+        return m_fallbackText;
+    }
 
     int32_t wlen = static_cast<int32_t>(wcslen(wstr));
     if (wlen == 0) {
         ::GlobalUnlock(hData);
-        return {};
+        return m_fallbackText;
     }
 
     int32_t utf8Len = ::WideCharToMultiByte(CP_UTF8, 0, wstr, wlen, nullptr, 0, nullptr, nullptr);
     if (utf8Len <= 0) {
         ::GlobalUnlock(hData);
-        return {};
+        return m_fallbackText;
     }
 
     std::string result(static_cast<size_t>(utf8Len), '\0');
@@ -72,8 +87,12 @@ std::string ClipboardWin32::GetText() const {
 
 void ClipboardWin32::SetText(compat::string_view text) {
     ClipboardScope scope;
-    if (!scope.IsOpened()) return;
+    if (!scope.IsOpened()) {
+        m_fallbackText = std::string(text.data(), text.size());
+        return;
+    }
 
+    m_fallbackText.clear();
     ::EmptyClipboard();
 
     if (text.empty()) return;
@@ -102,6 +121,7 @@ void ClipboardWin32::SetText(compat::string_view text) {
 }
 
 void ClipboardWin32::Clear() {
+    m_fallbackText.clear();
     ClipboardScope scope;
     if (!scope.IsOpened()) return;
     ::EmptyClipboard();

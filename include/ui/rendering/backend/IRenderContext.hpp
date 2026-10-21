@@ -80,6 +80,17 @@ public:
     /// <summary>取得底層 SkCanvas 畫布指標 (若當前 RenderTarget 為 Skia 畫布)。</summary>
     /// <returns>SkCanvas 原生指標，若非 Skia 後端則回傳 nullptr。</returns>
     virtual void* GetSkCanvas() noexcept { return nullptr; }
+
+    /// <summary>取得當前畫布 DPI 縮放係數 (預設 1.0f)。</summary>
+    /// <returns>DPI 縮放比率。</returns>
+    COMPAT_NODISCARD virtual float GetDpiScale() const noexcept { return m_dpiScale; }
+
+    /// <summary>設定當前畫布 DPI 縮放係數 (小於等於 0 自動回退為 1.0f)。</summary>
+    /// <param name="dpiScale">DPI 縮放比率。</param>
+    virtual void SetDpiScale(float dpiScale) noexcept { m_dpiScale = (dpiScale > 0.0f) ? dpiScale : 1.0f; }
+
+protected:
+    float m_dpiScale = 1.0f;
 };
 
 /// <summary>

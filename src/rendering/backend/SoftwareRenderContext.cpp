@@ -91,8 +91,8 @@ static DWriteRasterResources& GetDWriteResources() {
 
 class DWriteLayoutRenderer : public IDWriteTextRenderer {
 public:
-    DWriteLayoutRenderer(IDWriteBitmapRenderTarget* target, IDWriteRenderingParams* params, COLORREF textColor)
-        : m_target(target), m_params(params), m_textColor(textColor) {}
+    DWriteLayoutRenderer(IDWriteBitmapRenderTarget* target, IDWriteRenderingParams* params, COLORREF textColor, float pixelsPerDip = 1.0f)
+        : m_target(target), m_params(params), m_textColor(textColor), m_pixelsPerDip(pixelsPerDip > 0.0f ? pixelsPerDip : 1.0f) {}
 
     STDMETHOD(QueryInterface)(REFIID riid, void** ppvObject) override {
         if (!ppvObject) return E_POINTER;
@@ -125,7 +125,7 @@ public:
 
     STDMETHOD(GetPixelsPerDip)(void* clientDrawingContext, FLOAT* pixelsPerDip) override {
         (void)clientDrawingContext;
-        *pixelsPerDip = 1.0f;
+        *pixelsPerDip = m_pixelsPerDip;
         return S_OK;
     }
 
@@ -200,6 +200,7 @@ private:
     IDWriteBitmapRenderTarget* m_target;
     IDWriteRenderingParams*    m_params;
     COLORREF                   m_textColor;
+    float                      m_pixelsPerDip = 1.0f;
 };
 
 } // anonymous namespace
@@ -495,7 +496,8 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
 
         HDC memDC = CreateCompatibleDC(nullptr);
         if (memDC) {
-            int32_t fontH = static_cast<int32_t>(size);
+            float dpi = (m_dpiScale > 0.0f) ? m_dpiScale : 1.0f;
+            int32_t fontH = static_cast<int32_t>(std::round(size * dpi));
             HFONT hFont = CreateFontW(
                 fontH, 0, 0, 0,
                 weight,
@@ -513,8 +515,8 @@ void SoftwareRenderTarget::DrawText(compat::string_view text, core::Point origin
             int32_t textW = textSize.cx;
             int32_t textH = textSize.cy;
             if (textW > 0 && textH > 0) {
-                int32_t dstX0 = static_cast<int32_t>(origin.x);
-                int32_t dstY0 = static_cast<int32_t>(origin.y);
+                int32_t dstX0 = static_cast<int32_t>(origin.x * dpi);
+                int32_t dstY0 = static_cast<int32_t>(origin.y * dpi);
 
                 // 快速外包圍邊界剔除 (Fast culling)
                 if (dstX0 >= clipRight || dstX0 + textW <= clipLeft ||
@@ -821,13 +823,14 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
             float layoutW = (std::max)(tm.layoutWidth > 8000.0f ? 0.0f : tm.layoutWidth, tm.width + (std::max)(0.0f, tm.left));
             float layoutH = (std::max)(tm.layoutHeight > 8000.0f ? 0.0f : tm.layoutHeight, tm.height + (std::max)(0.0f, tm.top));
 
+            float dpi = (m_dpiScale > 0.0f) ? m_dpiScale : 1.0f;
             float boundW = layoutW + leftPad + rightPad;
             float boundH = layoutH + topPad + bottomPad;
-            int32_t textW = static_cast<int32_t>(std::ceil(boundW));
-            int32_t textH = static_cast<int32_t>(std::ceil(boundH));
+            int32_t textW = static_cast<int32_t>(std::ceil(boundW * dpi));
+            int32_t textH = static_cast<int32_t>(std::ceil(boundH * dpi));
             if (textW > 0 && textH > 0) {
-                int32_t dstX0 = static_cast<int32_t>(origin.x - leftPad);
-                int32_t dstY0 = static_cast<int32_t>(origin.y - topPad);
+                int32_t dstX0 = static_cast<int32_t>(origin.x * dpi - leftPad * dpi);
+                int32_t dstY0 = static_cast<int32_t>(origin.y * dpi - topPad * dpi);
 
                 // 快速外包圍邊界剔除 (Fast culling)
                 if (dstX0 >= clipRight || dstX0 + textW <= clipLeft ||
@@ -842,14 +845,13 @@ void SoftwareRenderTarget::DrawTextLayout(void* nativeLayoutHandle, core::Point 
                 IDWriteBitmapRenderTarget* pBitmapTarget = nullptr;
                 hr = dwriteRes.pGdiInterop->CreateBitmapRenderTarget(nullptr, textW, textH, &pBitmapTarget);
                 if (SUCCEEDED(hr) && pBitmapTarget) {
-                    // 強制將點陣渲染目標的 PixelsPerDip 鎖定為 1.0f。
-                    pBitmapTarget->SetPixelsPerDip(1.0f);
+                    pBitmapTarget->SetPixelsPerDip(dpi);
 
                     HDC memDC = pBitmapTarget->GetMemoryDC();
                     RECT rc = { 0, 0, textW, textH };
                     ::FillRect(memDC, &rc, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
 
-                    DWriteLayoutRenderer renderer(pBitmapTarget, dwriteRes.pRenderingParams, RGB(255, 255, 255));
+                    DWriteLayoutRenderer renderer(pBitmapTarget, dwriteRes.pRenderingParams, RGB(255, 255, 255), dpi);
                     hr = pLayout->Draw(nullptr, &renderer, leftPad, topPad);
 
                     if (SUCCEEDED(hr)) {

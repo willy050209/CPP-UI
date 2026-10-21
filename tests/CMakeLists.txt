@@ -45,6 +45,11 @@ add_executable(coordinate_transform_test coordinate_transform_test.cpp)
 target_link_libraries(coordinate_transform_test PRIVATE cppui_headers)
 add_test(NAME CoordinateTransformTest COMMAND coordinate_transform_test)
 
+# High-DPI 渲染縮放比例與排版等比放大測試
+add_executable(dpi_scaling_test dpi_scaling_test.cpp)
+target_link_libraries(dpi_scaling_test PRIVATE cppui_core)
+add_test(NAME DpiScalingTest COMMAND dpi_scaling_test)
+
 # M6 核心控制項與網格排版測試
 add_executable(controls_test controls_test.cpp)
 target_link_libraries(controls_test PRIVATE cppui_core)
@@ -235,7 +240,7 @@ endif()
 if(ASAN_DLL_DIR)
     set(CPPUI_ALL_TESTS
         SmokeTest PalTest DisplayListTest TextPipelineTest LayoutEngineTest
-        InputEventsTest CoordinateTransformTest ControlsTest FluentDslTest
+        InputEventsTest CoordinateTransformTest DpiScalingTest ControlsTest FluentDslTest
         PalCrossPlatformTest SkiaBackendTest IoCContainerTest MvvmTest
         AppFormTest GraphicsGdiTest ExampleFeaturesTest ControlClassTest
         ThemeTest ImageProcessingTest DialogsTest TimerTest ImeTest PopupTest

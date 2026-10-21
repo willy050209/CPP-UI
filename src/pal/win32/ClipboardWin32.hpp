@@ -36,6 +36,9 @@ public:
 
     /// <summary>清空 Win32 剪貼簿。</summary>
     void Clear() override;
+
+private:
+    mutable std::string m_fallbackText;
 };
 
 } // namespace pal

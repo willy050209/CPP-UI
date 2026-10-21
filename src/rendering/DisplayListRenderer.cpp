@@ -56,11 +56,20 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
     float targetH = static_cast<float>(target->GetHeight());
     if (targetW <= 0.0f || targetH <= 0.0f) return stats;
 
+    float dpiScale = target->GetDpiScale();
+    if (dpiScale <= 0.0f) dpiScale = 1.0f;
+
 #if defined(CPPUI_HAS_SKIA) && CPPUI_HAS_SKIA
     if (void* canvasPtr = target->GetSkCanvas()) {
         auto* skCanvas = static_cast<SkCanvas*>(canvasPtr);
+        skCanvas->save();
+        if (std::abs(dpiScale - 1.0f) > 0.0001f) {
+            skCanvas->scale(dpiScale, dpiScale);
+        }
         std::vector<core::Rect> clipStack;
-        clipStack.push_back(core::Rect(0.0f, 0.0f, targetW, targetH));
+        float logW = targetW / dpiScale;
+        float logH = targetH / dpiScale;
+        clipStack.push_back(core::Rect(0.0f, 0.0f, logW, logH));
 
         displayList.ForEach([&](const DrawOpHeader& header, const void* payload) {
             stats.totalOps++;
@@ -230,16 +239,24 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                     break;
             }
         });
+        skCanvas->restore();
         return stats;
     }
 #endif
 
-    // 狀態棧初始化
+    // 狀態棧初始化 (軟體光柵器使用物理像素緩衝區)
     std::vector<core::Rect> clipStack;
     clipStack.push_back(core::Rect(0.0f, 0.0f, targetW, targetH));
 
     std::vector<float> opacityStack;
     opacityStack.push_back(1.0f);
+
+    auto toPhysRect = [dpiScale](const core::Rect& r) {
+        return core::Rect(r.x * dpiScale, r.y * dpiScale, r.width * dpiScale, r.height * dpiScale);
+    };
+    auto toPhysPoint = [dpiScale](const core::Point& p) {
+        return core::Point(p.x * dpiScale, p.y * dpiScale);
+    };
 
     displayList.ForEach([&](const DrawOpHeader& header, const void* payload) {
         stats.totalOps++;
@@ -250,7 +267,8 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
         switch (header.type) {
             case DrawOpType::PushClipRect: {
                 const auto* op = static_cast<const PushClipRectOp*>(payload);
-                core::Rect newClip = IntersectRect(currentClip, op->rect);
+                core::Rect physRect = (dpiScale != 1.0f) ? toPhysRect(op->rect) : op->rect;
+                core::Rect newClip = IntersectRect(currentClip, physRect);
                 clipStack.push_back(newClip);
                 break;
             }
@@ -283,7 +301,8 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 }
 
                 const auto* op = static_cast<const DrawRectOp*>(payload);
-                core::Rect visibleRect = IntersectRect(op->rect, currentClip);
+                core::Rect physRect = (dpiScale != 1.0f) ? toPhysRect(op->rect) : op->rect;
+                core::Rect visibleRect = IntersectRect(physRect, currentClip);
                 if (visibleRect.IsEmpty()) {
                     stats.culledOps++;
                     break;
@@ -302,15 +321,17 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 }
 
                 const auto* op = static_cast<const DrawRoundedRectOp*>(payload);
-                core::Rect visibleRect = IntersectRect(op->rect, currentClip);
+                core::Rect physRect = (dpiScale != 1.0f) ? toPhysRect(op->rect) : op->rect;
+                core::Rect visibleRect = IntersectRect(physRect, currentClip);
                 if (visibleRect.IsEmpty()) {
                     stats.culledOps++;
                     break;
                 }
 
                 core::Color finalColor = ApplyOpacity(op->color, currentOpacity);
+                float physRadius = (dpiScale != 1.0f) ? (op->radius * dpiScale) : op->radius;
 
-                if (op->radius <= 0.5f) {
+                if (physRadius <= 0.5f) {
                     target->FillRect(visibleRect, finalColor);
                 } else {
                     // 軟體光柵化圓角矩形 (直接在 target 像素緩衝區上進行圓形遮罩判斷)
@@ -326,13 +347,13 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                     int32_t x1 = static_cast<int32_t>(visibleRect.Right());
                     int32_t y1 = static_cast<int32_t>(visibleRect.Bottom());
 
-                    float r = std::min({ op->radius, op->rect.width * 0.5f, op->rect.height * 0.5f });
+                    float r = std::min({ physRadius, physRect.width * 0.5f, physRect.height * 0.5f });
                     float rSq = r * r;
 
-                    float cxLeft   = op->rect.Left() + r;
-                    float cxRight  = op->rect.Right() - r;
-                    float cyTop    = op->rect.Top() + r;
-                    float cyBottom = op->rect.Bottom() - r;
+                    float cxLeft   = physRect.Left() + r;
+                    float cxRight  = physRect.Right() - r;
+                    float cyTop    = physRect.Top() + r;
+                    float cyBottom = physRect.Bottom() - r;
 
                     for (int32_t y = y0; y < y1; ++y) {
                         float py = static_cast<float>(y) + 0.5f;
@@ -377,21 +398,25 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 const auto* op = static_cast<const DrawLineOp*>(payload);
                 core::Color finalColor = ApplyOpacity(op->color, currentOpacity);
 
+                core::Point p1 = (dpiScale != 1.0f) ? toPhysPoint(op->p1) : op->p1;
+                core::Point p2 = (dpiScale != 1.0f) ? toPhysPoint(op->p2) : op->p2;
+                float strokeWidth = (dpiScale != 1.0f) ? (op->strokeWidth * dpiScale) : op->strokeWidth;
+
                 // 水平或垂直直線最佳化為 FillRect
-                if (std::abs(op->p1.y - op->p2.y) < 0.001f) {
-                    float left = std::min(op->p1.x, op->p2.x);
-                    float w    = std::abs(op->p2.x - op->p1.x);
-                    float top  = op->p1.y - op->strokeWidth * 0.5f;
-                    core::Rect lineRect(left, top, w, op->strokeWidth);
+                if (std::abs(p1.y - p2.y) < 0.001f) {
+                    float left = std::min(p1.x, p2.x);
+                    float w    = std::abs(p2.x - p1.x);
+                    float top  = p1.y - strokeWidth * 0.5f;
+                    core::Rect lineRect(left, top, w, strokeWidth);
                     core::Rect visibleRect = IntersectRect(lineRect, currentClip);
                     if (!visibleRect.IsEmpty()) {
                         target->FillRect(visibleRect, finalColor);
                     }
-                } else if (std::abs(op->p1.x - op->p2.x) < 0.001f) {
-                    float top  = std::min(op->p1.y, op->p2.y);
-                    float h    = std::abs(op->p2.y - op->p1.y);
-                    float left = op->p1.x - op->strokeWidth * 0.5f;
-                    core::Rect lineRect(left, top, op->strokeWidth, h);
+                } else if (std::abs(p1.x - p2.x) < 0.001f) {
+                    float top  = std::min(p1.y, p2.y);
+                    float h    = std::abs(p2.y - p1.y);
+                    float left = p1.x - strokeWidth * 0.5f;
+                    core::Rect lineRect(left, top, strokeWidth, h);
                     core::Rect visibleRect = IntersectRect(lineRect, currentClip);
                     if (!visibleRect.IsEmpty()) {
                         target->FillRect(visibleRect, finalColor);
@@ -405,10 +430,10 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                                           (static_cast<uint32_t>(finalColor.g) << 8)  |
                                           (static_cast<uint32_t>(finalColor.b));
 
-                    int32_t x0 = static_cast<int32_t>(op->p1.x);
-                    int32_t y0 = static_cast<int32_t>(op->p1.y);
-                    int32_t x1 = static_cast<int32_t>(op->p2.x);
-                    int32_t y1 = static_cast<int32_t>(op->p2.y);
+                    int32_t x0 = static_cast<int32_t>(p1.x);
+                    int32_t y0 = static_cast<int32_t>(p1.y);
+                    int32_t x1 = static_cast<int32_t>(p2.x);
+                    int32_t y1 = static_cast<int32_t>(p2.y);
 
                     int32_t dx = std::abs(x1 - x0);
                     int32_t dy = -std::abs(y1 - y0);
@@ -470,7 +495,8 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                     break;
                 }
                 const auto* op = static_cast<const DrawEllipseOp*>(payload);
-                core::Rect visibleRect = IntersectRect(op->rect, currentClip);
+                core::Rect physRect = (dpiScale != 1.0f) ? toPhysRect(op->rect) : op->rect;
+                core::Rect visibleRect = IntersectRect(physRect, currentClip);
                 if (visibleRect.IsEmpty()) {
                     stats.culledOps++;
                     break;
@@ -480,10 +506,10 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 uint32_t stride = target->GetWidth();
                 uint32_t pixelValue = finalColor.ToArgb();
 
-                float cx = op->rect.x + op->rect.width * 0.5f;
-                float cy = op->rect.y + op->rect.height * 0.5f;
-                float rx = op->rect.width * 0.5f;
-                float ry = op->rect.height * 0.5f;
+                float cx = physRect.x + physRect.width * 0.5f;
+                float cy = physRect.y + physRect.height * 0.5f;
+                float rx = physRect.width * 0.5f;
+                float ry = physRect.height * 0.5f;
                 constexpr int32_t steps = 64;
                 for (int32_t i = 0; i < steps; ++i) {
                     float theta1 = (static_cast<float>(i) * 2.0f * 3.14159265f) / steps;
@@ -523,7 +549,8 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                     break;
                 }
                 const auto* op = static_cast<const FillEllipseOp*>(payload);
-                core::Rect visibleRect = IntersectRect(op->rect, currentClip);
+                core::Rect physRect = (dpiScale != 1.0f) ? toPhysRect(op->rect) : op->rect;
+                core::Rect visibleRect = IntersectRect(physRect, currentClip);
                 if (visibleRect.IsEmpty()) {
                     stats.culledOps++;
                     break;
@@ -533,10 +560,10 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 uint32_t stride = target->GetWidth();
                 uint32_t pixelValue = finalColor.ToArgb();
 
-                float cx = op->rect.x + op->rect.width * 0.5f;
-                float cy = op->rect.y + op->rect.height * 0.5f;
-                float rx = op->rect.width * 0.5f;
-                float ry = op->rect.height * 0.5f;
+                float cx = physRect.x + physRect.width * 0.5f;
+                float cy = physRect.y + physRect.height * 0.5f;
+                float rx = physRect.width * 0.5f;
+                float ry = physRect.height * 0.5f;
                 if (rx <= 0.0f || ry <= 0.0f) break;
 
                 int32_t y0 = static_cast<int32_t>(visibleRect.Top());
@@ -579,10 +606,10 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 int32_t cb = static_cast<int32_t>(currentClip.Bottom());
 
                 for (size_t i = 0; i + 1 < op->pointCount; ++i) {
-                    int32_t x0 = static_cast<int32_t>(points[i].x);
-                    int32_t y0 = static_cast<int32_t>(points[i].y);
-                    int32_t x1 = static_cast<int32_t>(points[i + 1].x);
-                    int32_t y1 = static_cast<int32_t>(points[i + 1].y);
+                    int32_t x0 = static_cast<int32_t>(points[i].x * dpiScale);
+                    int32_t y0 = static_cast<int32_t>(points[i].y * dpiScale);
+                    int32_t x1 = static_cast<int32_t>(points[i + 1].x * dpiScale);
+                    int32_t y1 = static_cast<int32_t>(points[i + 1].y * dpiScale);
 
                     int32_t dx = std::abs(x1 - x0);
                     int32_t dy = -std::abs(y1 - y0);
@@ -612,7 +639,8 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 const auto* op = static_cast<const FillPathOp*>(payload);
                 if (op->pointCount < 3) { stats.culledOps++; break; }
 
-                core::Rect visibleRect = IntersectRect(op->bounds, currentClip);
+                core::Rect physBounds = (dpiScale != 1.0f) ? toPhysRect(op->bounds) : op->bounds;
+                core::Rect visibleRect = IntersectRect(physBounds, currentClip);
                 if (visibleRect.IsEmpty()) { stats.culledOps++; break; }
 
                 const auto* points = reinterpret_cast<const core::Point*>(reinterpret_cast<const char*>(op) + sizeof(FillPathOp));
@@ -626,8 +654,10 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 int32_t x0 = static_cast<int32_t>(visibleRect.Left());
                 int32_t x1 = static_cast<int32_t>(visibleRect.Right());
 
-                float gdx = op->gradEnd.x - op->gradStart.x;
-                float gdy = op->gradEnd.y - op->gradStart.y;
+                core::Point gStart = (dpiScale != 1.0f) ? toPhysPoint(op->gradStart) : op->gradStart;
+                core::Point gEnd   = (dpiScale != 1.0f) ? toPhysPoint(op->gradEnd) : op->gradEnd;
+                float gdx = gEnd.x - gStart.x;
+                float gdy = gEnd.y - gStart.y;
                 float glenSq = gdx * gdx + gdy * gdy;
                 if (glenSq <= 0.00001f) glenSq = 1.0f;
 
@@ -639,17 +669,19 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                         // 射線交叉點計算 (Ray-casting against inline points)
                         int32_t crossings = 0;
                         for (size_t i = 0, j = op->pointCount - 1; i < op->pointCount; j = i++) {
-                            const auto& p1 = points[i];
-                            const auto& p2 = points[j];
-                            if (((p1.y > py) != (p2.y > py)) &&
-                                (px < (p2.x - p1.x) * (py - p1.y) / (p2.y - p1.y + 0.000001f) + p1.x)) {
+                            float p1x = points[i].x * dpiScale;
+                            float p1y = points[i].y * dpiScale;
+                            float p2x = points[j].x * dpiScale;
+                            float p2y = points[j].y * dpiScale;
+                            if (((p1y > py) != (p2y > py)) &&
+                                (px < (p2x - p1x) * (py - p1y) / (p2y - p1y + 0.000001f) + p1x)) {
                                 crossings++;
                             }
                         }
 
                         if ((crossings % 2) != 0) {
                             if (op->hasGradient) {
-                                float t = ((px - op->gradStart.x) * gdx + (py - op->gradStart.y) * gdy) / glenSq;
+                                float t = ((px - gStart.x) * gdx + (py - gStart.y) * gdy) / glenSq;
                                 t = compat::clamp(t, 0.0f, 1.0f);
                                 uint8_t a = static_cast<uint8_t>(static_cast<float>(op->gradStartColor.a) + t * (static_cast<float>(op->gradEndColor.a) - static_cast<float>(op->gradStartColor.a)));
                                 uint8_t r = static_cast<uint8_t>(static_cast<float>(op->gradStartColor.r) + t * (static_cast<float>(op->gradEndColor.r) - static_cast<float>(op->gradStartColor.r)));
@@ -676,8 +708,9 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 if (!op->bitmapPtr) { stats.culledOps++; break; }
 
                 const auto* bmp = static_cast<const graphics::Bitmap*>(op->bitmapPtr);
-                core::Rect visibleRect = IntersectRect(op->destRect, currentClip);
-                if (visibleRect.IsEmpty() || op->destRect.width <= 0.0f || op->destRect.height <= 0.0f) {
+                core::Rect physDest = (dpiScale != 1.0f) ? toPhysRect(op->destRect) : op->destRect;
+                core::Rect visibleRect = IntersectRect(physDest, currentClip);
+                if (visibleRect.IsEmpty() || physDest.width <= 0.0f || physDest.height <= 0.0f) {
                     stats.culledOps++;
                     break;
                 }
@@ -692,12 +725,12 @@ RenderStats DisplayListRenderer::Render(const DisplayList& displayList, IRenderT
                 int32_t x1 = static_cast<int32_t>(visibleRect.Right());
 
                 for (int32_t y = y0; y < y1; ++y) {
-                    float v = (static_cast<float>(y) - op->destRect.y) / op->destRect.height;
+                    float v = (static_cast<float>(y) - physDest.y) / physDest.height;
                     float sy_f = op->srcRect.y + v * op->srcRect.height;
                     uint32_t sy = static_cast<uint32_t>(compat::clamp(sy_f, 0.0f, static_cast<float>(bmp->GetHeight() - 1)));
 
                     for (int32_t x = x0; x < x1; ++x) {
-                        float u = (static_cast<float>(x) - op->destRect.x) / op->destRect.width;
+                        float u = (static_cast<float>(x) - physDest.x) / physDest.width;
                         float sx_f = op->srcRect.x + u * op->srcRect.width;
                         uint32_t sx = static_cast<uint32_t>(compat::clamp(sx_f, 0.0f, static_cast<float>(bmp->GetWidth() - 1)));
 

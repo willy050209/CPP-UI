@@ -78,7 +78,25 @@ PlatformWindowWin32::PlatformWindowWin32(const WindowDesc& desc)
         style = WS_POPUP;
     }
 
-    // 計算符合客戶區寬高的視窗幾何邊界
+    // 探測初始系統 DPI 並將邏輯 DIP 換算為物理像素
+    UINT initDpi = 96;
+    typedef UINT(WINAPI* PFN_GetDpiForSystem)(void);
+    HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
+    if (hUser32) {
+        auto pfnGetDpiForSystem = reinterpret_cast<PFN_GetDpiForSystem>(GetProcAddress(hUser32, "GetDpiForSystem"));
+        if (pfnGetDpiForSystem) {
+            initDpi = pfnGetDpiForSystem();
+        }
+    }
+    m_dpiScale = (initDpi > 0) ? (static_cast<float>(initDpi) / 96.0f) : 1.0f;
+    m_coordTransform.SetDpiScale(m_dpiScale);
+
+    uint32_t physW = static_cast<uint32_t>(std::round(static_cast<float>(desc.width) * m_dpiScale));
+    uint32_t physH = static_cast<uint32_t>(std::round(static_cast<float>(desc.height) * m_dpiScale));
+    m_width = physW;
+    m_height = physH;
+
+    // 計算符合客戶區物理寬高的視窗幾何邊界
     RECT rc = { 0, 0, static_cast<LONG>(m_width), static_cast<LONG>(m_height) };
     AdjustWindowRectEx(&rc, style, FALSE, 0);
 
@@ -171,10 +189,12 @@ core::Size PlatformWindowWin32::GetFramebufferSize() const noexcept {
 
 void PlatformWindowWin32::SetSize(uint32_t width, uint32_t height) {
     if (!m_hwnd || m_isClosed) return;
-    m_width = width;
-    m_height = height;
+    uint32_t physW = static_cast<uint32_t>(std::round(static_cast<float>(width) * m_dpiScale));
+    uint32_t physH = static_cast<uint32_t>(std::round(static_cast<float>(height) * m_dpiScale));
+    m_width = physW;
+    m_height = physH;
 
-    RECT rc = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+    RECT rc = { 0, 0, static_cast<LONG>(physW), static_cast<LONG>(physH) };
     DWORD style = static_cast<DWORD>(GetWindowLongPtrW(m_hwnd, GWL_STYLE));
     DWORD exStyle = static_cast<DWORD>(GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE));
     AdjustWindowRectEx(&rc, style, FALSE, exStyle);
@@ -337,9 +357,9 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
                 DispatchEvent(enterEvt);
             }
 
-            core::Point clientPos(static_cast<float>(x), static_cast<float>(y));
             core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
             core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
+            core::Point clientPos = logicalPos; // Client layout space aligns with Logical DIP space
             DispatchEvent(RawInputEvent::MakeMouseMove(clientPos, physicalPos, logicalPos, mods, ts));
             return 0;
         }
@@ -359,9 +379,9 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             SetCapture(m_hwnd);
             int32_t x = GET_X_LPARAM(lParam);
             int32_t y = GET_Y_LPARAM(lParam);
-            core::Point clientPos(static_cast<float>(x), static_cast<float>(y));
             core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
             core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
+            core::Point clientPos = logicalPos;
 
             RawMouseButton btn = RawMouseButton::Left;
             if (msg == WM_RBUTTONDOWN) btn = RawMouseButton::Right;
@@ -377,9 +397,9 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             ReleaseCapture();
             int32_t x = GET_X_LPARAM(lParam);
             int32_t y = GET_Y_LPARAM(lParam);
-            core::Point clientPos(static_cast<float>(x), static_cast<float>(y));
             core::Point physicalPos(static_cast<float>(x), static_cast<float>(y));
             core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
+            core::Point clientPos = logicalPos;
 
             RawMouseButton btn = RawMouseButton::Left;
             if (msg == WM_RBUTTONUP) btn = RawMouseButton::Right;
@@ -392,9 +412,9 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
         case WM_MOUSEWHEEL: {
             POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
             ScreenToClient(m_hwnd, &pt);
-            core::Point clientPos(static_cast<float>(pt.x), static_cast<float>(pt.y));
             core::Point physicalPos(static_cast<float>(pt.x), static_cast<float>(pt.y));
             core::Point logicalPos = m_coordTransform.ToLogical(physicalPos);
+            core::Point clientPos = logicalPos;
             int32_t deltaY = GET_WHEEL_DELTA_WPARAM(wParam);
 
             DispatchEvent(RawInputEvent::MakeMouseWheel(clientPos, physicalPos, logicalPos, deltaY, 0, mods, ts));
@@ -499,6 +519,12 @@ LRESULT PlatformWindowWin32::HandleMessage(UINT msg, WPARAM wParam, LPARAM lPara
             SetWindowPos(m_hwnd, nullptr, prc->left, prc->top,
                          prc->right - prc->left, prc->bottom - prc->top,
                          SWP_NOZORDER | SWP_NOACTIVATE);
+            RECT clientRc = {};
+            if (GetClientRect(m_hwnd, &clientRc)) {
+                m_width = static_cast<uint32_t>(clientRc.right - clientRc.left);
+                m_height = static_cast<uint32_t>(clientRc.bottom - clientRc.top);
+            }
+            DispatchEvent(RawInputEvent::MakeDpiChange(m_dpiScale, m_width, m_height, ts));
             DispatchEvent(RawInputEvent::MakeResize(m_width, m_height, m_dpiScale, ts));
             if (m_paintCallback && m_width > 0 && m_height > 0) {
                 m_paintCallback();

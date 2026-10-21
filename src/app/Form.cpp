@@ -459,24 +459,29 @@ void Form::EnsurePlatformWindow() {
 
     m_window = pal::PlatformWindowFactory::Create(desc);
     core::Size actualFb = m_window->GetFramebufferSize();
-    if (actualFb.width > 0.0f && actualFb.height > 0.0f) {
-        m_width = static_cast<uint32_t>(actualFb.width);
-        m_height = static_cast<uint32_t>(actualFb.height);
+    float dpiScale = m_window->GetDpiScale();
+    core::Size logSize = m_window->GetSize();
+    if (logSize.width > 0.0f && logSize.height > 0.0f) {
+        m_width = static_cast<uint32_t>(std::round(logSize.width));
+        m_height = static_cast<uint32_t>(std::round(logSize.height));
         if (m_sizeToContent == SizeToContent::Manual) {
-            core::UIElement::SetWidth(static_cast<float>(m_width));
-            core::UIElement::SetHeight(static_cast<float>(m_height));
+            core::UIElement::SetWidth(logSize.width);
+            core::UIElement::SetHeight(logSize.height);
         }
     }
 
+    uint32_t fbW = static_cast<uint32_t>(actualFb.width);
+    uint32_t fbH = static_cast<uint32_t>(actualFb.height);
     if (Application::GetPlatformBackend() == PlatformBackend::Skia) {
         auto skiaCtx = std::make_unique<rendering::SkiaRenderContext>();
-        skiaCtx->Init(m_window->GetNativeHandle(), m_width, m_height);
+        skiaCtx->Init(m_window->GetNativeHandle(), fbW, fbH);
         m_renderContext = std::move(skiaCtx);
     } else {
         if (!m_renderTarget) {
             m_renderTarget = std::make_unique<rendering::SoftwareRenderTarget>();
         }
-        m_renderTarget->Resize(m_width, m_height);
+        m_renderTarget->Resize(fbW, fbH);
+        m_renderTarget->SetDpiScale(dpiScale);
     }
     SetupPlatformEvents();
 }
@@ -490,7 +495,7 @@ void Form::SetupPlatformEvents() {
             return;
         }
 
-        if (e.type == pal::RawEventType::WindowResize) {
+        if (e.type == pal::RawEventType::WindowResize || e.type == pal::RawEventType::DpiChanged) {
             HandleWindowResize(e.window.width, e.window.height);
             return;
         }
@@ -516,14 +521,20 @@ void Form::RenderFrame() {
         BringVisualChildToFront(m_overlayLayer.get());
     }
 
+    core::Size fbSize = m_window->GetFramebufferSize();
+    uint32_t fbW = static_cast<uint32_t>(fbSize.width);
+    uint32_t fbH = static_cast<uint32_t>(fbSize.height);
+    float dpiScale = m_window->GetDpiScale();
+
     if (Application::GetPlatformBackend() == PlatformBackend::Skia) {
         if (!m_renderContext) {
             auto skiaCtx = std::make_unique<rendering::SkiaRenderContext>();
-            skiaCtx->Init(m_window->GetNativeHandle(), m_width, m_height);
+            skiaCtx->Init(m_window->GetNativeHandle(), fbW, fbH);
             m_renderContext = std::move(skiaCtx);
         }
         auto* target = m_renderContext->BeginFrame();
         if (target) {
+            target->SetDpiScale(dpiScale);
             target->Clear(GetBackground());
             rendering::DisplayList dl;
             rendering::DrawingContext dc(dl);
@@ -532,41 +543,47 @@ void Form::RenderFrame() {
         }
         m_renderContext->EndFrame();
         if (target && target->GetPixelBuffer()) {
-            m_window->PresentFramebuffer(compat::span<const uint32_t>(target->GetPixelBuffer(), static_cast<size_t>(m_width) * m_height), m_width, m_height);
+            m_window->PresentFramebuffer(compat::span<const uint32_t>(target->GetPixelBuffer(), static_cast<size_t>(fbW) * fbH), fbW, fbH);
         }
     } else {
         if (!m_renderTarget) {
             auto swTarget = std::make_unique<rendering::SoftwareRenderTarget>();
-            swTarget->Resize(m_width, m_height);
+            swTarget->Resize(fbW, fbH);
             m_renderTarget = std::move(swTarget);
         }
 
+        m_renderTarget->SetDpiScale(dpiScale);
         m_renderTarget->Clear(GetBackground());
         rendering::DisplayList dl;
         rendering::DrawingContext dc(dl);
         Render(dc);
         m_renderer.Render(dl, m_renderTarget.get());
 
-        m_window->PresentFramebuffer(m_renderTarget->GetPixelSpan(), m_width, m_height);
+        m_window->PresentFramebuffer(m_renderTarget->GetPixelSpan(), fbW, fbH);
     }
 }
 
 void Form::HandleWindowResize(uint32_t width, uint32_t height) {
-    m_width = width;
-    m_height = height;
+    float dpiScale = m_window ? m_window->GetDpiScale() : 1.0f;
+    float logW = (dpiScale > 0.0f) ? (static_cast<float>(width) / dpiScale) : static_cast<float>(width);
+    float logH = (dpiScale > 0.0f) ? (static_cast<float>(height) / dpiScale) : static_cast<float>(height);
+
+    m_width = static_cast<uint32_t>(std::round(logW));
+    m_height = static_cast<uint32_t>(std::round(logH));
     if (m_sizeToContent == SizeToContent::Manual) {
-        core::UIElement::SetWidth(static_cast<float>(width));
-        core::UIElement::SetHeight(static_cast<float>(height));
+        core::UIElement::SetWidth(logW);
+        core::UIElement::SetHeight(logH);
     }
     if (m_overlayLayer) {
-        m_overlayLayer->SetWidth(static_cast<float>(width));
-        m_overlayLayer->SetHeight(static_cast<float>(height));
+        m_overlayLayer->SetWidth(logW);
+        m_overlayLayer->SetHeight(logH);
     }
     if (m_renderContext) {
         m_renderContext->Resize(width, height);
     }
     if (m_renderTarget) {
         m_renderTarget->Resize(width, height);
+        m_renderTarget->SetDpiScale(dpiScale);
     }
     InvalidateMeasure();
     InvalidateForm();
