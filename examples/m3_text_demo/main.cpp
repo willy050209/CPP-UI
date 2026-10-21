@@ -116,7 +116,7 @@ int main() {
                 currentWidth = e.window.width;
                 currentHeight = e.window.height;
                 dpiScale = e.window.dpiScale;
-                renderContext->Resize(currentWidth, currentHeight);
+                currentWidth = static_cast<uint32_t>(window->GetFramebufferSize().width); currentHeight = static_cast<uint32_t>(window->GetFramebufferSize().height); renderContext->Resize(currentWidth, currentHeight);
                 loop.RequestRedraw();
                 break;
             case RawEventType::KeyDown:
@@ -149,7 +149,8 @@ int main() {
         // 1. 動態計算響應式雙欄佈局 (Responsive Layout)
         float margin = 24.0f;
         float gap = 20.0f;
-        float availW = (std::max)(500.0f, static_cast<float>(currentWidth) - margin * 2.0f);
+        Size logical = window->GetSize();
+        float availW = (std::max)(500.0f, logical.width - margin * 2.0f);
         float colWidth = (std::max)(240.0f, (availW - gap) * 0.5f);
         float cardContentW = (std::max)(100.0f, colWidth - 32.0f);
 
@@ -162,12 +163,12 @@ int main() {
         displayList.Clear();
 
         // 3. 繪製深色現代背景
-        dc.DrawRectangle(Rect(0.0f, 0.0f, static_cast<float>(currentWidth), static_cast<float>(currentHeight)), Color(28, 30, 36, 255));
+        dc.DrawRectangle(Rect(0.0f, 0.0f, logical.width, logical.height), Color(28, 30, 36, 255));
 
         // 4. 繪製頂部導航列 / 標題
-        dc.DrawRectangle(Rect(0.0f, 0.0f, static_cast<float>(currentWidth), 60.0f), Color(38, 41, 50, 255));
+        dc.DrawRectangle(Rect(0.0f, 0.0f, logical.width, 60.0f), Color(38, 41, 50, 255));
         dc.DrawText("CPPUI M3 - 文字排版與雙向命中測試展示", Point(24.0f, 16.0f), titleFont, Colors::White);
-        dc.DrawText("DirectWrite Native Engine (60 FPS)", Point(static_cast<float>(currentWidth) - 280.0f, 22.0f), monoFont, Color(160, 180, 210, 255));
+        dc.DrawText("DirectWrite Native Engine (60 FPS)", Point(logical.width - 280.0f, 22.0f), monoFont, Color(160, 180, 210, 255));
 
         // 卡片 1：自動折行與基礎樣式 (高度自適應文字行數)
         float card1H = card1Layout.GetSize().height + 56.0f;
@@ -231,11 +232,12 @@ int main() {
         }
 
         // 底部狀態列
-        dc.DrawRectangle(Rect(0.0f, static_cast<float>(currentHeight) - 32.0f, static_cast<float>(currentWidth), 32.0f), Color(20, 22, 26, 255));
-        dc.DrawText("CPPUI M3 Architecture | 0 GC | Zero Memory Leaks | Cross-Compiler Ready", Point(24.0f, static_cast<float>(currentHeight) - 24.0f), monoFont, Color(140, 140, 140, 255));
+        dc.DrawRectangle(Rect(0.0f, logical.height - 32.0f, logical.width, 32.0f), Color(20, 22, 26, 255));
+        dc.DrawText("CPPUI M3 Architecture | 0 GC | Zero Memory Leaks | Cross-Compiler Ready", Point(24.0f, logical.height - 24.0f), monoFont, Color(140, 140, 140, 255));
 
         // 5. 重播繪製至軟體畫布並呈現
         IRenderTarget* target = renderContext->BeginFrame();
+        target->SetDpiScale(dpiScale);
         renderer.Render(displayList, target);
         renderContext->EndFrame();
 

@@ -10,7 +10,7 @@
 param(
     [string]$BinDir = "build\bin\Release",
     [string]$OutputDir = "docs\images",
-    [int]$WaitSeconds = 2
+    [int]$WaitSeconds = 3
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,6 +41,9 @@ public class ExampleBatchCap {
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool GetClientRect(IntPtr hWnd, out RECT lpRect);
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -91,8 +94,11 @@ public class ExampleBatchCap {
                     int w = r.Right - r.Left;
                     int h = r.Bottom - r.Top;
 
-                    // 優先匹配 CPPUI 原生視窗類別，或面積大於 150x150 之可見視窗（排除 IME 與 UAC 視窗）
-                    if (className.Contains("CPPUI") || (w > 150 && h > 150 && !className.Contains("UAC") && !className.Contains("IME"))) {
+                    // 嚴格排除主控台、IME 與 UAC 視窗
+                    if (className.Contains("Console") || className.Contains("IME") || className.Contains("UAC")) {
+                        return true;
+                    }
+                    if (className.Contains("CPPUI") || (w > 150 && h > 150)) {
                         found = hWnd;
                         return false;
                     }
@@ -106,7 +112,7 @@ public class ExampleBatchCap {
     public static bool Capture(IntPtr hWnd, string savePath) {
         if (hWnd == IntPtr.Zero) return false;
         RECT r;
-        if (!GetWindowRect(hWnd, out r)) return false;
+        if (!GetClientRect(hWnd, out r)) return false;
         int w = r.Right - r.Left;
         int h = r.Bottom - r.Top;
         if (w <= 0 || h <= 0) return false;
@@ -190,7 +196,7 @@ foreach ($t in $tasks) {
 
         $handle = [ExampleBatchCap]::FindWindowByProcessId([uint32]$p.Id)
         $retry = 0
-        while ($handle -eq [IntPtr]::Zero -and $retry -lt 20) {
+        while ($handle -eq [IntPtr]::Zero -and $retry -lt 40) {
             Start-Sleep -Milliseconds 250
             $handle = [ExampleBatchCap]::FindWindowByProcessId([uint32]$p.Id)
             $retry++
@@ -198,7 +204,7 @@ foreach ($t in $tasks) {
 
         if ($handle -ne [IntPtr]::Zero) {
             [ExampleBatchCap]::SetForegroundWindow($handle)
-            Start-Sleep -Milliseconds 500
+            Start-Sleep -Milliseconds 1200
             $ok = [ExampleBatchCap]::Capture($handle, $outPath)
             if ($ok -and (Test-Path $outPath)) {
                 $size = (Get-Item $outPath).Length

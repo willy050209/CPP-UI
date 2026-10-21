@@ -260,7 +260,7 @@ int main() {
 
     uint32_t currentWidth = desc.width;
     uint32_t currentHeight = desc.height;
-    target.Resize(currentWidth, currentHeight);
+    Size fbSize = window->GetFramebufferSize(); float dpiScale = window->GetDpiScale(); target.Resize(static_cast<uint32_t>(fbSize.width), static_cast<uint32_t>(fbSize.height)); target.SetDpiScale(dpiScale);
 
     // 建立視覺樹根節點
     auto rootBorder = std::make_shared<Border>();
@@ -544,7 +544,7 @@ int main() {
 
     window->SetPaintCallback([&]() {
         updateLayoutAndRender();
-        window->PresentFramebuffer(target.GetPixelSpan(), currentWidth, currentHeight);
+        Size fb = window->GetFramebufferSize(); window->PresentFramebuffer(target.GetPixelSpan(), static_cast<uint32_t>(fb.width), static_cast<uint32_t>(fb.height));
     });
 
     // 平台原生事件接駁
@@ -556,7 +556,7 @@ int main() {
         if (e.type == pal::RawEventType::WindowResize) {
             currentWidth = e.window.width;
             currentHeight = e.window.height;
-            target.Resize(currentWidth, currentHeight);
+            Size fbSize = window->GetFramebufferSize(); float dpiScale = window->GetDpiScale(); target.Resize(static_cast<uint32_t>(fbSize.width), static_cast<uint32_t>(fbSize.height)); target.SetDpiScale(dpiScale);
             float newColW = (std::max)(340.0f, (static_cast<float>(currentWidth) - 40.0f - 20.0f) * 0.5f);
             leftColBorder->SetWidth(newColW);
             rightColBorder->SetWidth(newColW);

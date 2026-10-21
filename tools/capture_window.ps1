@@ -79,8 +79,11 @@ public class WinCap {
                     int w = r.Right - r.Left;
                     int h = r.Bottom - r.Top;
 
-                    // 優先匹配 CPPUI 原生視窗類別，或面積大於 150x150 之可見視窗（避開 47x47 IME 隱藏視窗）
-                    if (className.Contains("CPPUI") || (w > 150 && h > 150 && !className.Contains("UAC") && !className.Contains("IME"))) {
+                    // 嚴格排除主控台、IME 與 UAC 視窗
+                    if (className.Contains("Console") || className.Contains("IME") || className.Contains("UAC")) {
+                        return true;
+                    }
+                    if (className.Contains("CPPUI") || (w > 150 && h > 150)) {
                         found = hWnd;
                         return false;
                     }
@@ -98,9 +101,7 @@ public class WinCap {
         } catch {}
 
         RECT r;
-        if (!GetClientRect(hWnd, out r)) {
-            if (!GetWindowRect(hWnd, out r)) return false;
-        }
+        if (!GetClientRect(hWnd, out r)) return false;
         int w = r.Right - r.Left;
         int h = r.Bottom - r.Top;
         if (w <= 0 || h <= 0) return false;
@@ -152,7 +153,7 @@ while ($handle -eq [IntPtr]::Zero -and $retry -lt 20) {
 
 if ($handle -ne [IntPtr]::Zero) {
     [WinCap]::SetForegroundWindow($handle)
-    Start-Sleep -Milliseconds 500
+    Start-Sleep -Milliseconds 1200
     $success = [WinCap]::Capture($handle, $OutputPath)
     if ($success) {
         $fileSize = (Get-Item $OutputPath).Length

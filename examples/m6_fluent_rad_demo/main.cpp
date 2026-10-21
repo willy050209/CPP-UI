@@ -63,7 +63,7 @@ int main() {
     window->Show();
 
     SoftwareRenderTarget target;
-    target.Resize(currentWidth, currentHeight);
+    Size fbSize = window->GetFramebufferSize(); float dpiScale = window->GetDpiScale(); target.Resize(static_cast<uint32_t>(fbSize.width), static_cast<uint32_t>(fbSize.height)); target.SetDpiScale(dpiScale);
     DisplayListRenderer renderer;
 
     // 2. 宣告響應式狀態 (Reactive Signals)
@@ -266,7 +266,7 @@ int main() {
 
     window->SetPaintCallback([&]() {
         updateLayoutAndRender();
-        window->PresentFramebuffer(target.GetPixelSpan(), currentWidth, currentHeight);
+        Size fb = window->GetFramebufferSize(); window->PresentFramebuffer(target.GetPixelSpan(), static_cast<uint32_t>(fb.width), static_cast<uint32_t>(fb.height));
     });
 
     // 平台原生事件接駁
@@ -278,7 +278,7 @@ int main() {
         if (e.type == pal::RawEventType::WindowResize) {
             currentWidth = e.window.width;
             currentHeight = e.window.height;
-            target.Resize(currentWidth, currentHeight);
+            Size fbSize = window->GetFramebufferSize(); float dpiScale = window->GetDpiScale(); target.Resize(static_cast<uint32_t>(fbSize.width), static_cast<uint32_t>(fbSize.height)); target.SetDpiScale(dpiScale);
             window->RequestRedraw();
             return;
         }
