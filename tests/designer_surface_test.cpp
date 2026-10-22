@@ -361,6 +361,89 @@ static void TestRubberBandAndDeleteSelected() {
     compat::println("  [PASS] Rubber-band selection & DeleteSelected with subtree Undo verified.");
 }
 
+static void TestDesignSurfaceViewportScrolling() {
+    compat::println("[Test 7] Design Surface Viewport Scrolling & Typography Initialization...");
+
+    FormDocumentNode doc;
+    doc.SetRoot(std::make_unique<WidgetNode>(NodeType::Canvas, "rootCanvas"));
+    CommandHistoryManager history;
+    DesignSurface surface(&doc, &history);
+    surface.SetBounds(0.0f, 0.0f, 800.0f, 600.0f);
+
+    // 1. 預設滾動偏移量為 (0, 0)
+    core::Point offset = surface.GetScrollOffset();
+    assert(offset.x == 0.0f);
+    assert(offset.y == 0.0f);
+
+    // 2. 預設內容尺寸至少涵蓋 FormSettings (800, 600)
+    core::Size extent = surface.GetContentExtent();
+    assert(extent.width >= 800.0f);
+    assert(extent.height >= 600.0f);
+
+    // 3. 新增越界元件以擴充內容尺寸
+    std::string btnId = surface.AddNewWidget(NodeType::Button, core::Point(1200.0f, 900.0f));
+    assert(!btnId.empty());
+
+    core::Size extentAfter = surface.GetContentExtent();
+    assert(extentAfter.width >= 1320.0f);
+    assert(extentAfter.height >= 932.0f);
+
+    // 4. 驗證 AddNewWidget 預設 Typography 與外觀屬性
+    WidgetNode* btnNode = doc.FindByUuid(btnId);
+    assert(btnNode != nullptr);
+    assert(btnNode->GetProperty("FontSize").has_value());
+    assert(btnNode->GetProperty("FontSize")->Get<double>().value() == 13.0);
+    assert(btnNode->GetProperty("FontFamily").has_value());
+    assert(btnNode->GetProperty("FontFamily")->Get<std::string>().value() == "Segoe UI");
+    assert(btnNode->GetProperty("FontWeight").has_value());
+    assert(btnNode->GetProperty("FontWeight")->Get<int32_t>().value() == 400);
+    assert(btnNode->GetProperty("Visibility").has_value());
+    assert(btnNode->GetProperty("Visibility")->Get<layout::Visibility>().value() == layout::Visibility::Visible);
+
+    // 5. 設定滾動偏移量並驗證 clamping
+    surface.SetScrollOffset(120.0f, 80.0f);
+    assert(surface.GetScrollOffset().x == 120.0f);
+    assert(surface.GetScrollOffset().y == 80.0f);
+
+    // 負數邊界 clamp 至 0
+    surface.SetScrollOffset(-50.0f, -30.0f);
+    assert(surface.GetScrollOffset().x == 0.0f);
+    assert(surface.GetScrollOffset().y == 0.0f);
+
+    // 6. 模擬滾輪事件 (PointerWheel)
+    input::PointerEventArgs wheelDown(
+        input::StandardEvents::PointerWheel,
+        &surface,
+        core::Point(200.0f, 200.0f),
+        pal::RawMouseButton::None,
+        pal::KeyModifiers::None,
+        0, // clickCount
+        0, // wheelDeltaX
+        -120 // wheelDeltaY: 往下滾
+    );
+    surface.OnPointerWheel(wheelDown);
+    assert(surface.GetScrollOffset().y > 0.0f);
+
+    float scrolledY = surface.GetScrollOffset().y;
+
+    // Shift 鍵橫向滾輪
+    input::PointerEventArgs wheelShift(
+        input::StandardEvents::PointerWheel,
+        &surface,
+        core::Point(200.0f, 200.0f),
+        pal::RawMouseButton::None,
+        pal::KeyModifiers::Shift,
+        0, // clickCount
+        0, // wheelDeltaX
+        -120 // wheelDeltaY
+    );
+    surface.OnPointerWheel(wheelShift);
+    assert(surface.GetScrollOffset().x > 0.0f);
+    assert(surface.GetScrollOffset().y == scrolledY); // Y 軸不變
+
+    compat::println("  [PASS] Viewport scrolling and typography defaults verified.");
+}
+
 int main() {
     compat::println("=================================================");
     compat::println(" [CPPUI Designer Phase 3] Design Surface Tests");
@@ -372,9 +455,10 @@ int main() {
     TestDesignSurfacePointerDragAndUndo();
     TestDesignSurfaceResizeHandle();
     TestRubberBandAndDeleteSelected();
+    TestDesignSurfaceViewportScrolling();
 
     compat::println("=================================================");
-    compat::println(" All 6 Design Surface Test Suites Passed!");
+    compat::println(" All 7 Design Surface Test Suites Passed!");
     compat::println("=================================================");
 
     return 0;

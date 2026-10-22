@@ -236,6 +236,21 @@ void InspectorPanel::Impl::CommitInlineEdit() {
                 (void)owner->ChangeProperty(name, res.value());
             }
         }
+    } else if (!p->enumOptions.empty()) {
+        auto res = PropertyEditorModel::ParseEnum(name, buf);
+        if (res.has_value()) {
+            if (attached) {
+                (void)owner->ChangeAttachedProperty(name, res.value());
+            } else {
+                (void)owner->ChangeProperty(name, res.value());
+            }
+        } else {
+            if (attached) {
+                (void)owner->ChangeAttachedProperty(name, PropertyValue(buf));
+            } else {
+                (void)owner->ChangeProperty(name, PropertyValue(buf));
+            }
+        }
     } else {
         if (attached) {
             (void)owner->ChangeAttachedProperty(name, PropertyValue(buf));
@@ -770,10 +785,55 @@ DesignerEvent<InspectorTab>& InspectorPanel::TabChangedSignal() noexcept {
     return m_impl->tabChangedSignal;
 }
 
-static std::string FormatValueString(const PropertyValue& val) {
+static std::string FormatValueString(const PropertyValue& val, compat::string_view propName = "") {
     if (val.IsEmpty()) return "";
+    if (auto v = val.Get<layout::Visibility>()) {
+        switch (*v) {
+            case layout::Visibility::Visible:   return "Visible";
+            case layout::Visibility::Hidden:    return "Hidden";
+            case layout::Visibility::Collapsed: return "Collapsed";
+        }
+    }
+    if (auto h = val.Get<layout::HorizontalAlignment>()) {
+        switch (*h) {
+            case layout::HorizontalAlignment::Left:    return "Left";
+            case layout::HorizontalAlignment::Center:  return "Center";
+            case layout::HorizontalAlignment::Right:   return "Right";
+            case layout::HorizontalAlignment::Stretch: return "Stretch";
+        }
+    }
+    if (auto va = val.Get<layout::VerticalAlignment>()) {
+        switch (*va) {
+            case layout::VerticalAlignment::Top:     return "Top";
+            case layout::VerticalAlignment::Center:  return "Center";
+            case layout::VerticalAlignment::Bottom:  return "Bottom";
+            case layout::VerticalAlignment::Stretch: return "Stretch";
+        }
+    }
+    if (auto o = val.Get<layout::Orientation>()) {
+        switch (*o) {
+            case layout::Orientation::Horizontal: return "Horizontal";
+            case layout::Orientation::Vertical:   return "Vertical";
+        }
+    }
     if (auto b = val.Get<bool>()) return *b ? "True" : "False";
-    if (auto i = val.Get<int32_t>()) return std::to_string(*i);
+    if (auto i = val.Get<int32_t>()) {
+        if (propName == "FontWeight") {
+            switch (*i) {
+                case 100: return "Thin";
+                case 200: return "ExtraLight";
+                case 300: return "Light";
+                case 400: return "Normal";
+                case 500: return "Medium";
+                case 600: return "SemiBold";
+                case 700: return "Bold";
+                case 800: return "ExtraBold";
+                case 900: return "Black";
+                default: break;
+            }
+        }
+        return std::to_string(*i);
+    }
     if (auto d = val.Get<double>()) {
         char buf[32];
         std::snprintf(buf, sizeof(buf), "%.1f", *d);
@@ -916,13 +976,13 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
                             dc.DrawText(val ? "True (點擊切換)" : "False (點擊切換)", core::Point(valRect.x + 26.0f, valRect.y + 4.0f * m_impl->fontScale),
                                         text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
                         } else if (!p->enumOptions.empty()) {
-                            std::string valStr = FormatValueString(p->currentValue);
+                            std::string valStr = FormatValueString(p->currentValue, p->name);
                             dc.DrawText(valStr, core::Point(valRect.x + 6.0f, valRect.y + 4.0f * m_impl->fontScale),
                                         text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
                             dc.DrawText("▼", core::Point(valRect.x + valRect.width - 16.0f, valRect.y + 4.0f * m_impl->fontScale),
                                         text::FontDescriptor("Segoe UI", 9.0f * m_impl->fontScale), colors.textSecondary);
                         } else {
-                            std::string valStr = FormatValueString(p->currentValue);
+                            std::string valStr = FormatValueString(p->currentValue, p->name);
                             dc.DrawText(valStr, core::Point(valRect.x + 6.0f, valRect.y + 4.0f * m_impl->fontScale),
                                         text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
                         }
@@ -1124,10 +1184,12 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
                 size_t selIdx = static_cast<size_t>(relY / itemH);
                 if (selIdx < dd.options.size()) {
                     const std::string& chosen = dd.options[selIdx];
+                    auto parsedEnum = PropertyEditorModel::ParseEnum(dd.propName, chosen);
+                    PropertyValue valToSet = parsedEnum.has_value() ? parsedEnum.value() : PropertyValue(chosen);
                     if (dd.isAttached) {
-                        ChangeAttachedProperty(dd.propName, PropertyValue(chosen));
+                        ChangeAttachedProperty(dd.propName, valToSet);
                     } else {
-                        ChangeProperty(dd.propName, PropertyValue(chosen));
+                        ChangeProperty(dd.propName, valToSet);
                     }
                 }
             }
@@ -1245,7 +1307,7 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
                                 m_impl->CommitInlineEdit();
                                 m_impl->editingPropName = p->name;
                                 m_impl->isEditingAttached = p->isAttached;
-                                m_impl->editingBuffer = FormatValueString(p->currentValue);
+                                m_impl->editingBuffer = FormatValueString(p->currentValue, p->name);
                                 m_impl->caretPos = m_impl->editingBuffer.size();
                                 m_impl->editingRect = valRect;
                                 Focus();
@@ -1255,7 +1317,7 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
                             m_impl->CommitInlineEdit();
                             m_impl->editingPropName = p->name;
                             m_impl->isEditingAttached = p->isAttached;
-                            m_impl->editingBuffer = FormatValueString(p->currentValue);
+                            m_impl->editingBuffer = FormatValueString(p->currentValue, p->name);
                             m_impl->caretPos = m_impl->editingBuffer.size();
                             m_impl->editingRect = valRect;
                             Focus();

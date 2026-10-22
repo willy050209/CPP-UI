@@ -5,6 +5,7 @@
 
 #include "ui/designer/codegen/FormClassEmitter.hpp"
 #include "ui/designer/metadata/PropertyDescriptor.hpp"
+#include "ui/text/Font.hpp"
 #include <sstream>
 #include <vector>
 #include <set>
@@ -123,6 +124,60 @@ static std::string FormatPropertyValue(const PropertyValue& val) {
     return "\"\"";
 }
 
+static std::string FormatPropertyForEmit(const std::string& propName, const PropertyValue& val) {
+    if (propName == "FontWeight") {
+        if (val.Is<int32_t>()) {
+            int32_t w = val.Get<int32_t>().value();
+            switch (w) {
+                case 100: return "cppui::text::FontWeight::Thin";
+                case 300: return "cppui::text::FontWeight::Light";
+                case 400: return "cppui::text::FontWeight::Normal";
+                case 600: return "cppui::text::FontWeight::SemiBold";
+                case 700: return "cppui::text::FontWeight::Bold";
+                case 800: return "cppui::text::FontWeight::ExtraBold";
+                case 900: return "cppui::text::FontWeight::Black";
+                default:  return "static_cast<cppui::text::FontWeight>(" + std::to_string(w) + ")";
+            }
+        }
+        if (val.Is<std::string>()) {
+            const std::string& s = val.Get<std::string>().value();
+            if (s == "Bold") return "cppui::text::FontWeight::Bold";
+            if (s == "SemiBold") return "cppui::text::FontWeight::SemiBold";
+            if (s == "Light") return "cppui::text::FontWeight::Light";
+            if (s == "Thin") return "cppui::text::FontWeight::Thin";
+            if (s == "ExtraBold") return "cppui::text::FontWeight::ExtraBold";
+            if (s == "Black") return "cppui::text::FontWeight::Black";
+            return "cppui::text::FontWeight::Normal";
+        }
+    }
+    if (propName == "Visibility" && val.Is<std::string>()) {
+        const std::string& s = val.Get<std::string>().value();
+        if (s == "Collapsed") return "cppui::layout::Visibility::Collapsed";
+        if (s == "Hidden") return "cppui::layout::Visibility::Hidden";
+        return "cppui::layout::Visibility::Visible";
+    }
+    if (propName == "HorizontalAlignment" && val.Is<std::string>()) {
+        const std::string& s = val.Get<std::string>().value();
+        if (s == "Center") return "cppui::layout::HorizontalAlignment::Center";
+        if (s == "Right") return "cppui::layout::HorizontalAlignment::Right";
+        if (s == "Stretch") return "cppui::layout::HorizontalAlignment::Stretch";
+        return "cppui::layout::HorizontalAlignment::Left";
+    }
+    if (propName == "VerticalAlignment" && val.Is<std::string>()) {
+        const std::string& s = val.Get<std::string>().value();
+        if (s == "Center") return "cppui::layout::VerticalAlignment::Center";
+        if (s == "Bottom") return "cppui::layout::VerticalAlignment::Bottom";
+        if (s == "Stretch") return "cppui::layout::VerticalAlignment::Stretch";
+        return "cppui::layout::VerticalAlignment::Top";
+    }
+    if (propName == "Orientation" && val.Is<std::string>()) {
+        const std::string& s = val.Get<std::string>().value();
+        if (s == "Horizontal") return "cppui::layout::Orientation::Horizontal";
+        return "cppui::layout::Orientation::Vertical";
+    }
+    return FormatPropertyValue(val);
+}
+
 struct NodeCollectInfo {
     const WidgetNode* node = nullptr;
     std::string varName;
@@ -229,7 +284,8 @@ struct FormClassEmitter::Impl {
            << "#include \"compat/Compat.hpp\"\n"
            << "#include \"ui/app/Form.hpp\"\n"
            << "#include \"ui/input/PointerEventArgs.hpp\"\n"
-           << "#include \"ui/input/KeyEventArgs.hpp\"\n";
+           << "#include \"ui/input/KeyEventArgs.hpp\"\n"
+           << "#include \"ui/text/Font.hpp\"\n";
 
         for (const auto& h : controlHeaders) {
             ss << "#include \"" << h << "\"\n";
@@ -344,7 +400,7 @@ struct FormClassEmitter::Impl {
                     continue;
                 }
 
-                ss << "    " << item.varName << "->Set" << propName << "(" << FormatPropertyValue(val) << ");\n";
+                ss << "    " << item.varName << "->Set" << propName << "(" << FormatPropertyForEmit(propName, val) << ");\n";
             }
 
             // Grid 定義

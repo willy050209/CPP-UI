@@ -103,6 +103,17 @@ public:
     /// <returns>若成功重做回傳 true。</returns>
     bool Redo();
 
+    // --- 視口滾動管理 (2D Viewport Scrolling) ---
+
+    /// <summary>取得當前畫布滾動偏移量 (X: 橫向, Y: 垂直)。</summary>
+    COMPAT_NODISCARD core::Point GetScrollOffset() const noexcept;
+
+    /// <summary>設定畫布滾動偏移量。</summary>
+    void SetScrollOffset(float x, float y);
+
+    /// <summary>取得畫布內容全域外接尺寸 (包含 Form 與所有元件)。</summary>
+    COMPAT_NODISCARD core::Size GetContentExtent() const noexcept;
+
     // --- 拖曳互動狀態查詢 (供單元測試與診斷) ---
 
     COMPAT_NODISCARD DragMode GetCurrentDragMode() const noexcept;
@@ -114,6 +125,7 @@ public:
     void OnPointerPressed(input::PointerEventArgs& e);
     void OnPointerMoved(input::PointerEventArgs& e);
     void OnPointerReleased(input::PointerEventArgs& e);
+    void OnPointerWheel(input::PointerEventArgs& e);
 
 protected:
     void OnRender(rendering::DrawingContext& dc) override;
@@ -122,6 +134,7 @@ protected:
     void OnPointerPressedCore(input::PointerEventArgs& e) override;
     void OnPointerMovedCore(input::PointerEventArgs& e) override;
     void OnPointerReleasedCore(input::PointerEventArgs& e) override;
+    void OnPointerWheelCore(input::PointerEventArgs& e) override;
 
 private:
     struct Impl;

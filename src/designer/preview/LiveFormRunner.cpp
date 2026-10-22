@@ -25,6 +25,7 @@
 #include "ui/layout/VirtualizingStackPanel.hpp"
 #include "ui/layout/Grid.hpp"
 #include "ui/layout/Border.hpp"
+#include "ui/designer/inspector/PropertyEditors.hpp"
 
 namespace cppui {
 namespace designer {
@@ -32,28 +33,96 @@ namespace preview {
 
 namespace {
 
+static core::Color ParseColorHelper(const PropertyValue& val, core::Color defaultColor = core::Color(0, 0, 0, 0)) {
+    if (auto c = val.Get<core::Color>()) return *c;
+    if (auto s = val.Get<std::string>()) {
+        auto parsed = inspector::PropertyEditorModel::ParseColor(*s);
+        if (parsed.has_value() && parsed->Is<core::Color>()) {
+            return parsed->Get<core::Color>().value();
+        }
+    }
+    return defaultColor;
+}
+
+static layout::Visibility ParseVisibilityHelper(const PropertyValue& val) {
+    if (auto v = val.Get<layout::Visibility>()) return *v;
+    if (auto s = val.Get<std::string>()) {
+        if (*s == "Hidden") return layout::Visibility::Hidden;
+        if (*s == "Collapsed") return layout::Visibility::Collapsed;
+        return layout::Visibility::Visible;
+    }
+    return layout::Visibility::Visible;
+}
+
+static layout::HorizontalAlignment ParseHAlignHelper(const PropertyValue& val) {
+    if (auto h = val.Get<layout::HorizontalAlignment>()) return *h;
+    if (auto s = val.Get<std::string>()) {
+        if (*s == "Left") return layout::HorizontalAlignment::Left;
+        if (*s == "Center") return layout::HorizontalAlignment::Center;
+        if (*s == "Right") return layout::HorizontalAlignment::Right;
+        if (*s == "Stretch") return layout::HorizontalAlignment::Stretch;
+    }
+    return layout::HorizontalAlignment::Stretch;
+}
+
+static layout::VerticalAlignment ParseVAlignHelper(const PropertyValue& val) {
+    if (auto v = val.Get<layout::VerticalAlignment>()) return *v;
+    if (auto s = val.Get<std::string>()) {
+        if (*s == "Top") return layout::VerticalAlignment::Top;
+        if (*s == "Center") return layout::VerticalAlignment::Center;
+        if (*s == "Bottom") return layout::VerticalAlignment::Bottom;
+        if (*s == "Stretch") return layout::VerticalAlignment::Stretch;
+    }
+    return layout::VerticalAlignment::Stretch;
+}
+
+static text::FontWeight ParseFontWeightHelper(const PropertyValue& val) {
+    if (auto i = val.Get<int32_t>()) return static_cast<text::FontWeight>(*i);
+    if (auto s = val.Get<std::string>()) {
+        if (*s == "Thin") return text::FontWeight::Thin;
+        if (*s == "ExtraLight") return text::FontWeight::ExtraLight;
+        if (*s == "Light") return text::FontWeight::Light;
+        if (*s == "Normal" || *s == "Regular") return text::FontWeight::Normal;
+        if (*s == "Medium") return text::FontWeight::Medium;
+        if (*s == "SemiBold") return text::FontWeight::SemiBold;
+        if (*s == "Bold") return text::FontWeight::Bold;
+        if (*s == "ExtraBold") return text::FontWeight::ExtraBold;
+        if (*s == "Black") return text::FontWeight::Black;
+    }
+    return text::FontWeight::Normal;
+}
+
+static float ParseFloatHelper(const PropertyValue& val, float defaultVal = 0.0f) {
+    if (auto d = val.Get<double>()) return static_cast<float>(*d);
+    if (auto i = val.Get<int32_t>()) return static_cast<float>(*i);
+    if (auto s = val.Get<std::string>()) {
+        try {
+            return std::stof(*s);
+        } catch (...) {}
+    }
+    return defaultVal;
+}
+
 void ApplyCommonProperties(const WidgetNode& node, const std::shared_ptr<core::UIElement>& elem) {
     if (!elem) return;
 
     if (auto p = node.GetProperty("Width")) {
-        if (p->Is<double>()) elem->SetWidth(static_cast<float>(p->Get<double>().value()));
-        else if (p->Is<int32_t>()) elem->SetWidth(static_cast<float>(p->Get<int32_t>().value()));
+        elem->SetWidth(ParseFloatHelper(*p));
     }
     if (auto p = node.GetProperty("Height")) {
-        if (p->Is<double>()) elem->SetHeight(static_cast<float>(p->Get<double>().value()));
-        else if (p->Is<int32_t>()) elem->SetHeight(static_cast<float>(p->Get<int32_t>().value()));
+        elem->SetHeight(ParseFloatHelper(*p));
     }
     if (auto p = node.GetProperty("Margin")) {
         if (p->Is<core::Thickness>()) elem->SetMargin(p->Get<core::Thickness>().value());
     }
     if (auto p = node.GetProperty("HorizontalAlignment")) {
-        if (p->Is<layout::HorizontalAlignment>()) elem->SetHorizontalAlignment(p->Get<layout::HorizontalAlignment>().value());
+        elem->SetHorizontalAlignment(ParseHAlignHelper(*p));
     }
     if (auto p = node.GetProperty("VerticalAlignment")) {
-        if (p->Is<layout::VerticalAlignment>()) elem->SetVerticalAlignment(p->Get<layout::VerticalAlignment>().value());
+        elem->SetVerticalAlignment(ParseVAlignHelper(*p));
     }
     if (auto p = node.GetProperty("Visibility")) {
-        if (p->Is<layout::Visibility>()) elem->SetVisibility(p->Get<layout::Visibility>().value());
+        elem->SetVisibility(ParseVisibilityHelper(*p));
     }
     if (auto p = node.GetProperty("IsEnabled")) {
         if (p->Is<bool>()) {
@@ -63,15 +132,15 @@ void ApplyCommonProperties(const WidgetNode& node, const std::shared_ptr<core::U
         }
     }
     if (auto p = node.GetProperty("Opacity")) {
-        if (p->Is<double>()) elem->SetOpacity(static_cast<float>(p->Get<double>().value()));
+        elem->SetOpacity(ParseFloatHelper(*p, 1.0f));
     }
 
     // 附加屬性 (Canvas.Left / Top, Grid.Row / Column)
     if (auto p = node.GetAttachedProperty("Canvas.Left")) {
-        if (p->Is<double>()) layout::Canvas::SetLeft(elem, static_cast<float>(p->Get<double>().value()));
+        layout::Canvas::SetLeft(elem, ParseFloatHelper(*p));
     }
     if (auto p = node.GetAttachedProperty("Canvas.Top")) {
-        if (p->Is<double>()) layout::Canvas::SetTop(elem, static_cast<float>(p->Get<double>().value()));
+        layout::Canvas::SetTop(elem, ParseFloatHelper(*p));
     }
     if (auto p = node.GetAttachedProperty("Grid.Row")) {
         if (p->Is<int32_t>()) layout::Grid::SetRow(*elem, static_cast<size_t>(p->Get<int32_t>().value()));
@@ -84,6 +153,38 @@ void ApplyCommonProperties(const WidgetNode& node, const std::shared_ptr<core::U
     }
     if (auto p = node.GetAttachedProperty("Grid.ColumnSpan")) {
         if (p->Is<int32_t>()) layout::Grid::SetColumnSpan(*elem, static_cast<size_t>(p->Get<int32_t>().value()));
+    }
+}
+
+void ApplyControlProperties(const WidgetNode& node, const std::shared_ptr<controls::Control>& ctrl) {
+    if (!ctrl) return;
+
+    if (auto p = node.GetProperty("Background")) {
+        ctrl->SetBackground(ParseColorHelper(*p));
+    }
+    if (auto p = node.GetProperty("Foreground")) {
+        ctrl->SetForeground(ParseColorHelper(*p, core::Color(255, 255, 255, 255)));
+    }
+    if (auto p = node.GetProperty("FontSize")) {
+        ctrl->SetFontSize(ParseFloatHelper(*p, 14.0f));
+    }
+    if (auto p = node.GetProperty("FontFamily")) {
+        if (auto s = p->Get<std::string>()) ctrl->SetFontFamily(*s);
+    }
+    if (auto p = node.GetProperty("FontWeight")) {
+        ctrl->SetFontWeight(ParseFontWeightHelper(*p));
+    }
+    if (auto p = node.GetProperty("Padding")) {
+        if (p->Is<core::Thickness>()) ctrl->SetPadding(p->Get<core::Thickness>().value());
+    }
+    if (auto p = node.GetProperty("BorderBrush")) {
+        ctrl->SetBorderBrush(ParseColorHelper(*p));
+    }
+    if (auto p = node.GetProperty("BorderThickness")) {
+        if (p->Is<core::Thickness>()) ctrl->SetBorderThickness(p->Get<core::Thickness>().value());
+    }
+    if (auto p = node.GetProperty("CornerRadius")) {
+        ctrl->SetCornerRadius(ParseFloatHelper(*p));
     }
 }
 
@@ -201,10 +302,24 @@ std::shared_ptr<core::UIElement> LiveFormRunner::CreateWidget(
         }
         case NodeType::TextBlock: {
             std::string text;
-            if (auto p = node.GetProperty("Text")) {
-                if (p->Is<std::string>()) text = p->Get<std::string>().value();
+            if (auto pt = node.GetProperty("Text")) {
+                if (pt->Is<std::string>()) text = pt->Get<std::string>().value();
+            } else if (auto pc = node.GetProperty("Content")) {
+                if (pc->Is<std::string>()) text = pc->Get<std::string>().value();
             }
             auto txt = std::make_shared<controls::TextBlock>(text);
+            if (auto p = node.GetProperty("Foreground")) {
+                txt->SetForeground(ParseColorHelper(*p, core::Color(255, 255, 255, 255)));
+            }
+            if (auto p = node.GetProperty("FontSize")) {
+                txt->SetFontSize(ParseFloatHelper(*p, 14.0f));
+            }
+            if (auto p = node.GetProperty("FontFamily")) {
+                if (auto s = p->Get<std::string>()) txt->SetFontFamily(*s);
+            }
+            if (auto p = node.GetProperty("FontWeight")) {
+                txt->SetFontWeight(ParseFontWeightHelper(*p));
+            }
             element = txt;
             break;
         }
@@ -322,6 +437,9 @@ std::shared_ptr<core::UIElement> LiveFormRunner::CreateWidget(
         }
     }
 
+    if (auto ctrl = std::dynamic_pointer_cast<controls::Control>(element)) {
+        ApplyControlProperties(node, ctrl);
+    }
     ApplyCommonProperties(node, element);
     return element;
 }
@@ -343,6 +461,12 @@ std::shared_ptr<app::Form> LiveFormRunner::CreateForm(
         auto rootElement = CreateWidget(*rootNode, std::move(eventCallback));
         if (rootElement) {
             form->SetContent(rootElement);
+        }
+        if (auto p = rootNode->GetProperty("Background")) {
+            form->SetBackground(ParseColorHelper(*p));
+        }
+        if (auto p = rootNode->GetProperty("Padding")) {
+            if (p->Is<core::Thickness>()) form->SetPadding(p->Get<core::Thickness>().value());
         }
     }
 

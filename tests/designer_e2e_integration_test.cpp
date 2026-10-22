@@ -17,6 +17,7 @@
 #include "ui/controls/ProgressBar.hpp"
 #include "ui/layout/Grid.hpp"
 #include "ui/layout/StackPanel.hpp"
+#include "ui/layout/Canvas.hpp"
 
 using namespace cppui;
 using namespace cppui::designer;
@@ -334,6 +335,51 @@ static void TestIncrementalUserCodeProtection() {
     compat::println("  [PASS] Incremental user code protection and stub appending verified.");
 }
 
+static void TestLiveFormRunnerStylingAndVisibility() {
+    compat::println("[Test 8] LiveFormRunner Control Styling & Visibility Reflection...");
+
+    FormDocumentNode doc;
+    FormSettings settings;
+    settings.title = "StylingTest";
+    settings.initialSize = core::Size(600.0f, 400.0f);
+    doc.SetSettings(settings);
+
+    auto root = std::make_unique<WidgetNode>(NodeType::Canvas, "rootCanvas");
+    root->SetProperty("Background", PropertyValue(core::Color(30, 40, 50, 255)));
+
+    auto btn = std::make_unique<WidgetNode>(NodeType::Button, "styledBtn");
+    btn->SetProperty("Content", PropertyValue(std::string("Click Me")));
+    btn->SetProperty("Background", PropertyValue(core::Color(255, 0, 0, 255)));
+    btn->SetProperty("Foreground", PropertyValue(core::Color(0, 255, 0, 255)));
+    btn->SetProperty("FontSize", PropertyValue(18.0));
+    btn->SetProperty("FontFamily", PropertyValue(std::string("Arial")));
+    btn->SetProperty("FontWeight", PropertyValue(int32_t(700)));
+    btn->SetProperty("Visibility", PropertyValue(layout::Visibility::Collapsed));
+
+    root->AddChild(std::move(btn));
+    doc.SetRoot(std::move(root));
+
+    auto form = LiveFormRunner::CreateForm(doc);
+    assert(form != nullptr);
+    assert(form->GetTitle() == "StylingTest");
+    assert(form->GetBackground() == core::Color(30, 40, 50, 255));
+
+    auto canvas = std::dynamic_pointer_cast<layout::Canvas>(form->GetContent());
+    assert(canvas != nullptr);
+    assert(canvas->GetChildrenCount() == 1);
+
+    auto* childBtn = dynamic_cast<controls::Button*>(canvas->GetChild(0));
+    assert(childBtn != nullptr);
+    assert(childBtn->GetVisibility() == layout::Visibility::Collapsed);
+    assert(childBtn->GetBackground() == core::Color(255, 0, 0, 255));
+    assert(childBtn->GetForeground() == core::Color(0, 255, 0, 255));
+    assert(childBtn->GetFontSize() == 18.0f);
+    assert(childBtn->GetFontFamily() == "Arial");
+    assert(childBtn->GetFontWeight() == text::FontWeight::Bold);
+
+    compat::println("  [PASS] LiveFormRunner styling & visibility reflection verified.");
+}
+
 int main() {
     compat::println("=== CPPUI Designer Phase 5 E2E Integration Test Suite ===");
 
@@ -344,6 +390,7 @@ int main() {
     TestLosslessProjectSerialization();
     TestCMakeProjectExportDirectory();
     TestIncrementalUserCodeProtection();
+    TestLiveFormRunnerStylingAndVisibility();
 
     compat::println("=== All Phase 5 E2E Integration Tests Passed Successfully! ===");
     return 0;

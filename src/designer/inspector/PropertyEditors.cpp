@@ -398,6 +398,16 @@ compat::expected<PropertyValue, std::string> PropertyEditorModel::ParseEnum(
         if (s == "Visible") return PropertyValue(layout::Visibility::Visible);
         if (s == "Hidden") return PropertyValue(layout::Visibility::Hidden);
         if (s == "Collapsed") return PropertyValue(layout::Visibility::Collapsed);
+    } else if (propName == "FontWeight") {
+        if (s == "Thin") return PropertyValue(int32_t(100));
+        if (s == "ExtraLight") return PropertyValue(int32_t(200));
+        if (s == "Light") return PropertyValue(int32_t(300));
+        if (s == "Normal" || s == "Regular") return PropertyValue(int32_t(400));
+        if (s == "Medium") return PropertyValue(int32_t(500));
+        if (s == "SemiBold") return PropertyValue(int32_t(600));
+        if (s == "Bold") return PropertyValue(int32_t(700));
+        if (s == "ExtraBold") return PropertyValue(int32_t(800));
+        if (s == "Black") return PropertyValue(int32_t(900));
     }
     return compat::unexpected("Unknown enum value '" + s + "' for property '" + std::string(propName) + "'");
 }

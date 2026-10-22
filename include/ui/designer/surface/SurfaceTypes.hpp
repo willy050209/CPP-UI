@@ -40,7 +40,9 @@ enum class DragMode : uint8_t {
     Move,
     Resize,
     RubberBand,
-    Create
+    Create,
+    ScrollH,
+    ScrollV
 };
 
 /// <summary>

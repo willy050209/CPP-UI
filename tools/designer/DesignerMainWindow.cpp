@@ -679,7 +679,7 @@ DesignerMainWindow::DesignerMainWindow()
     leftSidebar->AddChild(m_impl->m_hierarchyBox);
 
     // 3. 中央主工作區 (純畫布表面 - 完整開展自適應展開)
-    m_impl->m_surfaceHeader = std::make_shared<controls::TextBlock>("🎨 設計畫布表面 (Design Surface - 800 x 520)");
+    m_impl->m_surfaceHeader = std::make_shared<controls::TextBlock>("🎨 設計畫布表面 (Design Surface)");
     m_impl->m_surfaceHeader->SetFontSize(14.5f);
     m_impl->m_surfaceHeader->SetFontWeight(text::FontWeight::Bold);
     m_impl->m_surfaceHeader->SetMargin(core::Thickness(4.0f, 6.0f, 4.0f, 4.0f));

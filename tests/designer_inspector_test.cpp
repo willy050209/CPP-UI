@@ -562,6 +562,91 @@ static void TestDefectFixesRegression() {
     compat::println("  [PASS] Phase 8 defect fixes regression verified.");
 }
 
+static void TestTypographyAndFontWeightSupport() {
+    compat::println("[Test 10] Typography & FontWeight Enum Options, Parsing, and AST Binding...");
+
+    // 1. 驗證 FontWeight 與 FontFamily enum 選項
+    auto fwOptions = InheritanceMetadataRegistry::GetEnumOptions("FontWeight");
+    assert(!fwOptions.empty());
+    bool hasBold = false;
+    bool hasNormal = false;
+    for (const auto& opt : fwOptions) {
+        if (opt == "Bold") hasBold = true;
+        if (opt == "Normal") hasNormal = true;
+    }
+    assert(hasBold);
+    assert(hasNormal);
+
+    auto ffOptions = InheritanceMetadataRegistry::GetEnumOptions("FontFamily");
+    assert(!ffOptions.empty());
+    bool hasSegoe = false;
+    for (const auto& opt : ffOptions) {
+        if (opt == "Segoe UI") hasSegoe = true;
+    }
+    assert(hasSegoe);
+
+    // 2. 驗證 PropertyEditorModel::ParseEnum 針對 FontWeight 的整數對映
+    auto parsedBold = PropertyEditorModel::ParseEnum("FontWeight", "Bold");
+    assert(parsedBold.has_value());
+    assert(parsedBold->Is<int32_t>());
+    assert(parsedBold->Get<int32_t>().value() == 700);
+
+    auto parsedNormal = PropertyEditorModel::ParseEnum("FontWeight", "Normal");
+    assert(parsedNormal.has_value());
+    assert(parsedNormal->Is<int32_t>());
+    assert(parsedNormal->Get<int32_t>().value() == 400);
+
+    auto parsedSemiBold = PropertyEditorModel::ParseEnum("FontWeight", "SemiBold");
+    assert(parsedSemiBold.has_value());
+    assert(parsedSemiBold->Get<int32_t>().value() == 600);
+
+    // 3. 驗證 PropertyEditorModel::ParseEnum 針對 Visibility 的列舉對映
+    auto parsedVis = PropertyEditorModel::ParseEnum("Visibility", "Collapsed");
+    assert(parsedVis.has_value());
+    assert(parsedVis->Is<layout::Visibility>());
+    assert(parsedVis->Get<layout::Visibility>().value() == layout::Visibility::Collapsed);
+
+    // 4. 驗證 InspectorPanel 屬性套用至 AST
+    FormDocumentNode doc;
+    CommandHistoryManager history;
+    SelectionModel selection;
+    InspectorPanel inspector(&doc, &history, &selection);
+
+    auto root = std::make_unique<WidgetNode>(NodeType::Canvas, "rootCanvas");
+    auto textBlock = std::make_unique<WidgetNode>(NodeType::TextBlock, "labelTitle");
+    textBlock->SetProperty("Text", PropertyValue(std::string("Hello World")));
+    std::string tbUuid = textBlock->GetUuid();
+
+    WidgetNode* rawTb = textBlock.get();
+    root->AddChild(std::move(textBlock));
+    doc.SetRoot(std::move(root));
+
+    selection.SetSelection(tbUuid);
+
+    // 透過 inspector 修改 FontWeight
+    bool setFwOk = inspector.ChangeProperty("FontWeight", PropertyValue(int32_t(700)));
+    assert(setFwOk);
+    auto fwProp = rawTb->GetProperty("FontWeight");
+    assert(fwProp.has_value());
+    assert(fwProp->Get<int32_t>().value() == 700);
+
+    // 透過 inspector 修改 FontSize
+    bool setFsOk = inspector.ChangeProperty("FontSize", PropertyValue(18.0));
+    assert(setFsOk);
+    auto fsProp = rawTb->GetProperty("FontSize");
+    assert(fsProp.has_value());
+    assert(fsProp->Get<double>().value() == 18.0);
+
+    // 透過 inspector 修改 FontFamily
+    bool setFfOk = inspector.ChangeProperty("FontFamily", PropertyValue(std::string("Consolas")));
+    assert(setFfOk);
+    auto ffProp = rawTb->GetProperty("FontFamily");
+    assert(ffProp.has_value());
+    assert(ffProp->Get<std::string>().value() == "Consolas");
+
+    compat::println("  [PASS] Typography and FontWeight options & AST binding verified.");
+}
+
 int main() {
     compat::println("=== CPPUI Designer Phase 4 Inspector Test Suite ===");
 
@@ -574,6 +659,7 @@ int main() {
     TestBatchMacroCommandUndoRedo();
     TestResetToDefaultIntegrity();
     TestDefectFixesRegression();
+    TestTypographyAndFontWeightSupport();
 
     compat::println("=== All Phase 4 Inspector Tests Passed Successfully! ===");
     return 0;

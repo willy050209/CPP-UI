@@ -85,6 +85,7 @@ std::vector<PropertyDescriptor> BuildDescriptors(NodeType type) {
             list.push_back({ "Text", PropertyValue(std::string("")), PropertyCategory::Text, false });
             list.push_back({ "FontFamily", PropertyValue(std::string("Segoe UI")), PropertyCategory::Text, false });
             list.push_back({ "FontSize", PropertyValue(14.0), PropertyCategory::Text, false });
+            list.push_back({ "FontWeight", PropertyValue(int32_t(400)), PropertyCategory::Text, false });
             list.push_back({ "Foreground", PropertyValue(core::Color{ 0, 0, 0, 255 }), PropertyCategory::Appearance, false });
             list.push_back({ "TextWrapping", PropertyValue(false), PropertyCategory::Text, false });
             return list;
@@ -477,6 +478,12 @@ std::string InheritanceMetadataRegistry::GetFriendlyTypeName(const PropertyValue
 }
 
 std::vector<std::string> InheritanceMetadataRegistry::GetEnumOptions(compat::string_view propName) {
+    if (propName == "FontWeight") {
+        return { "Normal", "Bold", "SemiBold", "Light", "Thin", "ExtraBold", "Black" };
+    }
+    if (propName == "FontFamily") {
+        return { "Segoe UI", "Arial", "Consolas", "Microsoft JhengHei", "Tahoma", "Times New Roman" };
+    }
     if (propName == "HorizontalAlignment") {
         return { "Left", "Center", "Right", "Stretch" };
     }
