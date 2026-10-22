@@ -5,6 +5,8 @@
 
 #include "ui/designer/preview/LiveCodePreviewPanel.hpp"
 #include "ui/designer/codegen/FormCodegenPipeline.hpp"
+#include "ui/core/LifetimeToken.hpp"
+#include "ui/reactive/Signal.hpp"
 
 namespace cppui {
 namespace designer {
@@ -21,33 +23,44 @@ struct LiveCodePreviewPanel::Impl {
 
     DesignerEvent<std::pair<PreviewViewMode, std::string>> codeUpdatedSignal;
 
-    reactive::Connection propConn;
-    reactive::Connection nodeAddConn;
-    reactive::Connection nodeRemConn;
-    reactive::Connection nodeMovConn;
-    reactive::Connection settingsConn;
+    core::LifetimeToken lifetimeToken{ core::LifetimeToken::Create() };
 
-    void ConnectDocumentSignals() {
+    reactive::ScopedConnection propConn;
+    reactive::ScopedConnection nodeAddConn;
+    reactive::ScopedConnection nodeRemConn;
+    reactive::ScopedConnection nodeMovConn;
+    reactive::ScopedConnection settingsConn;
+
+    ~Impl() {
+        DisconnectDocumentSignals();
+        lifetimeToken.Invalidate();
+    }
+
+    void DisconnectDocumentSignals() {
         propConn.Disconnect();
         nodeAddConn.Disconnect();
         nodeRemConn.Disconnect();
         nodeMovConn.Disconnect();
         settingsConn.Disconnect();
+    }
+
+    void ConnectDocumentSignals() {
+        DisconnectDocumentSignals();
 
         if (document) {
-            propConn = document->PropertyChangedSignal().Connect([this](const PropertyChangedPayload&) {
+            propConn = document->PropertyChangedSignal().Connect(lifetimeToken, [this](const PropertyChangedPayload&) {
                 RefreshCode();
             });
-            nodeAddConn = document->NodeAddedSignal().Connect([this](const NodeAddedPayload&) {
+            nodeAddConn = document->NodeAddedSignal().Connect(lifetimeToken, [this](const NodeAddedPayload&) {
                 RefreshCode();
             });
-            nodeRemConn = document->NodeRemovedSignal().Connect([this](const NodeRemovedPayload&) {
+            nodeRemConn = document->NodeRemovedSignal().Connect(lifetimeToken, [this](const NodeRemovedPayload&) {
                 RefreshCode();
             });
-            nodeMovConn = document->NodeMovedSignal().Connect([this](const NodeMovedPayload&) {
+            nodeMovConn = document->NodeMovedSignal().Connect(lifetimeToken, [this](const NodeMovedPayload&) {
                 RefreshCode();
             });
-            settingsConn = document->SettingsChangedSignal().Connect([this](const FormSettingsChangedPayload&) {
+            settingsConn = document->SettingsChangedSignal().Connect(lifetimeToken, [this](const FormSettingsChangedPayload&) {
                 RefreshCode();
             });
         }

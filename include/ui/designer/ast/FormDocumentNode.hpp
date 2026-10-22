@@ -117,7 +117,9 @@ public:
     }
 
     void Notify(const Payload& payload) {
-        for (const auto& entry : m_listeners) {
+        // 複製一份監聽器列表，防止回呼中呼叫 Disconnect 引發容器迭代器失效
+        auto listenersCopy = m_listeners;
+        for (const auto& entry : listenersCopy) {
             if (entry.second) {
                 entry.second(payload);
             }

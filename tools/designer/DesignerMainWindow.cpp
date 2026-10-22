@@ -131,7 +131,7 @@ struct DesignerMainWindow::Impl {
     std::shared_ptr<controls::TextBox> m_toolboxSearch;
     std::shared_ptr<controls::TextBox> m_treeSearch;
 
-    std::vector<reactive::Connection> m_connections;
+    std::vector<reactive::ScopedConnection> m_connections;
     float m_fontScale = 1.0f;
 
     std::string m_saveBtnUuid;

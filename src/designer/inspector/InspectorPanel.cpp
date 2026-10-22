@@ -4,6 +4,8 @@
  */
 
 #include "ui/designer/inspector/InspectorPanel.hpp"
+#include "ui/core/LifetimeToken.hpp"
+#include "ui/reactive/Signal.hpp"
 #include "ui/designer/inspector/InheritanceMetadataRegistry.hpp"
 #include "ui/designer/inspector/PropertyEditors.hpp"
 #include "ui/designer/commands/PropertyCommands.hpp"
@@ -74,7 +76,7 @@ struct InspectorPanel::Impl {
     DesignerEvent<PropertyChangePayload> propertyChangedSignal;
     DesignerEvent<EventChangePayload> eventChangedSignal;
     DesignerEvent<InspectorTab> tabChangedSignal;
-    reactive::Connection selectionConn;
+    reactive::ScopedConnection selectionConn;
 
     std::vector<WidgetNode*> GetSelectedNodes() const {
         if (!document || !selectionModel) {
@@ -100,7 +102,7 @@ InspectorPanel::InspectorPanel(
     m_impl->historyManager = historyManager;
     m_impl->selectionModel = selectionModel;
     if (m_impl->selectionModel) {
-        m_impl->selectionConn = m_impl->selectionModel->SelectionChangedSignal().Connect([this](const std::vector<std::string>&) {
+        m_impl->selectionConn = m_impl->selectionModel->SelectionChangedSignal().Connect(GetLifetimeToken(), [this](const std::vector<std::string>&) {
             m_impl->scrollY = 0.0f;
             m_impl->CancelInlineEdit();
             InvalidateVisual();
@@ -131,7 +133,7 @@ CommandHistoryManager* InspectorPanel::GetHistoryManager() const noexcept {
 void InspectorPanel::SetSelectionModel(surface::SelectionModel* selectionModel) {
     m_impl->selectionModel = selectionModel;
     if (m_impl->selectionModel) {
-        m_impl->selectionConn = m_impl->selectionModel->SelectionChangedSignal().Connect([this](const std::vector<std::string>&) {
+        m_impl->selectionConn = m_impl->selectionModel->SelectionChangedSignal().Connect(GetLifetimeToken(), [this](const std::vector<std::string>&) {
             m_impl->scrollY = 0.0f;
             m_impl->CancelInlineEdit();
             InvalidateVisual();

@@ -4,6 +4,8 @@
  */
 
 #include "ui/designer/surface/DesignSurface.hpp"
+#include "ui/core/LifetimeToken.hpp"
+#include "ui/reactive/Signal.hpp"
 #include "ui/designer/surface/DesignerHitTest.hpp"
 #include "ui/designer/surface/SnapEngine.hpp"
 #include "ui/designer/surface/AdornerOverlay.hpp"
@@ -34,7 +36,7 @@ struct DesignSurface::Impl {
     std::vector<SnapLine> activeGuides;
     std::string draggedNodeUuid;
     float fontScale = 1.0f;
-    reactive::Connection selectionConn;
+    reactive::ScopedConnection selectionConn;
 
     void SyncBoundsFromDocument() {
         if (!document) return;
@@ -59,7 +61,7 @@ DesignSurface::DesignSurface(
 ) : m_impl(std::make_unique<Impl>()) {
     m_impl->document = document;
     m_impl->historyManager = historyManager;
-    m_impl->selectionConn = m_impl->selectionModel.SelectionChangedSignal().Connect([this](const std::vector<std::string>&) {
+    m_impl->selectionConn = m_impl->selectionModel.SelectionChangedSignal().Connect(GetLifetimeToken(), [this](const std::vector<std::string>&) {
         InvalidateVisual();
     });
     SetClipToBounds(true);

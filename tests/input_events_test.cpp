@@ -140,10 +140,12 @@ int main() {
         auto leaf = std::make_shared<TestElement>("Leaf");
         root->AddVisualChild(leaf);
 
+        bool leafCalled = false;
         bool regularCalled = false;
         bool handledTooCalled = false;
 
-        leaf->AddHandler(StandardEvents::PointerPressed, [](RoutedEventArgs& e) {
+        leaf->AddHandler(StandardEvents::PointerPressed, [&](RoutedEventArgs& e) {
+            leafCalled = true;
             e.SetHandled(true);
         });
 
@@ -159,6 +161,7 @@ int main() {
         EventRoute route(leaf.get());
         route.Dispatch(StandardEvents::PreviewPointerPressed, StandardEvents::PointerPressed, args);
 
+        assert(leafCalled);
         assert(!regularCalled);
         assert(handledTooCalled);
         compat::println("  [PASS] handledEventsToo = true correctly receives handled events.");

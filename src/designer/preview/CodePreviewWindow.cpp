@@ -4,6 +4,8 @@
  */
 
 #include "ui/designer/preview/CodePreviewWindow.hpp"
+#include "ui/core/LifetimeToken.hpp"
+#include "ui/reactive/Signal.hpp"
 #include <vector>
 #include <sstream>
 #include <algorithm>
@@ -300,25 +302,36 @@ struct CodePreviewWindow::Impl {
     float codeFontSize = 13.5f; // 預設放大至 13.5pt，增強閱讀體驗
     std::shared_ptr<CodeEditorControl> editorView;
 
-    reactive::Connection propConn;
-    reactive::Connection nodeAddConn;
-    reactive::Connection nodeRemConn;
-    reactive::Connection nodeMovConn;
-    reactive::Connection settingsConn;
+    core::LifetimeToken lifetimeToken{ core::LifetimeToken::Create() };
 
-    void ConnectSignals() {
+    reactive::ScopedConnection propConn;
+    reactive::ScopedConnection nodeAddConn;
+    reactive::ScopedConnection nodeRemConn;
+    reactive::ScopedConnection nodeMovConn;
+    reactive::ScopedConnection settingsConn;
+
+    ~Impl() {
+        DisconnectSignals();
+        lifetimeToken.Invalidate();
+    }
+
+    void DisconnectSignals() {
         propConn.Disconnect();
         nodeAddConn.Disconnect();
         nodeRemConn.Disconnect();
         nodeMovConn.Disconnect();
         settingsConn.Disconnect();
+    }
+
+    void ConnectSignals() {
+        DisconnectSignals();
 
         if (document) {
-            propConn = document->PropertyChangedSignal().Connect([this](const PropertyChangedPayload&) { Refresh(); });
-            nodeAddConn = document->NodeAddedSignal().Connect([this](const NodeAddedPayload&) { Refresh(); });
-            nodeRemConn = document->NodeRemovedSignal().Connect([this](const NodeRemovedPayload&) { Refresh(); });
-            nodeMovConn = document->NodeMovedSignal().Connect([this](const NodeMovedPayload&) { Refresh(); });
-            settingsConn = document->SettingsChangedSignal().Connect([this](const FormSettingsChangedPayload&) { Refresh(); });
+            propConn = document->PropertyChangedSignal().Connect(lifetimeToken, [this](const PropertyChangedPayload&) { Refresh(); });
+            nodeAddConn = document->NodeAddedSignal().Connect(lifetimeToken, [this](const NodeAddedPayload&) { Refresh(); });
+            nodeRemConn = document->NodeRemovedSignal().Connect(lifetimeToken, [this](const NodeRemovedPayload&) { Refresh(); });
+            nodeMovConn = document->NodeMovedSignal().Connect(lifetimeToken, [this](const NodeMovedPayload&) { Refresh(); });
+            settingsConn = document->SettingsChangedSignal().Connect(lifetimeToken, [this](const FormSettingsChangedPayload&) { Refresh(); });
         }
     }
 

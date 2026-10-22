@@ -142,6 +142,49 @@ static void TestLifetimeTokenProtection() {
     assert(triggerCount == 1);
 }
 
+static void TestCodePreviewWindowLifecycleAndSignalUnsubscribe() {
+    compat::println("--- Running TestCodePreviewWindowLifecycleAndSignalUnsubscribe ---");
+
+    FormDocumentNode doc;
+    auto rootCanvas = std::make_unique<WidgetNode>(NodeType::Canvas, "rootCanvas");
+    auto btn = std::make_unique<WidgetNode>(NodeType::Button, "btn1");
+    std::string btnUuid = btn->GetUuid();
+    assert(rootCanvas->AddChild(std::move(btn)).has_value());
+    doc.SetRoot(std::move(rootCanvas));
+
+    surface::SelectionModel sm;
+
+    // 1. 驗證 CodePreviewWindow 於獨立作用域中建構、連線並解構
+    {
+        auto previewWin = std::make_shared<preview::CodePreviewWindow>(&doc, &sm);
+        previewWin->RefreshCode();
+        assert(!previewWin->GetCurrentCode().empty());
+        // 作用域結束，previewWin 析構 -> Impl 析構 -> ScopedConnection 自動 Disconnect + LifetimeToken 失效
+    }
+
+    // 2. 視窗解構後觸發屬性廣播 (模擬 InspectorPanel 修改屬性)
+    // 若信號未取消註冊，殘留的 lambda 會引發 Heap-use-after-free (ASan 崩潰)
+    doc.PropertyChangedSignal().Notify({ btnUuid, "Width", PropertyValue(100.0), PropertyValue(200.0) });
+    doc.NodeAddedSignal().Notify({ "rootCanvas", "btn2", 1 });
+    doc.NodeMovedSignal().Notify({ btnUuid, "rootCanvas", "rootCanvas", 1 });
+    doc.NodeRemovedSignal().Notify({ "rootCanvas", "btn2" });
+    doc.SettingsChangedSignal().Notify({ doc.GetSettings(), doc.GetSettings() });
+
+    // 3. 驗證 LiveCodePreviewPanel 於獨立作用域中建構並解構
+    {
+        auto previewPanel = std::make_shared<preview::LiveCodePreviewPanel>(&doc, &sm);
+        previewPanel->SetViewMode(preview::PreviewViewMode::ClassicSource);
+        assert(!previewPanel->GetActiveCodeText().empty());
+        // 作用域結束，previewPanel 析構 -> ScopedConnection 自動 Disconnect
+    }
+
+    // 4. 面板解構後再次觸發廣播
+    doc.PropertyChangedSignal().Notify({ btnUuid, "Height", PropertyValue(50.0), PropertyValue(80.0) });
+    doc.SettingsChangedSignal().Notify({ doc.GetSettings(), doc.GetSettings() });
+
+    compat::println("  [PASS] CodePreviewWindow & LiveCodePreviewPanel lifecycle unsubscription verified (0 UAF).");
+}
+
 int main() {
     compat::println("==================================================");
     compat::println("Starting designer_property_signal_test...");
@@ -152,6 +195,7 @@ int main() {
     TestAttachedPropertiesValidation();
     TestReactiveSignalChangeBus();
     TestLifetimeTokenProtection();
+    TestCodePreviewWindowLifecycleAndSignalUnsubscribe();
 
     compat::println("All designer_property_signal_test passed successfully!");
     return 0;
