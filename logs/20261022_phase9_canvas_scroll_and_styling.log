@@ -1,0 +1,32 @@
+# CPPUI Designer Phase 9 Audit Log: Canvas Scrolling & Typography Styling
+
+- Timestamp: 2026-10-22T11:18:50+08:00
+- Orchestrator: AI Workflow Orchestrator
+- Git Commit: 7475641 ("feat(designer): add canvas horizontal scrollbar, typography settings, and live runner styling")
+
+## 1. Summary of Changes
+- Implemented 2D viewport scrolling in `DesignSurface` including horizontal and vertical scrollbars, thumb dragging, page scrolling, and mouse wheel navigation (`Shift`+wheel for horizontal scroll).
+- Added typography metadata (`FontWeight`, `FontFamily`), enum parsing, inspector editors, and canvas rendering for `FontSize`, `FontFamily`, `FontWeight`, `Foreground`, `Background`, and dimmed non-visible elements.
+- Enabled complete runtime property reflection in `LiveFormRunner` for `controls::Control` subclasses (`Background`, `Foreground`, `FontSize`, `FontFamily`, `FontWeight`, `Visibility`, `Padding`, `Borders`).
+- Updated `FormClassEmitter` for strongly-typed typography code generation.
+
+## 2. Modified Files
+- `include/ui/designer/surface/DesignSurface.hpp`
+- `include/ui/designer/surface/SurfaceTypes.hpp`
+- `src/designer/codegen/FormClassEmitter.cpp`
+- `src/designer/inspector/InheritanceMetadataRegistry.cpp`
+- `src/designer/inspector/InspectorPanel.cpp`
+- `src/designer/inspector/PropertyEditors.cpp`
+- `src/designer/preview/LiveFormRunner.cpp`
+- `src/designer/surface/DesignSurface.cpp`
+- `tests/designer_e2e_integration_test.cpp`
+- `tests/designer_inspector_test.cpp`
+- `tests/designer_surface_test.cpp`
+- `tools/designer/DesignerMainWindow.cpp`
+
+## 3. Test & Verification
+- `designer_surface_test.exe`: 7/7 suites passed
+- `designer_inspector_test.exe`: 10/10 suites passed
+- `designer_e2e_integration_test.exe`: 8/8 suites passed
+- Full CTest suite: 42/42 (100%) passed (0 failures)
+- Compiler: MSVC /W4 (0 Errors / 0 Warnings)
