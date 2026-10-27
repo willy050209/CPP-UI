@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <functional>
 #include "compat/Compat.hpp"
@@ -18,7 +19,7 @@ namespace controls {
 
 /// <summary>
 /// 單行文字編輯輸入框 (TextBox)
-/// 支援滑鼠點擊獲焦定位、鍵盤即時輸入、退格刪除、方向鍵游標移動、佔位提示字 (Placeholder) 與焦點外框光暈。
+/// 支援滑鼠點擊獲焦定位、拖曳框選、多擊選取、鍵盤即時輸入、退格刪除、方向鍵游標移動、佔位提示字 (Placeholder) 與焦點外框光暈。
 /// </summary>
 class TextBox : public Control {
 public:
@@ -196,6 +197,18 @@ public:
     COMPAT_NODISCARD std::string GetSelectedText() const;
 
     /// <summary>
+    /// 取得選取文字反白背景色彩。
+    /// </summary>
+    /// <returns>選取背景色彩。</returns>
+    COMPAT_NODISCARD core::Color GetSelectionColor() const noexcept { return m_selectionColor; }
+
+    /// <summary>
+    /// 設定選取文字反白背景色彩。
+    /// </summary>
+    /// <param name="color">選取背景色彩。</param>
+    void SetSelectionColor(core::Color color);
+
+    /// <summary>
     /// 將選取文字複製至剪貼簿 (Copy)。
     /// </summary>
     void Copy();
@@ -248,7 +261,7 @@ public:
     core::Size MeasureOverride(core::Size availableSize) override;
 
     /// <summary>
-    /// 繪製文字輸入框背景、邊框、提示字/編輯文字與閃爍游標。
+    /// 繪製文字輸入框背景、邊框、反白選取、提示字/編輯文字與閃爍游標。
     /// </summary>
     /// <param name="dc">繪圖上下文。</param>
     void OnRender(rendering::DrawingContext& dc) override;
@@ -266,6 +279,38 @@ private:
     float GetCaretXOffset() const;
     void UpdateImeCompositionWindow();
 
+    /// <summary>
+    /// 取得指定索引前一個 UTF-8 字元的起始位元組索引。
+    /// </summary>
+    /// <param name="index">當前字元位元組索引。</param>
+    /// <returns>前一個 UTF-8 字元索引。</returns>
+    COMPAT_NODISCARD size_t PrevCharIndex(size_t index) const;
+
+    /// <summary>
+    /// 取得指定索引後一個 UTF-8 字元的起始位元組索引。
+    /// </summary>
+    /// <param name="index">當前字元位元組索引。</param>
+    /// <returns>後一個 UTF-8 字元索引。</returns>
+    COMPAT_NODISCARD size_t NextCharIndex(size_t index) const;
+
+    /// <summary>
+    /// 刪除目前反白選取的文字區塊內容。
+    /// </summary>
+    void DeleteSelectedText();
+
+    /// <summary>
+    /// 確保游標維持在目前文字方塊內部可視範圍內，若超出則自動調整水平滾動偏移。
+    /// </summary>
+    /// <param name="innerW">內容可視寬度。</param>
+    void EnsureCaretVisible(float innerW);
+
+    /// <summary>
+    /// 判斷指定位元組是否屬於文字單詞字元 (英數字、底線或多位元組 UTF-8 字元)。
+    /// </summary>
+    /// <param name="c">字元位元組。</param>
+    /// <returns>若為單詞字元傳回 true，否則傳回 false。</returns>
+    COMPAT_NODISCARD static bool IsWordChar(uint8_t c);
+
     std::string          m_text;
     std::string          m_placeholder;
     size_t               m_caretIndex = 0;
@@ -273,6 +318,9 @@ private:
     size_t               m_maxLength = 0;
     size_t               m_selectionStart = 0;
     size_t               m_selectionLength = 0;
+    size_t               m_selectionAnchorIndex = 0;
+    bool                 m_isSelecting = false;
+    float                m_scrollOffsetX = 0.0f;
     bool                 m_isPassword = false;
     char                 m_passwordChar = '*';
 
@@ -285,6 +333,8 @@ private:
     core::Color          m_placeholderColor{ 130, 145, 165, 255 };
     core::Color          m_caretColor{ 240, 245, 255, 255 };
     core::Color          m_focusBorderColor{ 0, 160, 255, 255 };
+    core::Color          m_selectionColor{ 0, 122, 255, 120 };
+    bool                 m_hasExplicitSelectionColor = false;
 
     text::TextLayout     m_textLayout;
     text::TextLayout     m_placeholderLayout;

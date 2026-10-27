@@ -1,3 +1,8 @@
+/**
+ * @file TextBox.cpp
+ * @brief 單行文字編輯輸入框實作，支援鍵盤互動、拖曳框選、多擊選取、選取高亮渲染、IME 組字與事件分發
+ */
+
 #include "ui/controls/TextBox.hpp"
 #include "ui/controls/ContextMenu.hpp"
 #include "ui/text/TextLayoutEngine.hpp"
@@ -9,6 +14,7 @@
 #include "ui/theme/Theme.hpp"
 #include "ui/app/Form.hpp"
 #include <algorithm>
+#include <cctype>
 
 namespace cppui {
 namespace controls {
@@ -25,32 +31,37 @@ TextBox::TextBox() {
     SetBackground(theme.Colors().surfaceBackground);
     SetBorderBrush(theme.Colors().controlBorder);
     SetForeground(theme.Colors().textPrimary);
+    SetCursor(CursorType::IBeam);
 
     m_focusBorderColor = theme.Colors().controlFocusedBorder;
     m_placeholderColor = theme.Colors().textPlaceholder;
+    core::Color accent = theme.Colors().accentPrimary;
+    m_selectionColor = core::Color(accent.r, accent.g, accent.b, 120);
+
     m_font.SetFamily(theme.Typography().fontFamily);
     m_font.SetSize(theme.Typography().fontSizeBody);
     m_hasExplicitBackground = false;
     m_hasExplicitBorder = false;
     m_hasExplicitForeground = false;
+    m_hasExplicitSelectionColor = false;
 
     OnPointerPressed([this](input::PointerEventArgs& e) {
+        if (!e.IsLeftButton()) return;
+
         input::FocusManager::Get().SetFocus(this);
         EnsureLayout();
 
         float left = m_padding.left + m_borderThickness.left;
         core::Point localPos = e.GetPosition(this);
-        float clickRelX = localPos.x - left;
+        float clickRelX = localPos.x - left + m_scrollOffsetX;
 
         // 利用 TextLayout 命中測試反查游標字元索引
         text::TextHitTestResult hit = m_textLayout.HitTestPoint(core::Point((std::max)(0.0f, clickRelX), 0.0f));
-        m_caretIndex = hit.textPosition;
-        if (hit.isTrailingHit && m_caretIndex < m_text.size()) {
-            m_caretIndex++;
-            while (m_caretIndex < m_text.size() && (static_cast<uint8_t>(m_text[m_caretIndex]) & 0xC0) == 0x80) {
-                m_caretIndex++;
-            }
+        size_t hitIndex = hit.textPosition;
+        if (hit.isTrailingHit && hitIndex < m_text.size()) {
+            hitIndex = NextCharIndex(hitIndex);
         }
+        hitIndex = (std::min)(hitIndex, m_text.size());
 
         // 若原先有未定稿組字，點擊重定游標時清空
         if (!m_compositionText.empty()) {
@@ -59,9 +70,102 @@ TextBox::TextBox() {
             m_isCompositionLayoutDirty = true;
         }
 
+        int32_t clicks = (std::max)(1, e.GetClickCount());
+        if (clicks >= 3) {
+            // 三擊：全選
+            SelectAll();
+        } else if (clicks == 2 && !m_text.empty()) {
+            // 雙擊：選取單詞
+            size_t scanPos = (hitIndex < m_text.size()) ? hitIndex : (m_text.size() - 1);
+            uint8_t targetByte = static_cast<uint8_t>(m_text[scanPos]);
+            if (IsWordChar(targetByte)) {
+                size_t start = scanPos;
+                while (start > 0 && IsWordChar(static_cast<uint8_t>(m_text[start - 1]))) {
+                    start--;
+                }
+                size_t end = scanPos;
+                while (end < m_text.size() && IsWordChar(static_cast<uint8_t>(m_text[end]))) {
+                    end++;
+                }
+                m_selectionStart = start;
+                m_selectionLength = end - start;
+                m_selectionAnchorIndex = start;
+                m_caretIndex = end;
+            } else if (std::isspace(targetByte)) {
+                size_t start = scanPos;
+                while (start > 0 && std::isspace(static_cast<uint8_t>(m_text[start - 1]))) {
+                    start--;
+                }
+                size_t end = scanPos;
+                while (end < m_text.size() && std::isspace(static_cast<uint8_t>(m_text[end]))) {
+                    end++;
+                }
+                m_selectionStart = start;
+                m_selectionLength = end - start;
+                m_selectionAnchorIndex = start;
+                m_caretIndex = end;
+            } else {
+                size_t nextPos = NextCharIndex(scanPos);
+                m_selectionStart = scanPos;
+                m_selectionLength = nextPos - scanPos;
+                m_selectionAnchorIndex = scanPos;
+                m_caretIndex = nextPos;
+            }
+        } else {
+            // 單擊 (ClickCount == 1)
+            if (e.HasShift()) {
+                m_caretIndex = hitIndex;
+                m_selectionStart = (std::min)(m_selectionAnchorIndex, m_caretIndex);
+                m_selectionLength = (std::max)(m_selectionAnchorIndex, m_caretIndex) - m_selectionStart;
+            } else {
+                m_caretIndex = hitIndex;
+                m_selectionAnchorIndex = hitIndex;
+                m_selectionStart = hitIndex;
+                m_selectionLength = 0;
+                m_isSelecting = true;
+                CaptureMouse();
+            }
+        }
+
+        float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+        EnsureCaretVisible(innerW);
         InvalidateVisual();
         UpdateImeCompositionWindow();
         e.SetHandled(true);
+    });
+
+    OnPointerMoved([this](input::PointerEventArgs& e) {
+        if (!m_isSelecting) return;
+
+        EnsureLayout();
+        float left = m_padding.left + m_borderThickness.left;
+        core::Point localPos = e.GetPosition(this);
+        float clickRelX = localPos.x - left + m_scrollOffsetX;
+
+        text::TextHitTestResult hit = m_textLayout.HitTestPoint(core::Point((std::max)(0.0f, clickRelX), 0.0f));
+        size_t hitIndex = hit.textPosition;
+        if (hit.isTrailingHit && hitIndex < m_text.size()) {
+            hitIndex = NextCharIndex(hitIndex);
+        }
+        hitIndex = (std::min)(hitIndex, m_text.size());
+
+        m_caretIndex = hitIndex;
+        m_selectionStart = (std::min)(m_selectionAnchorIndex, m_caretIndex);
+        m_selectionLength = (std::max)(m_selectionAnchorIndex, m_caretIndex) - m_selectionStart;
+
+        float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+        EnsureCaretVisible(innerW);
+        InvalidateVisual();
+        UpdateImeCompositionWindow();
+        e.SetHandled(true);
+    });
+
+    OnPointerReleased([this](input::PointerEventArgs& e) {
+        if (m_isSelecting) {
+            m_isSelecting = false;
+            ReleaseMouseCapture();
+            e.SetHandled(true);
+        }
     });
 
     OnTextInput([this](input::TextInputEventArgs& e) {
@@ -129,15 +233,15 @@ TextBox::TextBox() {
                 e.SetHandled(true);
                 return;
             }
-            if (m_caretIndex > 0) {
-                // 回退一個 UTF-8 字元
-                size_t eraseStart = m_caretIndex - 1;
-                while (eraseStart > 0 && (static_cast<uint8_t>(m_text[eraseStart]) & 0xC0) == 0x80) {
-                    eraseStart--;
-                }
-                size_t count = m_caretIndex - eraseStart;
-                m_text.erase(eraseStart, count);
+            if (m_selectionLength > 0) {
+                DeleteSelectedText();
+            } else if (m_caretIndex > 0) {
+                size_t eraseStart = PrevCharIndex(m_caretIndex);
+                m_text.erase(eraseStart, m_caretIndex - eraseStart);
                 m_caretIndex = eraseStart;
+                m_selectionAnchorIndex = m_caretIndex;
+                m_selectionStart = m_caretIndex;
+                m_selectionLength = 0;
 
                 InvalidateLayout();
                 InvalidateMeasure();
@@ -145,19 +249,22 @@ TextBox::TextBox() {
                 RaiseTextChanged();
                 UpdateImeCompositionWindow();
             }
+            float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+            EnsureCaretVisible(innerW);
             e.SetHandled(true);
         } else if (key == input::Key::Delete) { // Delete
             if (m_isReadOnly) {
                 e.SetHandled(true);
                 return;
             }
-            if (m_caretIndex < m_text.size()) {
-                // 前進一個 UTF-8 字元刪除
-                size_t eraseEnd = m_caretIndex + 1;
-                while (eraseEnd < m_text.size() && (static_cast<uint8_t>(m_text[eraseEnd]) & 0xC0) == 0x80) {
-                    eraseEnd++;
-                }
+            if (m_selectionLength > 0) {
+                DeleteSelectedText();
+            } else if (m_caretIndex < m_text.size()) {
+                size_t eraseEnd = NextCharIndex(m_caretIndex);
                 m_text.erase(m_caretIndex, eraseEnd - m_caretIndex);
+                m_selectionAnchorIndex = m_caretIndex;
+                m_selectionStart = m_caretIndex;
+                m_selectionLength = 0;
 
                 InvalidateLayout();
                 InvalidateMeasure();
@@ -165,34 +272,78 @@ TextBox::TextBox() {
                 RaiseTextChanged();
                 UpdateImeCompositionWindow();
             }
+            float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+            EnsureCaretVisible(innerW);
             e.SetHandled(true);
         } else if (key == input::Key::Left) { // Arrow Left
-            if (m_caretIndex > 0) {
-                m_caretIndex--;
-                while (m_caretIndex > 0 && (static_cast<uint8_t>(m_text[m_caretIndex]) & 0xC0) == 0x80) {
-                    m_caretIndex--;
+            if (e.HasShift()) {
+                m_caretIndex = PrevCharIndex(m_caretIndex);
+                m_selectionStart = (std::min)(m_selectionAnchorIndex, m_caretIndex);
+                m_selectionLength = (std::max)(m_selectionAnchorIndex, m_caretIndex) - m_selectionStart;
+            } else {
+                if (m_selectionLength > 0) {
+                    m_caretIndex = m_selectionStart;
+                    m_selectionAnchorIndex = m_caretIndex;
+                    m_selectionLength = 0;
+                } else {
+                    m_caretIndex = PrevCharIndex(m_caretIndex);
+                    m_selectionAnchorIndex = m_caretIndex;
                 }
-                InvalidateVisual();
-                UpdateImeCompositionWindow();
             }
+            float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+            EnsureCaretVisible(innerW);
+            InvalidateVisual();
+            UpdateImeCompositionWindow();
             e.SetHandled(true);
         } else if (key == input::Key::Right) { // Arrow Right
-            if (m_caretIndex < m_text.size()) {
-                m_caretIndex++;
-                while (m_caretIndex < m_text.size() && (static_cast<uint8_t>(m_text[m_caretIndex]) & 0xC0) == 0x80) {
-                    m_caretIndex++;
+            if (e.HasShift()) {
+                m_caretIndex = NextCharIndex(m_caretIndex);
+                m_selectionStart = (std::min)(m_selectionAnchorIndex, m_caretIndex);
+                m_selectionLength = (std::max)(m_selectionAnchorIndex, m_caretIndex) - m_selectionStart;
+            } else {
+                if (m_selectionLength > 0) {
+                    m_caretIndex = m_selectionStart + m_selectionLength;
+                    m_selectionAnchorIndex = m_caretIndex;
+                    m_selectionLength = 0;
+                } else {
+                    m_caretIndex = NextCharIndex(m_caretIndex);
+                    m_selectionAnchorIndex = m_caretIndex;
                 }
-                InvalidateVisual();
-                UpdateImeCompositionWindow();
             }
+            float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+            EnsureCaretVisible(innerW);
+            InvalidateVisual();
+            UpdateImeCompositionWindow();
             e.SetHandled(true);
         } else if (key == input::Key::Home) { // Home
-            m_caretIndex = 0;
+            if (e.HasShift()) {
+                m_caretIndex = 0;
+                m_selectionStart = (std::min)(m_selectionAnchorIndex, m_caretIndex);
+                m_selectionLength = (std::max)(m_selectionAnchorIndex, m_caretIndex) - m_selectionStart;
+            } else {
+                m_caretIndex = 0;
+                m_selectionAnchorIndex = 0;
+                m_selectionStart = 0;
+                m_selectionLength = 0;
+            }
+            float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+            EnsureCaretVisible(innerW);
             InvalidateVisual();
             UpdateImeCompositionWindow();
             e.SetHandled(true);
         } else if (key == input::Key::End) { // End
-            m_caretIndex = m_text.size();
+            if (e.HasShift()) {
+                m_caretIndex = m_text.size();
+                m_selectionStart = (std::min)(m_selectionAnchorIndex, m_caretIndex);
+                m_selectionLength = (std::max)(m_selectionAnchorIndex, m_caretIndex) - m_selectionStart;
+            } else {
+                m_caretIndex = m_text.size();
+                m_selectionAnchorIndex = m_caretIndex;
+                m_selectionStart = m_caretIndex;
+                m_selectionLength = 0;
+            }
+            float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+            EnsureCaretVisible(innerW);
             InvalidateVisual();
             UpdateImeCompositionWindow();
             e.SetHandled(true);
@@ -205,6 +356,10 @@ TextBox::TextBox() {
     });
 
     OnLostFocus([this](input::FocusEventArgs&) {
+        if (m_isSelecting) {
+            m_isSelecting = false;
+            ReleaseMouseCapture();
+        }
         if (!m_compositionText.empty()) {
             m_compositionText.clear();
             m_compositionCursor = 0;
@@ -256,11 +411,13 @@ void TextBox::SetText(compat::string_view text) {
     if (m_text != newText) {
         m_text = std::move(newText);
         m_caretIndex = m_text.size();
+        m_selectionAnchorIndex = m_caretIndex;
+        m_selectionStart = 0;
+        m_selectionLength = 0;
+        m_scrollOffsetX = 0.0f;
         m_compositionText.clear();
         m_compositionCursor = 0;
         m_isCompositionLayoutDirty = true;
-        m_selectionStart = (std::min)(m_selectionStart, m_text.size());
-        m_selectionLength = (std::min)(m_selectionLength, m_text.size() - m_selectionStart);
         InvalidateLayout();
         InvalidateMeasure();
         InvalidateVisual();
@@ -274,7 +431,12 @@ void TextBox::SetText(compat::string_view text) {
 }
 
 void TextBox::InsertText(compat::string_view text) {
-    if (text.empty() || m_isReadOnly) return;
+    if (m_isReadOnly) return;
+    if (m_selectionLength > 0) {
+        DeleteSelectedText();
+    }
+    if (text.empty()) return;
+
     m_caretIndex = (std::min)(m_caretIndex, m_text.size());
     compat::string_view toInsert = text;
     if (m_maxLength > 0) {
@@ -286,11 +448,18 @@ void TextBox::InsertText(compat::string_view text) {
     }
     m_text.insert(m_caretIndex, toInsert.data(), toInsert.size());
     m_caretIndex += toInsert.size();
+    m_selectionAnchorIndex = m_caretIndex;
+    m_selectionStart = m_caretIndex;
+    m_selectionLength = 0;
+
     InvalidateLayout();
     InvalidateMeasure();
     InvalidateVisual();
     RaiseTextChanged();
     UpdateImeCompositionWindow();
+
+    float innerW = (std::max)(0.0f, m_renderBounds.width - (m_padding.Horizontal() + m_borderThickness.Horizontal()));
+    EnsureCaretVisible(innerW);
 }
 
 void TextBox::SetReadOnly(bool readOnly) noexcept {
@@ -305,6 +474,7 @@ void TextBox::SetMaxLength(size_t maxLen) {
     if (m_maxLength > 0 && m_text.size() > m_maxLength) {
         m_text.erase(m_maxLength);
         m_caretIndex = (std::min)(m_caretIndex, m_text.size());
+        m_selectionAnchorIndex = m_caretIndex;
         m_selectionStart = (std::min)(m_selectionStart, m_text.size());
         m_selectionLength = (std::min)(m_selectionLength, m_text.size() - m_selectionStart);
         InvalidateLayout();
@@ -318,23 +488,29 @@ void TextBox::SetMaxLength(size_t maxLen) {
 void TextBox::Clear() {
     SetText("");
     m_caretIndex = 0;
+    m_selectionAnchorIndex = 0;
+    m_selectionStart = 0;
+    m_selectionLength = 0;
+    m_scrollOffsetX = 0.0f;
     m_compositionText.clear();
     m_compositionCursor = 0;
     m_isCompositionLayoutDirty = true;
-    m_selectionStart = 0;
-    m_selectionLength = 0;
     UpdateImeCompositionWindow();
 }
 
 void TextBox::SelectAll() {
     m_selectionStart = 0;
     m_selectionLength = m_text.size();
+    m_selectionAnchorIndex = 0;
+    m_caretIndex = m_text.size();
     InvalidateVisual();
 }
 
 void TextBox::Select(size_t start, size_t length) {
     m_selectionStart = (std::min)(start, m_text.size());
     m_selectionLength = (std::min)(length, m_text.size() - m_selectionStart);
+    m_selectionAnchorIndex = m_selectionStart;
+    m_caretIndex = m_selectionStart + m_selectionLength;
     InvalidateVisual();
 }
 
@@ -343,6 +519,12 @@ std::string TextBox::GetSelectedText() const {
         return "";
     }
     return m_text.substr(m_selectionStart, m_selectionLength);
+}
+
+void TextBox::SetSelectionColor(core::Color color) {
+    m_selectionColor = color;
+    m_hasExplicitSelectionColor = true;
+    InvalidateVisual();
 }
 
 void TextBox::Copy() {
@@ -357,16 +539,7 @@ void TextBox::Cut() {
     std::string sel = GetSelectedText();
     if (!sel.empty()) {
         pal::Clipboard::SetText(sel);
-        if (m_selectionLength > 0 && m_selectionStart < m_text.size()) {
-            m_text.erase(m_selectionStart, m_selectionLength);
-            m_caretIndex = m_selectionStart;
-            m_selectionLength = 0;
-            InvalidateLayout();
-            InvalidateMeasure();
-            InvalidateVisual();
-            RaiseTextChanged();
-            UpdateImeCompositionWindow();
-        }
+        DeleteSelectedText();
     }
 }
 
@@ -374,10 +547,8 @@ void TextBox::Paste() {
     if (m_isReadOnly) return;
     std::string clipText = pal::Clipboard::GetText();
     if (!clipText.empty()) {
-        if (m_selectionLength > 0 && m_selectionStart < m_text.size()) {
-            m_text.erase(m_selectionStart, m_selectionLength);
-            m_caretIndex = m_selectionStart;
-            m_selectionLength = 0;
+        if (m_selectionLength > 0) {
+            DeleteSelectedText();
         }
         InsertText(clipText);
     }
@@ -411,6 +582,9 @@ void TextBox::SetPlaceholder(compat::string_view placeholder) {
 
 void TextBox::SetCaretIndex(size_t index) {
     m_caretIndex = (std::min)(index, m_text.size());
+    m_selectionAnchorIndex = m_caretIndex;
+    m_selectionStart = m_caretIndex;
+    m_selectionLength = 0;
     InvalidateVisual();
     UpdateImeCompositionWindow();
 }
@@ -495,7 +669,7 @@ core::Rect TextBox::GetCaretRect() const {
     float textY = top + (innerH - m_font.GetSize() * 1.25f) * 0.5f;
     float caretH = m_font.GetSize() * 1.2f;
 
-    float caretX = left;
+    float caretX = left - m_scrollOffsetX;
     if (m_compositionText.empty()) {
         caretX += GetCaretXOffset();
     } else {
@@ -531,6 +705,64 @@ void TextBox::UpdateImeCompositionWindow() {
     core::Point winTopLeft = TransformToAncestor(core::Point(localCaret.x, localCaret.y), form);
     core::Rect winCaretRect(winTopLeft.x, winTopLeft.y, localCaret.width, localCaret.height);
     form->GetPlatformWindow()->SetImeCompositionWindow(winCaretRect);
+}
+
+size_t TextBox::PrevCharIndex(size_t index) const {
+    if (index > m_text.size()) return m_text.size();
+    if (index == 0) return 0;
+    size_t prev = index - 1;
+    while (prev > 0 && (static_cast<uint8_t>(m_text[prev]) & 0xC0) == 0x80) {
+        prev--;
+    }
+    return prev;
+}
+
+size_t TextBox::NextCharIndex(size_t index) const {
+    if (index >= m_text.size()) return m_text.size();
+    size_t next = index + 1;
+    while (next < m_text.size() && (static_cast<uint8_t>(m_text[next]) & 0xC0) == 0x80) {
+        next++;
+    }
+    return next;
+}
+
+void TextBox::DeleteSelectedText() {
+    if (m_isReadOnly) return;
+    if (m_selectionLength > 0 && m_selectionStart < m_text.size()) {
+        size_t len = (std::min)(m_selectionLength, m_text.size() - m_selectionStart);
+        m_text.erase(m_selectionStart, len);
+        m_caretIndex = m_selectionStart;
+        m_selectionAnchorIndex = m_caretIndex;
+        m_selectionLength = 0;
+        InvalidateLayout();
+        InvalidateMeasure();
+        InvalidateVisual();
+        RaiseTextChanged();
+        UpdateImeCompositionWindow();
+    }
+}
+
+void TextBox::EnsureCaretVisible(float innerW) {
+    if (innerW <= 0.0f) return;
+    EnsureLayout();
+    float totalTextW = m_textLayout.GetSize().width;
+    if (totalTextW <= innerW) {
+        m_scrollOffsetX = 0.0f;
+        return;
+    }
+    float caretX = GetCaretXOffset();
+    if (caretX - m_scrollOffsetX > innerW) {
+        m_scrollOffsetX = caretX - innerW + 4.0f;
+    } else if (caretX - m_scrollOffsetX < 0.0f) {
+        m_scrollOffsetX = (std::max)(0.0f, caretX - 4.0f);
+    }
+    float maxScroll = (std::max)(0.0f, totalTextW - innerW + 10.0f);
+    m_scrollOffsetX = compat::clamp(m_scrollOffsetX, 0.0f, maxScroll);
+}
+
+bool TextBox::IsWordChar(uint8_t c) {
+    if (c >= 0x80) return true;
+    return (std::isalnum(c) != 0) || (c == '_');
 }
 
 core::Size TextBox::MeasureOverride(core::Size availableSize) {
@@ -593,8 +825,22 @@ void TextBox::OnRender(rendering::DrawingContext& dc) {
     core::Rect innerBounds(left, top, innerW, innerH);
     dc.PushClip(innerBounds);
 
+    EnsureCaretVisible(innerW);
+
     float textY = top + (innerH - m_font.GetSize() * 1.25f) * 0.5f;
-    core::Point textOrigin(left, textY);
+    core::Point textOrigin(left - m_scrollOffsetX, textY);
+
+    // 繪製選取文字高亮背景 (在文字底層)
+    if (m_selectionLength > 0 && m_selectionStart < m_text.size() && m_compositionText.empty()) {
+        size_t selStart = m_selectionStart;
+        size_t selEnd = (std::min)(m_selectionStart + m_selectionLength, m_text.size());
+        float x1 = m_textLayout.HitTestTextPosition(selStart).x;
+        float x2 = m_textLayout.HitTestTextPosition(selEnd).x;
+        float selLeft = (std::min)(x1, x2);
+        float selRight = (std::max)(x1, x2);
+        core::Rect selRect(left - m_scrollOffsetX + selLeft, textY, (std::max)(2.0f, selRight - selLeft), m_font.GetSize() * 1.25f);
+        dc.DrawRectangle(selRect, m_selectionColor);
+    }
 
     if (m_text.empty() && m_compositionText.empty()) {
         if (!m_placeholder.empty()) {
@@ -608,7 +854,7 @@ void TextBox::OnRender(rendering::DrawingContext& dc) {
         std::string beforeText = m_text.substr(0, clampedIndex);
         std::string afterText = m_text.substr(clampedIndex);
 
-        float xCursor = left;
+        float xCursor = left - m_scrollOffsetX;
         if (!beforeText.empty()) {
             auto beforeLayout = text::TextLayoutEngine::Get().CreateLayout(beforeText, m_font, 100000.0f);
             dc.DrawTextLayout(beforeLayout, core::Point(xCursor, textY), m_foreground);
@@ -651,6 +897,10 @@ void TextBox::ApplyTheme(const theme::Theme& theme) {
         m_focusBorderColor = theme.Colors().controlFocusedBorder;
     }
     m_placeholderColor = theme.Colors().textPlaceholder;
+    if (!m_hasExplicitSelectionColor) {
+        core::Color accent = theme.Colors().accentPrimary;
+        m_selectionColor = core::Color(accent.r, accent.g, accent.b, 120);
+    }
     if (!m_hasExplicitFont) {
         m_font.SetFamily(theme.Typography().fontFamily);
         m_font.SetSize(theme.Typography().fontSizeBody);

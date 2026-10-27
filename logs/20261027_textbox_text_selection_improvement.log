@@ -1,0 +1,34 @@
+# Change Log: TextBox Text Selection & Visual Highlight Improvement
+Date: 2026-10-27
+Author: Antigravity AI Workflow Orchestrator
+
+## 1. 任務與問題背景
+- 使用者回報：文字輸入框目前無法框選輸入的文字。
+- 缺陷分析：
+  1. `TextBox` 未實作滑鼠拖曳選取狀態機與指標捕獲 (`CaptureMouse`)，無法使用滑鼠框選。
+  2. 缺乏多擊選取（雙擊選取單詞、三擊全選）。
+  3. `OnRender` 未繪製選取文字反白高亮背景矩形。
+  4. 鍵盤操作未支援 `Shift + Arrows / Home / End` 連續選取。
+  5. 選取文字後輸入或按 Backspace/Delete 無法就地刪除或取代選取之內容。
+  6. 未設定 `CursorType::IBeam` 工字文字游標。
+
+## 2. 實作內容
+- `include/ui/controls/TextBox.hpp`:
+  - 宣告 `GetSelectionColor()` / `SetSelectionColor(core::Color)`。
+  - 宣告輔助函式 `PrevCharIndex`, `NextCharIndex`, `DeleteSelectedText`, `EnsureCaretVisible`, `IsWordChar`。
+  - 宣告選取狀態機與滾動成員欄位。
+- `src/controls/TextBox.cpp`:
+  - 建構子配置 `SetCursor(CursorType::IBeam)` 與主題強調色選取色彩。
+  - 實作 `OnPointerPressed` 單擊拖曳初始化、Shift 延伸選取、雙擊中英文字詞分詞選取、三擊全選。
+  - 實作 `OnPointerMoved` 與 `OnPointerReleased` 滑鼠拖曳框選狀態機與指標捕獲釋放。
+  - 實作 `OnKeyDown` 之 `Shift + Left/Right/Home/End` 鍵盤選取與無 Shift 折疊游標。
+  - 實作選取狀態下 `Backspace`、`Delete`、`InsertText` 與 `Paste` 之就地刪除/替換。
+  - 實作 `OnRender` 中選取文字高亮背景矩形渲染與 `EnsureCaretVisible` 水平滾動支援。
+- `tests/controls_test.cpp`:
+  - 新增 `[Test 18]` 完整驗證滑鼠拖曳框選、多擊單詞/全選、鍵盤擴展選取、退格/刪除/替換與中文 CJK 多位元組分詞。
+
+## 3. 測試驗證
+- `controls_test.exe` 18/18 測試模組全部通過。
+- `clipboard_test.exe` 剪貼簿整合測試全部通過。
+- 全套 42/42 CTest 測試 100% 通過 (82.34s)。
+- MSVC `/W4` 0 Errors / 0 Warnings。

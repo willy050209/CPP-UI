@@ -22,9 +22,9 @@
 - [x] Phase 1~7: 核心設計器架構、AST 模型、命令模式與撤銷重做、屬性面板與即時渲染
 - [x] Phase 8: 核心事件路由、檢查器交互防護與視窗生命週期修復 (`logs/20261021_phase8_defect_fixes.log`)
 - [x] Phase 9: 畫布 2D 視口滾動（橫向/垂直卷軸）、控制項文字外觀細節設定（FontWeight/FontSize/FontFamily/Color）、試運行視窗樣式與 Visibility 反映 (`logs/20261022_phase9_canvas_scroll_and_styling.log`)
+- [x] Phase 10: TextBox 文字框選、多擊選取、鍵盤擴展選取與反白視覺渲染 (`logs/20261027_textbox_text_selection_improvement.log`)
   - 全套件 CTest 42/42 測試 100% 通過
   - MSVC `/W4` 全編譯器零警告（0 Errors / 0 Warnings）
-  - Git Commit: `7475641` (已推送到遠端倉庫 `master`)
 
 ---
 

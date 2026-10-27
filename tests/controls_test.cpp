@@ -1088,6 +1088,159 @@ int main() {
         compat::println("  [PASS] ContentControl font propagation, Fluent DSL, and TextBox clamping verified.");
     }
 
+    // -------------------------------------------------------------------------
+    // [Test 18] TextBox Mouse Drag Selection, Multi-Click, Keyboard Range & Visual Highlight
+    // -------------------------------------------------------------------------
+    compat::println("[Test 18] TextBox Mouse Selection, Multi-Click & Keyboard Selection...");
+    {
+        auto tb = std::make_shared<TextBox>();
+        tb->SetText("Hello World Modern GUI");
+        tb->Measure(Size(400.0f, 40.0f));
+        tb->Arrange(Rect(0.0f, 0.0f, 400.0f, 40.0f));
+
+        // 1. 滑鼠左鍵單擊並拖曳框選 (Mouse Drag Selection with Capture)
+        // 點擊於左側靠近開頭 (10, 15)
+        PointerEventArgs pDown(StandardEvents::PointerPressed, tb.get(), Point(10.0f, 15.0f), pal::RawMouseButton::Left);
+        EventRoute rDown(tb.get());
+        rDown.DispatchBubble(StandardEvents::PointerPressed, pDown);
+        assert(tb->HasMouseCapture());
+        assert(tb->GetCaretIndex() == 0);
+        assert(tb->GetSelectionLength() == 0);
+
+        // 拖曳向右至 (80, 15)
+        PointerEventArgs pMove(StandardEvents::PointerMoved, tb.get(), Point(80.0f, 15.0f), pal::RawMouseButton::Left);
+        EventRoute rMove(tb.get());
+        rMove.DispatchBubble(StandardEvents::PointerMoved, pMove);
+        assert(tb->GetSelectionStart() == 0);
+        assert(tb->GetSelectionLength() > 0);
+        assert(tb->GetCaretIndex() == tb->GetSelectionLength());
+
+        // 放開滑鼠釋放捕獲
+        PointerEventArgs pUp(StandardEvents::PointerReleased, tb.get(), Point(80.0f, 15.0f), pal::RawMouseButton::Left);
+        EventRoute rUp(tb.get());
+        rUp.DispatchBubble(StandardEvents::PointerReleased, pUp);
+        assert(!tb->HasMouseCapture());
+
+        // 2. 多擊選取 (Multi-Click Selection)
+        // 雙擊單詞 "World"
+        float worldX = 10.0f + 55.0f;
+        PointerEventArgs pDblClick(StandardEvents::PointerPressed, tb.get(), Point(worldX, 15.0f), pal::RawMouseButton::Left, pal::KeyModifiers::None, 2);
+        EventRoute rDbl(tb.get());
+        rDbl.DispatchBubble(StandardEvents::PointerPressed, pDblClick);
+        assert(tb->GetSelectedText() == "World");
+
+        // 三擊全選
+        PointerEventArgs pTriClick(StandardEvents::PointerPressed, tb.get(), Point(worldX, 15.0f), pal::RawMouseButton::Left, pal::KeyModifiers::None, 3);
+        EventRoute rTri(tb.get());
+        rTri.DispatchBubble(StandardEvents::PointerPressed, pTriClick);
+        assert(tb->GetSelectedText() == "Hello World Modern GUI");
+        assert(tb->GetSelectionStart() == 0);
+        assert(tb->GetSelectionLength() == tb->GetText().size());
+
+        // 3. 鍵盤 Shift 擴展選取 (Shift + Arrows / Home / End)
+        tb->SetText("ABCDEFG");
+        tb->SetCaretIndex(2); // 位於 'C' 之前
+        assert(tb->GetCaretIndex() == 2);
+        assert(tb->GetSelectionLength() == 0);
+
+        // Shift + Right -> 選取 "C"
+        KeyEventArgs evShiftRight(StandardEvents::KeyDown, tb.get(), 0x27, 0, false, pal::KeyModifiers::Shift);
+        EventRoute rSR(tb.get());
+        rSR.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, evShiftRight);
+        assert(tb->GetCaretIndex() == 3);
+        assert(tb->GetSelectedText() == "C");
+
+        // 再次 Shift + Right -> 選取 "CD"
+        KeyEventArgs evShiftRight2(StandardEvents::KeyDown, tb.get(), 0x27, 0, false, pal::KeyModifiers::Shift);
+        EventRoute rSR2(tb.get());
+        rSR2.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, evShiftRight2);
+        assert(tb->GetCaretIndex() == 4);
+        assert(tb->GetSelectedText() == "CD");
+
+        // 無 Shift 的 Left -> 折疊游標至選取開頭 (2)
+        KeyEventArgs evLeft(StandardEvents::KeyDown, tb.get(), 0x25, 0, false, pal::KeyModifiers::None);
+        EventRoute rLeft(tb.get());
+        rLeft.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, evLeft);
+        assert(tb->GetCaretIndex() == 2);
+        assert(tb->GetSelectionLength() == 0);
+
+        // Shift + End -> 選取 "CDEFG"
+        KeyEventArgs evShiftEnd(StandardEvents::KeyDown, tb.get(), 0x23, 0, false, pal::KeyModifiers::Shift);
+        EventRoute rSEnd(tb.get());
+        rSEnd.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, evShiftEnd);
+        assert(tb->GetCaretIndex() == 7);
+        assert(tb->GetSelectedText() == "CDEFG");
+
+        // Shift + Home -> 選取 "AB"
+        KeyEventArgs evShiftHome(StandardEvents::KeyDown, tb.get(), 0x24, 0, false, pal::KeyModifiers::Shift);
+        EventRoute rSHome(tb.get());
+        rSHome.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, evShiftHome);
+        assert(tb->GetCaretIndex() == 0);
+        assert(tb->GetSelectedText() == "AB");
+
+        // Ctrl + A -> 全選
+        KeyEventArgs evCtrlA(StandardEvents::KeyDown, tb.get(), 'A', 0, false, pal::KeyModifiers::Control);
+        EventRoute rCtrlA(tb.get());
+        rCtrlA.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, evCtrlA);
+        assert(tb->GetSelectedText() == "ABCDEFG");
+
+        // 4. 選取狀態下的退格/刪除與文字替換 (Delete & Replace over Selection)
+        // 退格鍵清空選取的 "ABCDEFG"
+        KeyEventArgs evBack(StandardEvents::KeyDown, tb.get(), 0x08, 0, false, pal::KeyModifiers::None);
+        EventRoute rBack(tb.get());
+        rBack.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, evBack);
+        assert(tb->GetText().empty());
+        assert(tb->GetCaretIndex() == 0);
+
+        // 設定新文字並選取部分進行輸入替換
+        tb->SetText("Hello World");
+        tb->Select(6, 5); // 選取 "World"
+        assert(tb->GetSelectedText() == "World");
+
+        TextInputEventArgs evInput(StandardEvents::TextInput, tb.get(), 0, "Universe");
+        EventRoute rInput(tb.get());
+        rInput.DispatchBubble(StandardEvents::TextInput, evInput);
+        assert(tb->GetText() == "Hello Universe");
+        assert(tb->GetCaretIndex() == 14);
+        assert(tb->GetSelectionLength() == 0);
+
+        // 選取 "Universe" 並以 Delete 鍵刪除
+        tb->Select(6, 8);
+        assert(tb->GetSelectedText() == "Universe");
+        KeyEventArgs evDel(StandardEvents::KeyDown, tb.get(), 0x2E, 0, false, pal::KeyModifiers::None);
+        EventRoute rDel(tb.get());
+        rDel.Dispatch(StandardEvents::PreviewKeyDown, StandardEvents::KeyDown, evDel);
+        assert(tb->GetText() == "Hello ");
+        assert(tb->GetCaretIndex() == 6);
+        assert(tb->GetSelectionLength() == 0);
+
+        // 5. 選取色彩自訂與渲染管線執行 (Selection Color & Visual Rendering)
+        Color customSelColor(255, 100, 50, 160);
+        tb->SetSelectionColor(customSelColor);
+        assert(tb->GetSelectionColor() == customSelColor);
+
+        tb->SelectAll();
+        rendering::DisplayList dl;
+        rendering::DrawingContext dc(dl);
+        tb->Render(dc);
+
+        // 6. UTF-8 多位元組中文字詞雙擊選取 (CJK Multi-byte Word Selection)
+        tb->SetText("哈囉 世界 CPPUI");
+        tb->Measure(Size(400.0f, 40.0f));
+        tb->Arrange(Rect(0.0f, 0.0f, 400.0f, 40.0f));
+
+        // 雙擊首個多位元組中文字詞 "哈囉" (6 bytes)
+        float cjkX = 10.0f + 20.0f;
+        PointerEventArgs pCjkDbl(StandardEvents::PointerPressed, tb.get(), Point(cjkX, 15.0f), pal::RawMouseButton::Left, pal::KeyModifiers::None, 2);
+        EventRoute rCjkDbl(tb.get());
+        rCjkDbl.DispatchBubble(StandardEvents::PointerPressed, pCjkDbl);
+        assert(tb->GetSelectedText() == "哈囉");
+        assert(tb->GetSelectionStart() == 0);
+        assert(tb->GetSelectionLength() == 6);
+
+        compat::println("  [PASS] TextBox mouse drag, multi-click, keyboard selection, and visual highlight verified.");
+    }
+
     compat::println("=================================================");
     compat::println(" ALL M6 CONTROLS & GRID TESTS PASSED!            ");
     compat::println("=================================================");
