@@ -266,6 +266,13 @@ struct FluentDslEmitter::Impl {
             if (handledTextInFactory && propName == "Text") continue;
             if (handledOrientationInFactory && propName == "Orientation") continue;
 
+            if (propName == "AutoSize") {
+                if (val.Is<bool>() && val.Get<bool>().value()) {
+                    ss << "\n" << indent << options.GetIndent(1) << ".AutoSize(true)";
+                }
+                continue;
+            }
+
             if (options.elideDefaults && PropertyMetadataRegistry::IsDefaultValue(type, propName, val)) {
                 continue;
             }

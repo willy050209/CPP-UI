@@ -9,6 +9,8 @@
 #include <cmath>
 #include "compat/Compat.hpp"
 #include "ui/Designer.hpp"
+#include "ui/controls/Button.hpp"
+#include "ui/layout/Border.hpp"
 
 using namespace cppui;
 using namespace cppui::designer;
@@ -647,6 +649,192 @@ static void TestTypographyAndFontWeightSupport() {
     compat::println("  [PASS] Typography and FontWeight options & AST binding verified.");
 }
 
+static void TestLiveRunButtonAndInspectorTextBoxIntegration() {
+    compat::println("[Test 11] Button Background Polymorphism, LiveFormRunner & Real TextBox Inspector Integration...");
+
+    // 1. Button 背景色多型指派測試
+    std::shared_ptr<controls::Control> ctrl = std::make_shared<controls::Button>("ClickMe");
+    core::Color expectedBtnBg{ 220, 80, 60, 255 };
+    ctrl->SetBackground(expectedBtnBg);
+    assert(ctrl->GetBackground() == expectedBtnBg);
+
+    // 2. LiveFormRunner 實例化 Button 背景色還原測試 (包含 Hex 解析)
+    WidgetNode btnNode(NodeType::Button, "OkButton");
+    btnNode.SetProperty("Background", std::string("#336699"));
+    btnNode.SetProperty("Content", std::string("確定"));
+    auto liveElem = preview::LiveFormRunner::CreateWidget(btnNode);
+    assert(liveElem != nullptr);
+    auto liveBtn = std::dynamic_pointer_cast<controls::Button>(liveElem);
+    assert(liveBtn != nullptr);
+    assert(liveBtn->GetBackground() == (core::Color{ 0x33, 0x66, 0x99, 255 }));
+
+    // 3. LiveFormRunner 實例化 Border 背景色還原測試
+    WidgetNode borderNode(NodeType::Border, "MainBorder");
+    borderNode.SetProperty("Background", std::string("#123456"));
+    borderNode.SetProperty("BorderBrush", std::string("#654321"));
+    auto liveBorderElem = preview::LiveFormRunner::CreateWidget(borderNode);
+    assert(liveBorderElem != nullptr);
+    auto liveBorder = std::dynamic_pointer_cast<layout::Border>(liveBorderElem);
+    assert(liveBorder != nullptr);
+    assert(liveBorder->GetBackground() == (core::Color{ 0x12, 0x34, 0x56, 255 }));
+    assert(liveBorder->GetBorderBrush() == (core::Color{ 0x65, 0x43, 0x21, 255 }));
+
+    // 4. InspectorPanel 嵌入之真實 TextBox 視覺樹與搜尋過濾驗證
+    FormDocumentNode doc;
+    auto root = std::make_unique<WidgetNode>(NodeType::Canvas, "CanvasRoot");
+    auto childBtn = std::make_unique<WidgetNode>(NodeType::Button, "TargetButton");
+    std::string childUuid = childBtn->GetUuid();
+    root->AddChild(std::move(childBtn));
+    doc.SetRoot(std::move(root));
+
+    CommandHistoryManager history;
+    SelectionModel selection;
+    selection.SetSelection(childUuid);
+
+    InspectorPanel inspector(&doc, &history, &selection);
+    // 驗證 InspectorPanel 已包含真實 TextBox 子元件 (搜尋框與行內編輯器)
+    assert(inspector.GetVisualChildrenCount() >= 2);
+
+    // 驗證排版測量與排列呼叫
+    inspector.Measure(core::Size(320.0f, 600.0f));
+    inspector.Arrange(core::Rect(0.0f, 0.0f, 320.0f, 600.0f));
+
+    // 驗證搜尋過濾
+    inspector.SetFilterText("Width");
+    assert(inspector.GetFilterText() == "Width");
+    auto filteredProps = inspector.GetInspectedProperties();
+    assert(!filteredProps.empty());
+    for (const auto& p : filteredProps) {
+        // 屬性名稱應包含 "width" (不區分大小寫)
+        std::string pName = p.name;
+        for (char& ch : pName) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        assert(pName.find("width") != std::string::npos);
+    }
+
+    // 重設搜尋過濾
+    inspector.SetFilterText("");
+    assert(inspector.GetFilterText().empty());
+    auto allProps = inspector.GetInspectedProperties();
+    assert(allProps.size() > filteredProps.size());
+
+    // 驗證屬性直接設定與 AST 連結
+    bool setWidthOk = inspector.ChangeProperty("Width", PropertyValue(180.0));
+    assert(setWidthOk);
+    WidgetNode* targetNode = doc.FindByUuid(childUuid);
+    assert(targetNode != nullptr);
+    auto widthProp = targetNode->GetProperty("Width");
+    assert(widthProp.has_value());
+    assert(widthProp->Get<double>().value() == 180.0);
+
+    compat::println("  [PASS] Button background polymorphism, LiveFormRunner & Inspector TextBox integration verified.");
+}
+
+/// <summary>
+/// 驗證 AutoSize 與 AutoSizeMode 屬性註冊、列舉選項與 FormDocument / WidgetNode 檢查器讀寫。
+/// </summary>
+static void TestAutoSizeInspectorAndMetadata() {
+    compat::println("[Test 12] AutoSize & AutoSizeMode Registry & Inspector Metadata Integration...");
+
+    // 1. 驗證 Control (Button) 包含 AutoSize 屬性
+    const auto& btnProps = InheritanceMetadataRegistry::GetDescriptorsForType(NodeType::Button);
+    bool btnHasAutoSize = false;
+    for (const auto& p : btnProps) {
+        if (p.name == "AutoSize") {
+            btnHasAutoSize = true;
+            assert(p.category == PropertyCategory::Layout);
+            assert(p.defaultValue.Is<bool>());
+            assert(p.defaultValue.Get<bool>().value_or(true) == false);
+        }
+    }
+    assert(btnHasAutoSize);
+
+    // 2. 驗證 FormDocument 包含 AutoSize 與 AutoSizeMode 屬性
+    const auto& formProps = InheritanceMetadataRegistry::GetDescriptorsForType(NodeType::FormDocument);
+    bool formHasAutoSize = false;
+    bool formHasAutoSizeMode = false;
+    for (const auto& p : formProps) {
+        if (p.name == "AutoSize") {
+            formHasAutoSize = true;
+            assert(p.category == PropertyCategory::Layout);
+            assert(p.defaultValue.Is<bool>());
+            assert(p.defaultValue.Get<bool>().value_or(true) == false);
+        }
+        if (p.name == "AutoSizeMode") {
+            formHasAutoSizeMode = true;
+            assert(p.category == PropertyCategory::Layout);
+            assert(p.defaultValue.Is<std::string>());
+            assert(p.defaultValue.Get<std::string>().value_or("") == "GrowAndShrink");
+        }
+    }
+    assert(formHasAutoSize);
+    assert(formHasAutoSizeMode);
+
+    // 3. 驗證 AutoSizeMode 列舉選項
+    auto autoSizeModeOptions = InheritanceMetadataRegistry::GetEnumOptions("AutoSizeMode");
+    assert(autoSizeModeOptions.size() == 2);
+    assert(autoSizeModeOptions[0] == "GrowAndShrink");
+    assert(autoSizeModeOptions[1] == "GrowOnly");
+
+    // 4. 驗證 InspectorPanel 在無選取 (FormDocument) 模式下讀取與修改 AutoSize / AutoSizeMode
+    FormDocumentNode doc;
+    CommandHistoryManager history;
+    SelectionModel sm;
+    InspectorPanel inspector(&doc, &history, &sm);
+
+    // 讀取 FormDocument 預設值
+    auto formInspectedProps = inspector.GetInspectedProperties();
+    (void)formInspectedProps;
+    auto formAutoSizeProp = inspector.FindProperty("AutoSize");
+    assert(formAutoSizeProp.has_value());
+    assert(formAutoSizeProp->currentValue.Is<bool>());
+    assert(formAutoSizeProp->currentValue.Get<bool>().value_or(true) == false);
+
+    auto formAutoSizeModeProp = inspector.FindProperty("AutoSizeMode");
+    assert(formAutoSizeModeProp.has_value());
+    assert(formAutoSizeModeProp->currentValue.Is<std::string>());
+    assert(formAutoSizeModeProp->currentValue.Get<std::string>().value_or("") == "GrowAndShrink");
+    assert(formAutoSizeModeProp->enumOptions.size() == 2);
+
+    // 修改 FormDocument AutoSize 為 true
+    bool changeAutoSizeOk = inspector.ChangeProperty("AutoSize", PropertyValue(true));
+    assert(changeAutoSizeOk);
+    assert(doc.GetSettings().autoSize == true);
+
+    // 修改 FormDocument AutoSizeMode 為 "GrowOnly"
+    bool changeModeOk = inspector.ChangeProperty("AutoSizeMode", PropertyValue(std::string("GrowOnly")));
+    assert(changeModeOk);
+    assert(doc.GetSettings().autoSizeMode == "GrowOnly");
+
+    // 重新透過 Inspector 讀取更新後的數值
+    auto updatedAutoSizeProp = inspector.FindProperty("AutoSize");
+    assert(updatedAutoSizeProp.has_value());
+    assert(updatedAutoSizeProp->currentValue.Get<bool>().value_or(false) == true);
+
+    auto updatedModeProp = inspector.FindProperty("AutoSizeMode");
+    assert(updatedModeProp.has_value());
+    assert(updatedModeProp->currentValue.Get<std::string>().value_or("") == "GrowOnly");
+
+    // 5. 驗證控制項節點之 AutoSize 修改
+    auto root = std::make_unique<WidgetNode>(NodeType::Canvas, "CanvasRoot");
+    auto btn = std::make_unique<WidgetNode>(NodeType::Button, "MyButton");
+    std::string btnUuid = btn->GetUuid();
+    root->AddChild(std::move(btn));
+    doc.SetRoot(std::move(root));
+
+    sm.SetSelection(btnUuid);
+    bool setBtnAutoSizeOk = inspector.ChangeProperty("AutoSize", PropertyValue(true));
+    assert(setBtnAutoSizeOk);
+
+    WidgetNode* node = doc.FindByUuid(btnUuid);
+    assert(node != nullptr);
+    auto nodeAutoSize = node->GetProperty("AutoSize");
+    assert(nodeAutoSize.has_value());
+    assert(nodeAutoSize->Is<bool>());
+    assert(nodeAutoSize->Get<bool>().value_or(false) == true);
+
+    compat::println("  [PASS] AutoSize & AutoSizeMode registry & inspector metadata integration verified.");
+}
+
 int main() {
     compat::println("=== CPPUI Designer Phase 4 Inspector Test Suite ===");
 
@@ -660,6 +848,8 @@ int main() {
     TestResetToDefaultIntegrity();
     TestDefectFixesRegression();
     TestTypographyAndFontWeightSupport();
+    TestLiveRunButtonAndInspectorTextBoxIntegration();
+    TestAutoSizeInspectorAndMetadata();
 
     compat::println("=== All Phase 4 Inspector Tests Passed Successfully! ===");
     return 0;

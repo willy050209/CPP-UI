@@ -32,6 +32,8 @@ struct FormSettings {
     bool useIoC = true;
     bool topmost = false;
     bool showInTaskbar = true;
+    bool autoSize = false;
+    std::string autoSizeMode = "GrowAndShrink";
 
     COMPAT_NODISCARD bool operator==(const FormSettings& other) const noexcept {
         return className == other.className &&
@@ -44,7 +46,9 @@ struct FormSettings {
                useMvvm == other.useMvvm &&
                useIoC == other.useIoC &&
                topmost == other.topmost &&
-               showInTaskbar == other.showInTaskbar;
+               showInTaskbar == other.showInTaskbar &&
+               autoSize == other.autoSize &&
+               autoSizeMode == other.autoSizeMode;
     }
 
     COMPAT_NODISCARD bool operator!=(const FormSettings& other) const noexcept {

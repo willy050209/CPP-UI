@@ -368,7 +368,15 @@ struct FormClassEmitter::Impl {
         const auto& settings = document.GetSettings();
         ss << "    SetTitle(\"" << EscapeString(settings.title) << "\");\n";
         ss << "    SetFormSize(" << static_cast<uint32_t>(settings.initialSize.width) << ", "
-           << static_cast<uint32_t>(settings.initialSize.height) << ");\n\n";
+           << static_cast<uint32_t>(settings.initialSize.height) << ");\n";
+
+        if (settings.autoSize) {
+            ss << "    SetAutoSize(true);\n";
+            if (settings.autoSizeMode == "GrowOnly") {
+                ss << "    SetAutoSizeMode(cppui::app::AutoSizeMode::GrowOnly);\n";
+            }
+        }
+        ss << "\n";
 
         // 1. 建立所有節點實例
         for (const auto& item : collected) {
@@ -395,6 +403,13 @@ struct FormClassEmitter::Impl {
             for (const auto& kv : sortedProps) {
                 const std::string& propName = kv.first;
                 const PropertyValue& val = kv.second;
+
+                if (propName == "AutoSize") {
+                    if (val.Is<bool>() && val.Get<bool>().value()) {
+                        ss << "    " << item.varName << "->SetAutoSize(true);\n";
+                    }
+                    continue;
+                }
 
                 if (options.elideDefaults && PropertyMetadataRegistry::IsDefaultValue(type, propName, val)) {
                     continue;

@@ -444,6 +444,89 @@ static void TestDesignSurfaceViewportScrolling() {
     compat::println("  [PASS] Viewport scrolling and typography defaults verified.");
 }
 
+/// <summary>
+/// 驗證使用者於畫布上拖曳手柄改變控制項尺寸時，自動解除 AutoSize (設為 false) 並支援完整 Undo/Redo。
+/// </summary>
+static void TestDesignSurfaceResizeResetsAutoSize() {
+    compat::println("[Test 8] DesignSurface Resize Handle Automatically Clears AutoSize...");
+
+    FormDocumentNode doc;
+    auto rootCanvas = std::make_unique<WidgetNode>(NodeType::Canvas, "rootCanvas");
+    auto btn = std::make_unique<WidgetNode>(NodeType::Button, "myButton");
+    btn->SetProperty("Width", PropertyValue(100.0));
+    btn->SetProperty("Height", PropertyValue(50.0));
+    btn->SetProperty("AutoSize", PropertyValue(true));
+    btn->SetAttachedProperty("Canvas.Left", PropertyValue(100.0));
+    btn->SetAttachedProperty("Canvas.Top", PropertyValue(100.0));
+    std::string btnUuid = btn->GetUuid();
+
+    auto addRes = rootCanvas->AddChild(std::move(btn));
+    assert(addRes.has_value());
+    doc.SetRoot(std::move(rootCanvas));
+
+    CommandHistoryManager history;
+    DesignSurface surface(&doc, &history);
+    surface.SetBounds(0.0f, 0.0f, 800.0f, 600.0f);
+    surface.SetNodeBounds(btnUuid, core::Rect(100.0f, 100.0f, 100.0f, 50.0f));
+
+    // 選取元件
+    surface.GetSelectionModel().SetSelection(btnUuid);
+
+    // 點擊右下角 (BottomRight) 控制點 (200, 150)
+    input::PointerEventArgs pressEvt(
+        input::StandardEvents::PointerPressed,
+        &surface,
+        core::Point(200.0f, 150.0f),
+        pal::RawMouseButton::Left
+    );
+    surface.OnPointerPressed(pressEvt);
+    assert(surface.GetCurrentDragMode() == DragMode::Resize);
+
+    // 拖曳向右下擴展 (+60, +40) -> 新尺寸 (160, 90)
+    input::PointerEventArgs moveEvt(
+        input::StandardEvents::PointerMoved,
+        &surface,
+        core::Point(260.0f, 190.0f),
+        pal::RawMouseButton::Left
+    );
+    surface.OnPointerMoved(moveEvt);
+
+    // 釋放手柄以提交尺寸變更
+    input::PointerEventArgs releaseEvt(
+        input::StandardEvents::PointerReleased,
+        &surface,
+        core::Point(260.0f, 190.0f),
+        pal::RawMouseButton::Left
+    );
+    surface.OnPointerReleased(releaseEvt);
+    assert(surface.GetCurrentDragMode() == DragMode::None);
+
+    WidgetNode* btnNode = doc.FindByUuid(btnUuid);
+    assert(btnNode != nullptr);
+
+    // 驗證尺寸變更且 AutoSize 自動變更為 false
+    assert(btnNode->GetProperty("Width")->Get<double>().value() == 160.0);
+    assert(btnNode->GetProperty("Height")->Get<double>().value() == 90.0);
+    auto autoSizeProp = btnNode->GetProperty("AutoSize");
+    assert(autoSizeProp.has_value());
+    assert(autoSizeProp->Is<bool>());
+    assert(autoSizeProp->Get<bool>().value_or(true) == false);
+
+    // 驗證 Undo：AutoSize 復原為 true，尺寸復原為 100x50
+    assert(surface.Undo() == true);
+    assert(btnNode->GetProperty("Width")->Get<double>().value() == 100.0);
+    assert(btnNode->GetProperty("Height")->Get<double>().value() == 50.0);
+    assert(btnNode->GetProperty("AutoSize")->Get<bool>().value_or(false) == true);
+
+    // 驗證 Redo：再次套用尺寸並重設 AutoSize 為 false
+    assert(surface.Redo() == true);
+    assert(btnNode->GetProperty("Width")->Get<double>().value() == 160.0);
+    assert(btnNode->GetProperty("Height")->Get<double>().value() == 90.0);
+    assert(btnNode->GetProperty("AutoSize")->Get<bool>().value_or(true) == false);
+
+    compat::println("  [PASS] Handle resize automatically clears AutoSize with Undo/Redo verified.");
+}
+
 int main() {
     compat::println("=================================================");
     compat::println(" [CPPUI Designer Phase 3] Design Surface Tests");
@@ -456,9 +539,10 @@ int main() {
     TestDesignSurfaceResizeHandle();
     TestRubberBandAndDeleteSelected();
     TestDesignSurfaceViewportScrolling();
+    TestDesignSurfaceResizeResetsAutoSize();
 
     compat::println("=================================================");
-    compat::println(" All 7 Design Surface Test Suites Passed!");
+    compat::println(" All 8 Design Surface Test Suites Passed!");
     compat::println("=================================================");
 
     return 0;

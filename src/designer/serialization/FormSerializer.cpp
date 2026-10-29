@@ -481,6 +481,8 @@ compat::expected<std::string, DesignerError> FormSerializer::Serialize(const For
     settingsObj["useIoC"] = JsonValue(s.useIoC);
     settingsObj["topmost"] = JsonValue(s.topmost);
     settingsObj["showInTaskbar"] = JsonValue(s.showInTaskbar);
+    settingsObj["autoSize"] = JsonValue(s.autoSize);
+    settingsObj["autoSizeMode"] = JsonValue(s.autoSizeMode);
 
     JsonValue::ObjectType sizeObj;
     sizeObj["width"] = JsonValue(s.initialSize.width);
@@ -538,6 +540,8 @@ compat::expected<std::unique_ptr<FormDocumentNode>, DesignerError> FormSerialize
             if (const auto* ic = setVal->Find("useIoC")) settings.useIoC = ic->AsBool();
             if (const auto* tm = setVal->Find("topmost")) settings.topmost = tm->AsBool();
             if (const auto* tb = setVal->Find("showInTaskbar")) settings.showInTaskbar = tb->AsBool();
+            if (const auto* as = setVal->Find("autoSize")) settings.autoSize = as->AsBool();
+            if (const auto* asm_ = setVal->Find("autoSizeMode")) settings.autoSizeMode = asm_->AsString();
             if (const auto* sz = setVal->Find("initialSize")) {
                 if (sz->IsObject()) {
                     if (const auto* w = sz->Find("width")) settings.initialSize.width = static_cast<float>(w->AsDouble());

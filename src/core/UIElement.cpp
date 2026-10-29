@@ -37,6 +37,14 @@ void UIElement::SetHeight(float height) {
     }
 }
 
+void UIElement::SetAutoSize(bool autoSize) {
+    if (m_autoSize != autoSize) {
+        m_autoSize = autoSize;
+        InvalidateMeasure();
+        InvalidateVisual();
+    }
+}
+
 void UIElement::SetMinWidth(float minWidth) {
     if (m_minWidth != minWidth) {
         m_minWidth = minWidth;
@@ -159,8 +167,8 @@ void UIElement::Measure(Size availableSize) {
     if (std::isinf(unconstrainedContentSize.height)) unconstrainedContentSize.height = 1000000.0f;
 
     // 結合明確尺寸與測量尺寸
-    float finalContentW = (m_width >= 0.0f) ? m_width : unconstrainedContentSize.width;
-    float finalContentH = (m_height >= 0.0f) ? m_height : unconstrainedContentSize.height;
+    float finalContentW = (!m_autoSize && m_width >= 0.0f) ? m_width : unconstrainedContentSize.width;
+    float finalContentH = (!m_autoSize && m_height >= 0.0f) ? m_height : unconstrainedContentSize.height;
 
     // 再次約束於 Min/Max
     finalContentW = compat::clamp(finalContentW, m_minWidth, m_maxWidth);
@@ -206,8 +214,8 @@ void UIElement::Arrange(Rect finalRect) {
     float contentDesiredW = std::max(0.0f, m_desiredSize.width - marginW);
     float contentDesiredH = std::max(0.0f, m_desiredSize.height - marginH);
 
-    float arrangeW = (m_width >= 0.0f) ? m_width : contentDesiredW;
-    float arrangeH = (m_height >= 0.0f) ? m_height : contentDesiredH;
+    float arrangeW = (!m_autoSize && m_width >= 0.0f) ? m_width : contentDesiredW;
+    float arrangeH = (!m_autoSize && m_height >= 0.0f) ? m_height : contentDesiredH;
 
     if (m_horizontalAlignment == layout::HorizontalAlignment::Stretch && m_width < 0.0f) {
         arrangeW = availW;

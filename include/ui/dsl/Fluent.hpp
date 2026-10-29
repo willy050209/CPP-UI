@@ -139,6 +139,16 @@ public:
     UIBuilder& MaxHeight(float mh) { m_element->SetMaxHeight(mh); return *this; }
 
     /// <summary>
+    /// 設定元件是否啟用內容自適應 (AutoSize)。
+    /// </summary>
+    /// <param name="autoSize">true 啟用自適應尺寸，false 維持固定尺寸。</param>
+    /// <returns>UIBuilder 引用支援鏈式調用。</returns>
+    UIBuilder& AutoSize(bool autoSize = true) {
+        m_element->SetAutoSize(autoSize);
+        return *this;
+    }
+
+    /// <summary>
     /// 設定外距 (Margin)。
     /// </summary>
     /// <param name="m">Thickness 厚度結構。</param>

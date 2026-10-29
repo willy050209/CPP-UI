@@ -124,6 +124,27 @@ void Button::SetEnabled(bool enabled) {
     }
 }
 
+void Button::SetBackground(core::Color bg) {
+    Control::SetBackground(bg);
+    m_normalBackground = bg;
+    auto clampCh = [](int32_t val) -> uint8_t {
+        return static_cast<uint8_t>(compat::clamp(val, 0, 255));
+    };
+    m_hoverBackground = core::Color(
+        clampCh(static_cast<int32_t>(bg.r) + 20),
+        clampCh(static_cast<int32_t>(bg.g) + 20),
+        clampCh(static_cast<int32_t>(bg.b) + 20),
+        bg.a
+    );
+    m_pressedBackground = core::Color(
+        clampCh(static_cast<int32_t>(bg.r) - 20),
+        clampCh(static_cast<int32_t>(bg.g) - 20),
+        clampCh(static_cast<int32_t>(bg.b) - 20),
+        bg.a
+    );
+    InvalidateVisual();
+}
+
 void Button::SetHoverBackground(core::Color color) {
     m_hoverBackground = color;
     InvalidateVisual();

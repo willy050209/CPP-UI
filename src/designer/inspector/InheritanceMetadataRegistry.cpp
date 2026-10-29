@@ -47,6 +47,7 @@ std::vector<PropertyDescriptor> CreateControlProperties() {
     list.push_back({ "FontWeight", PropertyValue(int32_t(400)), PropertyCategory::Text, false });
     list.push_back({ "BorderBrush", PropertyValue(core::Color{ 0, 0, 0, 255 }), PropertyCategory::Appearance, false });
     list.push_back({ "BorderThickness", PropertyValue(core::Thickness(1.0f, 1.0f, 1.0f, 1.0f)), PropertyCategory::Appearance, false });
+    list.push_back({ "AutoSize", PropertyValue(false), PropertyCategory::Layout, false });
     return list;
 }
 
@@ -208,7 +209,9 @@ std::vector<PropertyDescriptor> BuildDescriptors(NodeType type) {
                 { "UseMvvm", PropertyValue(true), PropertyCategory::Behavior, false },
                 { "UseIoC", PropertyValue(true), PropertyCategory::Behavior, false },
                 { "Topmost", PropertyValue(false), PropertyCategory::Behavior, false },
-                { "ShowInTaskbar", PropertyValue(true), PropertyCategory::Behavior, false }
+                { "ShowInTaskbar", PropertyValue(true), PropertyCategory::Behavior, false },
+                { "AutoSize", PropertyValue(false), PropertyCategory::Layout, false },
+                { "AutoSizeMode", PropertyValue(std::string("GrowAndShrink")), PropertyCategory::Layout, false }
             };
         }
     }
@@ -504,6 +507,9 @@ std::vector<std::string> InheritanceMetadataRegistry::GetEnumOptions(compat::str
     }
     if (propName == "DefaultTheme") {
         return { "Dark", "Light" };
+    }
+    if (propName == "AutoSizeMode") {
+        return { "GrowAndShrink", "GrowOnly" };
     }
     return {};
 }

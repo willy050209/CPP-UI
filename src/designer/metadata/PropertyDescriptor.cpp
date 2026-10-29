@@ -19,7 +19,8 @@ std::vector<PropertyDescriptor> CreateCommonDescriptors() {
         { "HorizontalAlignment", PropertyValue(layout::HorizontalAlignment::Stretch), PropertyCategory::Layout, false },
         { "VerticalAlignment", PropertyValue(layout::VerticalAlignment::Stretch), PropertyCategory::Layout, false },
         { "Visibility", PropertyValue(layout::Visibility::Visible), PropertyCategory::Common, false },
-        { "IsEnabled", PropertyValue(true), PropertyCategory::Common, false }
+        { "IsEnabled", PropertyValue(true), PropertyCategory::Common, false },
+        { "AutoSize", PropertyValue(false), PropertyCategory::Layout, false }
     };
 }
 

@@ -15,6 +15,7 @@
 #include "ui/controls/TextBox.hpp"
 #include "ui/controls/DataGrid.hpp"
 #include "ui/controls/ProgressBar.hpp"
+#include "ui/controls/PictureBox.hpp"
 #include "ui/layout/Grid.hpp"
 #include "ui/layout/StackPanel.hpp"
 #include "ui/layout/Canvas.hpp"
@@ -380,6 +381,54 @@ static void TestLiveFormRunnerStylingAndVisibility() {
     compat::println("  [PASS] LiveFormRunner styling & visibility reflection verified.");
 }
 
+/// <summary>
+/// 驗證 LiveFormRunner 對 Form 的 AutoSize/AutoSizeMode、控制項 AutoSize 以及 PictureBox SizeMode::AutoSize 支援。
+/// </summary>
+static void TestLiveFormRunnerAutoSizeSupport() {
+    compat::println("[Test 9] LiveFormRunner AutoSize & PictureBox SizeMode Reflection...");
+
+    FormDocumentNode doc;
+    FormSettings settings;
+    settings.title = "AutoSizeLiveTest";
+    settings.initialSize = core::Size(500.0f, 350.0f);
+    settings.autoSize = true;
+    settings.autoSizeMode = "GrowOnly";
+    doc.SetSettings(settings);
+
+    auto root = std::make_unique<WidgetNode>(NodeType::Canvas, "rootCanvas");
+
+    auto btn = std::make_unique<WidgetNode>(NodeType::Button, "autoBtn");
+    btn->SetProperty("Content", PropertyValue(std::string("Auto Button")));
+    btn->SetProperty("AutoSize", PropertyValue(true));
+
+    auto pb = std::make_unique<WidgetNode>(NodeType::PictureBox, "autoPb");
+    pb->SetProperty("AutoSize", PropertyValue(true));
+
+    root->AddChild(std::move(btn));
+    root->AddChild(std::move(pb));
+    doc.SetRoot(std::move(root));
+
+    auto form = LiveFormRunner::CreateForm(doc);
+    assert(form != nullptr);
+    assert(form->GetAutoSize() == true);
+    assert(form->GetAutoSizeMode() == app::AutoSizeMode::GrowOnly);
+
+    auto canvas = std::dynamic_pointer_cast<layout::Canvas>(form->GetContent());
+    assert(canvas != nullptr);
+    assert(canvas->GetChildrenCount() == 2);
+
+    auto* childBtn = dynamic_cast<controls::Button*>(canvas->GetChild(0));
+    assert(childBtn != nullptr);
+    assert(childBtn->GetAutoSize() == true);
+
+    auto* childPb = dynamic_cast<controls::PictureBox*>(canvas->GetChild(1));
+    assert(childPb != nullptr);
+    assert(childPb->GetAutoSize() == true);
+    assert(childPb->GetSizeMode() == graphics::PictureBoxSizeMode::AutoSize);
+
+    compat::println("  [PASS] LiveFormRunner AutoSize and PictureBox size mode verified.");
+}
+
 int main() {
     compat::println("=== CPPUI Designer Phase 5 E2E Integration Test Suite ===");
 
@@ -391,6 +440,7 @@ int main() {
     TestCMakeProjectExportDirectory();
     TestIncrementalUserCodeProtection();
     TestLiveFormRunnerStylingAndVisibility();
+    TestLiveFormRunnerAutoSizeSupport();
 
     compat::println("=== All Phase 5 E2E Integration Tests Passed Successfully! ===");
     return 0;

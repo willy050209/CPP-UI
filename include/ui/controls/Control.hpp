@@ -465,7 +465,7 @@ public:
 
     /// <summary>設定背景填色色彩。</summary>
     /// <param name="bg">背景色彩。</param>
-    void SetBackground(core::Color bg);
+    virtual void SetBackground(core::Color bg);
 
     /// <summary>取得前景筆刷色彩。</summary>
     /// <returns>前景色彩。</returns>

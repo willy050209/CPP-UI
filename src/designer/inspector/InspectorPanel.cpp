@@ -12,8 +12,11 @@
 #include "ui/designer/commands/MacroCommand.hpp"
 #include "ui/theme/ThemeManager.hpp"
 #include "ui/rendering/DrawingContext.hpp"
+#include "ui/controls/TextBox.hpp"
+#include "ui/input/FocusManager.hpp"
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 
 namespace cppui {
@@ -49,11 +52,12 @@ struct InspectorPanel::Impl {
     float scrollY = 0.0f;
     float fontScale = 1.0f;
 
-    // 行內鍵盤文字編輯狀態機
+    // 搜尋與行內文字編輯器控制項實例
+    std::shared_ptr<controls::TextBox> searchTextBox;
+    std::shared_ptr<controls::TextBox> inlineEditor;
+
     std::string editingPropName;
     bool isEditingAttached = false;
-    std::string editingBuffer;
-    size_t caretPos = 0;
     core::Rect editingRect;
 
     // 列舉浮動下拉選單狀態
@@ -65,12 +69,17 @@ struct InspectorPanel::Impl {
     };
     compat::optional<ActiveDropdown> activeDropdown;
 
+    void StartInlineEdit(const std::string& name, bool isAttached, const std::string& initialText, const core::Rect& rect);
     void CommitInlineEdit();
     void CancelInlineEdit() {
         editingPropName.clear();
-        editingBuffer.clear();
-        caretPos = 0;
+        if (inlineEditor) {
+            inlineEditor->SetVisible(false);
+        }
         activeDropdown = compat::nullopt;
+        if (owner) {
+            owner->InvalidateVisual();
+        }
     }
 
     DesignerEvent<PropertyChangePayload> propertyChangedSignal;
@@ -108,6 +117,47 @@ InspectorPanel::InspectorPanel(
             InvalidateVisual();
         });
     }
+
+    // 建立搜尋篩選文字框 (Real TextBox)
+    m_impl->searchTextBox = std::make_shared<controls::TextBox>();
+    m_impl->searchTextBox->SetPlaceholder("🔍 搜尋屬性或事件 (Filter)...");
+    m_impl->searchTextBox->SetFontSize(12.0f);
+    m_impl->searchTextBox->SetCornerRadius(3.0f);
+    m_impl->searchTextBox->SetPadding(core::Thickness(6.0f, 3.0f, 6.0f, 3.0f));
+    m_impl->searchTextBox->OnTextChanged([this](compat::string_view text) {
+        if (m_impl->filterText != text) {
+            m_impl->filterText = std::string(text);
+            m_impl->scrollY = 0.0f;
+            InvalidateVisual();
+        }
+    });
+    AddVisualChild(m_impl->searchTextBox);
+
+    // 建立行內屬性設定文字框 (Real TextBox with Selection, Caret & Clipboard support)
+    m_impl->inlineEditor = std::make_shared<controls::TextBox>();
+    m_impl->inlineEditor->SetVisible(false);
+    m_impl->inlineEditor->SetFontSize(11.5f);
+    m_impl->inlineEditor->SetCornerRadius(3.0f);
+    m_impl->inlineEditor->SetPadding(core::Thickness(4.0f, 2.0f, 4.0f, 2.0f));
+    m_impl->inlineEditor->OnKeyDown([this](input::KeyEventArgs& e) {
+        auto k = e.GetKey();
+        if (k == input::Key::Enter || k == input::Key::Return) {
+            m_impl->CommitInlineEdit();
+            e.SetHandled(true);
+        } else if (k == input::Key::Escape) {
+            m_impl->CancelInlineEdit();
+            e.SetHandled(true);
+        }
+    });
+    m_impl->inlineEditor->OnLostFocus([this](input::FocusEventArgs& /*e*/) {
+        m_impl->CommitInlineEdit();
+    });
+    AddVisualChild(m_impl->inlineEditor);
+
+    const auto& theme = theme::ThemeManager::Get().GetCurrentTheme();
+    m_impl->searchTextBox->ApplyTheme(theme);
+    m_impl->inlineEditor->ApplyTheme(theme);
+
     SetClipToBounds(true);
     SetFocusable(true);
 }
@@ -147,6 +197,7 @@ surface::SelectionModel* InspectorPanel::GetSelectionModel() const noexcept {
 
 void InspectorPanel::SetCurrentTab(InspectorTab tab) {
     if (m_impl->currentTab != tab) {
+        m_impl->CommitInlineEdit();
         m_impl->currentTab = tab;
         m_impl->scrollY = 0.0f;
         m_impl->tabChangedSignal.Notify(tab);
@@ -159,7 +210,11 @@ InspectorTab InspectorPanel::GetCurrentTab() const noexcept {
 
 void InspectorPanel::SetFilterText(compat::string_view filter) {
     m_impl->filterText = std::string(filter);
+    if (m_impl->searchTextBox && m_impl->searchTextBox->GetText() != filter) {
+        m_impl->searchTextBox->SetText(std::string(filter));
+    }
     m_impl->scrollY = 0.0f;
+    InvalidateVisual();
 }
 
 const std::string& InspectorPanel::GetFilterText() const noexcept {
@@ -168,11 +223,73 @@ const std::string& InspectorPanel::GetFilterText() const noexcept {
 
 void InspectorPanel::SetFontScale(float scale) {
     m_impl->fontScale = compat::clamp(scale, 0.5f, 5.0f);
+    if (m_impl->searchTextBox) {
+        m_impl->searchTextBox->SetFontSize(12.0f * m_impl->fontScale);
+    }
+    if (m_impl->inlineEditor) {
+        m_impl->inlineEditor->SetFontSize(11.5f * m_impl->fontScale);
+    }
     InvalidateVisual();
 }
 
 float InspectorPanel::GetFontScale() const noexcept {
     return m_impl->fontScale;
+}
+
+core::Size InspectorPanel::MeasureOverride(core::Size availableSize) {
+    float w = availableSize.width;
+    if (std::isinf(w) || w <= 0.0f) {
+        w = (GetWidth() > 0.0f) ? GetWidth() : 310.0f;
+    }
+    if (m_impl->searchTextBox) {
+        m_impl->searchTextBox->Measure(core::Size((std::max)(0.0f, w - 16.0f), 26.0f));
+    }
+    if (m_impl->inlineEditor && m_impl->inlineEditor->IsVisible()) {
+        m_impl->inlineEditor->Measure(m_impl->editingRect.GetSize());
+    }
+    return availableSize;
+}
+
+void InspectorPanel::ArrangeOverride(core::Size finalSize) {
+    if (m_impl->searchTextBox) {
+        m_impl->searchTextBox->Arrange(core::Rect(8.0f, 74.0f, (std::max)(0.0f, finalSize.width - 16.0f), 26.0f));
+    }
+    if (m_impl->inlineEditor && m_impl->inlineEditor->IsVisible()) {
+        m_impl->inlineEditor->Arrange(m_impl->editingRect);
+    }
+}
+
+void InspectorPanel::ApplyTheme(const theme::Theme& theme) {
+    Control::ApplyTheme(theme);
+    if (m_impl->searchTextBox) {
+        m_impl->searchTextBox->ApplyTheme(theme);
+    }
+    if (m_impl->inlineEditor) {
+        m_impl->inlineEditor->ApplyTheme(theme);
+    }
+}
+
+void InspectorPanel::Impl::StartInlineEdit(
+    const std::string& name,
+    bool isAttached,
+    const std::string& initialText,
+    const core::Rect& rect
+) {
+    CommitInlineEdit();
+    editingPropName = name;
+    isEditingAttached = isAttached;
+    editingRect = rect;
+    if (inlineEditor) {
+        inlineEditor->SetText(initialText);
+        inlineEditor->SetVisible(true);
+        inlineEditor->Measure(rect.GetSize());
+        inlineEditor->Arrange(rect);
+        input::FocusManager::Get().SetFocus(inlineEditor.get());
+        inlineEditor->SelectAll();
+    }
+    if (owner) {
+        owner->InvalidateVisual();
+    }
 }
 
 void InspectorPanel::Impl::CommitInlineEdit() {
@@ -181,13 +298,16 @@ void InspectorPanel::Impl::CommitInlineEdit() {
     }
     std::string name = editingPropName;
     bool attached = isEditingAttached;
-    std::string buf = editingBuffer;
+    std::string buf;
+    if (inlineEditor) {
+        buf = inlineEditor->GetText();
+        inlineEditor->SetVisible(false);
+    }
     editingPropName.clear();
-    editingBuffer.clear();
-    caretPos = 0;
 
     auto p = owner->FindProperty(name);
     if (!p) {
+        if (owner) owner->InvalidateVisual();
         return;
     }
 
@@ -258,6 +378,9 @@ void InspectorPanel::Impl::CommitInlineEdit() {
             (void)owner->ChangeProperty(name, PropertyValue(buf));
         }
     }
+    if (owner) {
+        owner->InvalidateVisual();
+    }
 }
 
 std::vector<InspectedProperty> InspectorPanel::GetInspectedProperties() const {
@@ -323,6 +446,10 @@ std::vector<InspectedProperty> InspectorPanel::GetInspectedProperties() const {
                 p.currentValue = PropertyValue(s.topmost);
             } else if (desc.name == "ShowInTaskbar") {
                 p.currentValue = PropertyValue(s.showInTaskbar);
+            } else if (desc.name == "AutoSize") {
+                p.currentValue = PropertyValue(s.autoSize);
+            } else if (desc.name == "AutoSizeMode") {
+                p.currentValue = PropertyValue(s.autoSizeMode);
             } else {
                 p.currentValue = desc.defaultValue;
             }
@@ -576,6 +703,12 @@ bool InspectorPanel::ChangeProperty(compat::string_view propName, const Property
             handled = true;
         } else if (propName == "ShowInTaskbar" && newValue.Is<bool>()) {
             s.showInTaskbar = newValue.Get<bool>().value_or(false);
+            handled = true;
+        } else if (propName == "AutoSize" && newValue.Is<bool>()) {
+            s.autoSize = newValue.Get<bool>().value_or(false);
+            handled = true;
+        } else if (propName == "AutoSizeMode" && newValue.Is<std::string>()) {
+            s.autoSizeMode = newValue.Get<std::string>().value_or("GrowAndShrink");
             handled = true;
         }
 
@@ -934,17 +1067,7 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
                     dc.DrawRoundedRectangle(valRect, 3.0f, colors.controlBackground);
 
                     if (m_impl->editingPropName == p->name) {
-                        // 作用中行內鍵盤編輯態：繪製強調邊框與文字緩衝區
-                        DrawRectOutline(dc, valRect, colors.accentPrimary, 1.5f);
-                        std::string textToShow = m_impl->editingBuffer;
-                        dc.DrawText(textToShow, core::Point(valRect.x + 6.0f, valRect.y + 4.0f * m_impl->fontScale),
-                                    text::FontDescriptor("Segoe UI", 11.5f * m_impl->fontScale), colors.textPrimary);
-
-                        // 繪製文字光標
-                        float charAdvance = 7.0f * m_impl->fontScale;
-                        float caretX = valRect.x + 6.0f + static_cast<float>(m_impl->caretPos) * charAdvance;
-                        if (caretX > valRect.x + valRect.width - 4.0f) caretX = valRect.x + valRect.width - 4.0f;
-                        dc.DrawLine(core::Point(caretX, valRect.y + 3.0f), core::Point(caretX, valRect.y + valRect.height - 3.0f), colors.accentPrimary, 1.5f);
+                        // 作用中行內編輯態：由 m_impl->inlineEditor 子元件負責渲染
                     } else {
                         DrawRectOutline(dc, valRect, colors.controlBorder, 1.0f);
 
@@ -1105,16 +1228,7 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
                 text::FontDescriptor("Segoe UI", 12.0f, !isPropTab ? text::FontWeight::Bold : text::FontWeight::Normal),
                 !isPropTab ? colors.accentPrimary : colors.textSecondary);
 
-    // 3. 搜尋篩選列 (Filter Box)
-    const float filterY = 74.0f;
-    core::Rect filterRect(8.0f, filterY, w - 16.0f, 25.0f);
-    dc.DrawRoundedRectangle(filterRect, 3.0f, colors.controlBackground);
-    DrawRectOutline(dc, filterRect, colors.controlBorder, 1.0f);
-
-    std::string filterDisp = m_impl->filterText.empty() ? "🔍 搜尋屬性或事件 (Filter)..." : ("🔍 " + m_impl->filterText);
-    core::Color filterClr = m_impl->filterText.empty() ? colors.textPlaceholder : colors.textPrimary;
-    dc.DrawText(filterDisp, core::Point(14.0f, filterY + 4.0f),
-                text::FontDescriptor("Segoe UI", 11.5f), filterClr);
+    // 3. 搜尋篩選列 (Filter Box) 由 m_impl->searchTextBox 子元件自行繪製
 
     // 4. 浮動下拉選單 (Dropdown Overlay)
     if (m_impl->activeDropdown.has_value()) {
@@ -1139,6 +1253,8 @@ void InspectorPanel::OnRender(rendering::DrawingContext& dc) {
 void InspectorPanel::OnPointerWheelCore(input::PointerEventArgs& e) {
     int32_t delta = e.GetWheelDeltaY();
     if (delta == 0) return;
+
+    m_impl->CommitInlineEdit();
 
     float h = GetHeight();
     if (h <= 0.0f) h = 720.0f;
@@ -1303,24 +1419,13 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
                                     ChangeProperty(p->name, PropertyValue(s_presetColors[s_colorIdx]));
                                 }
                             } else {
-                                // 點擊色塊右側文字區域：啟動行內鍵盤文字編輯模式 (#RRGGBB)
-                                m_impl->CommitInlineEdit();
-                                m_impl->editingPropName = p->name;
-                                m_impl->isEditingAttached = p->isAttached;
-                                m_impl->editingBuffer = FormatValueString(p->currentValue, p->name);
-                                m_impl->caretPos = m_impl->editingBuffer.size();
-                                m_impl->editingRect = valRect;
-                                Focus();
+                                // 點擊色塊右側文字區域：啟動行內文字編輯模式 (#RRGGBB)
+                                core::Rect editRect(valRect.x + 24.0f, valRect.y, valRect.width - 24.0f, valRect.height);
+                                m_impl->StartInlineEdit(p->name, p->isAttached, FormatValueString(p->currentValue, p->name), editRect);
                             }
                         } else {
-                            // 啟動行內鍵盤文字編輯模式
-                            m_impl->CommitInlineEdit();
-                            m_impl->editingPropName = p->name;
-                            m_impl->isEditingAttached = p->isAttached;
-                            m_impl->editingBuffer = FormatValueString(p->currentValue, p->name);
-                            m_impl->caretPos = m_impl->editingBuffer.size();
-                            m_impl->editingRect = valRect;
-                            Focus();
+                            // 啟動行內文字編輯模式
+                            m_impl->StartInlineEdit(p->name, p->isAttached, FormatValueString(p->currentValue, p->name), valRect);
                         }
                         InvalidateVisual();
                         e.SetHandled(true);
@@ -1367,71 +1472,31 @@ void InspectorPanel::OnPointerPressedCore(input::PointerEventArgs& e) {
 }
 
 void InspectorPanel::OnKeyDownCore(input::KeyEventArgs& e) {
-    if (m_impl->editingPropName.empty()) {
-        return;
-    }
-
-    auto key = e.GetKey();
-    if (key == input::Key::Enter || key == input::Key::Return) {
-        m_impl->CommitInlineEdit();
-        InvalidateVisual();
-        e.SetHandled(true);
-        return;
-    }
-    if (key == input::Key::Escape) {
-        m_impl->CancelInlineEdit();
-        InvalidateVisual();
-        e.SetHandled(true);
-        return;
-    }
-    if (key == input::Key::Back) {
-        if (m_impl->caretPos > 0 && m_impl->caretPos <= m_impl->editingBuffer.size()) {
-            m_impl->editingBuffer.erase(m_impl->caretPos - 1, 1);
-            m_impl->caretPos--;
+    if (e.GetKey() == input::Key::Escape) {
+        if (m_impl->activeDropdown.has_value()) {
+            m_impl->activeDropdown = compat::nullopt;
             InvalidateVisual();
+            e.SetHandled(true);
+            return;
         }
-        e.SetHandled(true);
-        return;
-    }
-    if (key == input::Key::Delete) {
-        if (m_impl->caretPos < m_impl->editingBuffer.size()) {
-            m_impl->editingBuffer.erase(m_impl->caretPos, 1);
+        if (!m_impl->editingPropName.empty()) {
+            m_impl->CancelInlineEdit();
             InvalidateVisual();
+            e.SetHandled(true);
+            return;
         }
-        e.SetHandled(true);
-        return;
-    }
-    if (key == input::Key::Left) {
-        if (m_impl->caretPos > 0) {
-            m_impl->caretPos--;
+    } else if (e.GetKey() == input::Key::Enter || e.GetKey() == input::Key::Return) {
+        if (!m_impl->editingPropName.empty()) {
+            m_impl->CommitInlineEdit();
             InvalidateVisual();
+            e.SetHandled(true);
+            return;
         }
-        e.SetHandled(true);
-        return;
     }
-    if (key == input::Key::Right) {
-        if (m_impl->caretPos < m_impl->editingBuffer.size()) {
-            m_impl->caretPos++;
-            InvalidateVisual();
-        }
-        e.SetHandled(true);
-        return;
-    }
-
 }
 
 void InspectorPanel::OnTextInputCore(input::TextInputEventArgs& e) {
-    if (m_impl->editingPropName.empty()) {
-        return;
-    }
-    auto txt = e.GetText();
-    if (!txt.empty() && static_cast<unsigned char>(txt[0]) >= 32) {
-        if (m_impl->caretPos > m_impl->editingBuffer.size()) m_impl->caretPos = m_impl->editingBuffer.size();
-        m_impl->editingBuffer.insert(m_impl->caretPos, txt.data(), txt.size());
-        m_impl->caretPos += txt.size();
-        InvalidateVisual();
-        e.SetHandled(true);
-    }
+    (void)e;
 }
 
 } // namespace inspector

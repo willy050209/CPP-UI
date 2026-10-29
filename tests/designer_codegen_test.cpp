@@ -234,6 +234,68 @@ static void TestErrorHandlingAndEmptyDocs() {
     compat::println("  [PASS] Error handled gracefully for invalid AST.");
 }
 
+/// <summary>
+/// 驗證 AutoSize 與 AutoSizeMode 於 Fluent DSL 與 Form Partial Class 發射器中的程式碼生成。
+/// </summary>
+static void TestAutoSizeCodegen() {
+    compat::println("[Test 6] AutoSize & AutoSizeMode Codegen Integration...");
+
+    // 1. Fluent DSL 測試 (包含 AutoSize = true 與 AutoSize = false)
+    FluentDslEmitter dslEmitter;
+    CodegenOptions opts;
+    opts.elideDefaults = true;
+
+    auto btnAuto = std::make_unique<WidgetNode>(NodeType::Button, "autoBtn");
+    btnAuto->SetProperty("Text", std::string("Auto"));
+    btnAuto->SetProperty("AutoSize", true);
+
+    std::string dslAuto = dslEmitter.EmitNode(*btnAuto, opts, 0);
+    assert(dslAuto.find(".AutoSize(true)") != std::string::npos);
+
+    auto btnFixed = std::make_unique<WidgetNode>(NodeType::Button, "fixedBtn");
+    btnFixed->SetProperty("Text", std::string("Fixed"));
+    btnFixed->SetProperty("AutoSize", false);
+
+    std::string dslFixed = dslEmitter.EmitNode(*btnFixed, opts, 0);
+    assert(dslFixed.find(".AutoSize") == std::string::npos);
+
+    // 2. Form Partial Class 測試 (Form 層級與 Control 層級)
+    FormDocumentNode doc;
+    FormSettings settings;
+    settings.className = "AutoSizeTestForm";
+    settings.targetNamespace = "test_app";
+    settings.title = "AutoSize Demo";
+    settings.initialSize = core::Size(400.0f, 300.0f);
+    settings.autoSize = true;
+    settings.autoSizeMode = "GrowOnly";
+    doc.SetSettings(settings);
+
+    auto rootCanvas = std::make_unique<WidgetNode>(NodeType::Canvas, "rootCanvas");
+    auto label = std::make_unique<WidgetNode>(NodeType::Label, "statusLabel");
+    label->SetProperty("Text", std::string("Ready"));
+    label->SetProperty("AutoSize", true);
+
+    auto addRes = rootCanvas->AddChild(std::move(label));
+    assert(addRes.has_value());
+    doc.SetRoot(std::move(rootCanvas));
+
+    FormCodegenPipeline pipeline;
+    opts.formClassName = "AutoSizeTestForm";
+    opts.rootNamespace = "test_app";
+
+    auto genRes = pipeline.Generate(doc, opts);
+    assert(genRes.has_value());
+
+    const auto& res = genRes.value();
+    // 驗證 Form AutoSize 初始化
+    assert(res.designerHeader.find("SetAutoSize(true);") != std::string::npos);
+    assert(res.designerHeader.find("SetAutoSizeMode(cppui::app::AutoSizeMode::GrowOnly);") != std::string::npos);
+    // 驗證 控制項 AutoSize 生成
+    assert(res.designerHeader.find("m_statusLabel->SetAutoSize(true);") != std::string::npos);
+
+    compat::println("  [PASS] AutoSize and AutoSizeMode Fluent DSL & Form class codegen verified.");
+}
+
 int main() {
     compat::println("=================================================");
     compat::println(" [CPPUI Designer Phase 2] Codegen Engine Unit Tests");
@@ -244,9 +306,10 @@ int main() {
     TestFormPartialClassGeneration();
     TestSourceMapLookup();
     TestErrorHandlingAndEmptyDocs();
+    TestAutoSizeCodegen();
 
     compat::println("=================================================");
-    compat::println(" All 5 Designer Codegen Engine Test Suites Passed!");
+    compat::println(" All 6 Designer Codegen Engine Test Suites Passed!");
     compat::println("=================================================");
 
     return 0;

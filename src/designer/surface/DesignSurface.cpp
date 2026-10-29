@@ -61,6 +61,7 @@ struct DesignSurface::Impl {
     core::Rect rubberBandRect;
     std::vector<SnapLine> activeGuides;
     std::string draggedNodeUuid;
+    bool dragInitialAutoSize = false;
     float fontScale = 1.0f;
     reactive::ScopedConnection selectionConn;
 
@@ -784,6 +785,16 @@ void DesignSurface::OnPointerPressedCore(input::PointerEventArgs& e) {
                 m_impl->dragInitialBounds = primBounds;
                 m_impl->currentDragBounds = primBounds;
                 m_impl->draggedNodeUuid = *prim;
+                m_impl->dragInitialAutoSize = false;
+                if (m_impl->document) {
+                    if (WidgetNode* node = m_impl->document->FindByUuid(*prim)) {
+                        if (auto p = node->GetProperty("AutoSize")) {
+                            if (p->Is<bool>() && p->Get<bool>().value_or(false)) {
+                                m_impl->dragInitialAutoSize = true;
+                            }
+                        }
+                    }
+                }
                 e.SetHandled(true);
                 return;
             }
@@ -935,6 +946,9 @@ void DesignSurface::OnPointerMovedCore(input::PointerEventArgs& e) {
             if (WidgetNode* node = m_impl->document->FindByUuid(m_impl->draggedNodeUuid)) {
                 node->SetProperty("Width", static_cast<double>(r.width));
                 node->SetProperty("Height", static_cast<double>(r.height));
+                if (m_impl->dragInitialAutoSize) {
+                    node->SetProperty("AutoSize", PropertyValue(false));
+                }
             }
         }
 
@@ -1012,26 +1026,47 @@ void DesignSurface::OnPointerReleasedCore(input::PointerEventArgs& e) {
             }
         }
     } else if (m_impl->dragMode == DragMode::Resize) {
-        if (m_impl->document && m_impl->historyManager && !m_impl->draggedNodeUuid.empty()) {
+        if (m_impl->document && !m_impl->draggedNodeUuid.empty()) {
             if (m_impl->currentDragBounds.width != m_impl->dragInitialBounds.width ||
                 m_impl->currentDragBounds.height != m_impl->dragInitialBounds.height) {
-                if (WidgetNode* node = m_impl->document->FindByUuid(m_impl->draggedNodeUuid)) {
-                    node->SetProperty("Width", static_cast<double>(m_impl->dragInitialBounds.width));
-                    node->SetProperty("Height", static_cast<double>(m_impl->dragInitialBounds.height));
-                }
+                bool hadAutoSize = m_impl->dragInitialAutoSize;
+                if (m_impl->historyManager) {
+                    if (WidgetNode* node = m_impl->document->FindByUuid(m_impl->draggedNodeUuid)) {
+                        node->SetProperty("Width", static_cast<double>(m_impl->dragInitialBounds.width));
+                        node->SetProperty("Height", static_cast<double>(m_impl->dragInitialBounds.height));
+                        if (hadAutoSize) {
+                            node->SetProperty("AutoSize", PropertyValue(true));
+                        }
+                    }
 
-                auto macro = std::make_unique<MacroCommand>("Resize Widget");
-                macro->AddCommand(std::make_unique<SetPropertyCommand>(
-                    m_impl->draggedNodeUuid,
-                    "Width",
-                    static_cast<double>(m_impl->currentDragBounds.width)
-                ));
-                macro->AddCommand(std::make_unique<SetPropertyCommand>(
-                    m_impl->draggedNodeUuid,
-                    "Height",
-                    static_cast<double>(m_impl->currentDragBounds.height)
-                ));
-                (void)m_impl->historyManager->Execute(*m_impl->document, std::move(macro));
+                    auto macro = std::make_unique<MacroCommand>("Resize Widget");
+                    macro->AddCommand(std::make_unique<SetPropertyCommand>(
+                        m_impl->draggedNodeUuid,
+                        "Width",
+                        static_cast<double>(m_impl->currentDragBounds.width)
+                    ));
+                    macro->AddCommand(std::make_unique<SetPropertyCommand>(
+                        m_impl->draggedNodeUuid,
+                        "Height",
+                        static_cast<double>(m_impl->currentDragBounds.height)
+                    ));
+                    if (hadAutoSize) {
+                        macro->AddCommand(std::make_unique<SetPropertyCommand>(
+                            m_impl->draggedNodeUuid,
+                            "AutoSize",
+                            PropertyValue(false)
+                        ));
+                    }
+                    (void)m_impl->historyManager->Execute(*m_impl->document, std::move(macro));
+                } else {
+                    if (WidgetNode* node = m_impl->document->FindByUuid(m_impl->draggedNodeUuid)) {
+                        node->SetProperty("Width", static_cast<double>(m_impl->currentDragBounds.width));
+                        node->SetProperty("Height", static_cast<double>(m_impl->currentDragBounds.height));
+                        if (hadAutoSize) {
+                            node->SetProperty("AutoSize", PropertyValue(false));
+                        }
+                    }
+                }
             }
         }
     }
@@ -1040,6 +1075,7 @@ void DesignSurface::OnPointerReleasedCore(input::PointerEventArgs& e) {
     m_impl->activeHandle = HandleType::None;
     m_impl->activeGuides.clear();
     m_impl->rubberBandRect = core::Rect();
+    m_impl->dragInitialAutoSize = false;
     SetCursor(controls::CursorType::Default);
     InvalidateVisual();
     e.SetHandled(true);

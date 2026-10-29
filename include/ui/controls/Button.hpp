@@ -85,6 +85,12 @@ public:
     void SetEnabled(bool enabled) override;
 
     /// <summary>
+    /// 設定按鈕預設背景色彩，並自動衍生懸停與下壓時之明暗視覺回饋。
+    /// </summary>
+    /// <param name="bg">背景色彩。</param>
+    void SetBackground(core::Color bg) override;
+
+    /// <summary>
     /// 設定滑鼠懸停時之背景色彩。
     /// </summary>
     /// <param name="color">懸停背景色。</param>

@@ -174,6 +174,25 @@ public:
     /// <returns>縮放倍率。</returns>
     COMPAT_NODISCARD float GetFontScale() const noexcept;
 
+    /// <summary>
+    /// 覆寫排版測量階段，計算子元件期望尺寸。
+    /// </summary>
+    /// <param name="availableSize">父容器可用尺寸。</param>
+    /// <returns>元件期望尺寸。</returns>
+    core::Size MeasureOverride(core::Size availableSize) override;
+
+    /// <summary>
+    /// 覆寫排版排列階段，定位搜尋輸入框與動態行內屬性編輯器。
+    /// </summary>
+    /// <param name="finalSize">最終配置尺寸。</param>
+    void ArrangeOverride(core::Size finalSize) override;
+
+    /// <summary>
+    /// 套用主題規格代幣至檢查器及其子控制項。
+    /// </summary>
+    /// <param name="theme">欲套用之 Theme 常數引用。</param>
+    void ApplyTheme(const theme::Theme& theme) override;
+
 protected:
     void OnRender(rendering::DrawingContext& dc) override;
     void OnPointerPressedCore(input::PointerEventArgs& e) override;

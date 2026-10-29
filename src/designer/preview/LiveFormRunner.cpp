@@ -186,6 +186,11 @@ void ApplyControlProperties(const WidgetNode& node, const std::shared_ptr<contro
     if (auto p = node.GetProperty("CornerRadius")) {
         ctrl->SetCornerRadius(ParseFloatHelper(*p));
     }
+    if (auto p = node.GetProperty("AutoSize")) {
+        if (p->Is<bool>()) {
+            ctrl->SetAutoSize(p->Get<bool>().value());
+        }
+    }
 }
 
 } // anonymous namespace
@@ -249,10 +254,10 @@ std::shared_ptr<core::UIElement> LiveFormRunner::CreateWidget(
         case NodeType::Border: {
             auto border = std::make_shared<layout::Border>();
             if (auto p = node.GetProperty("Background")) {
-                if (p->Is<core::Color>()) border->SetBackground(p->Get<core::Color>().value());
+                border->SetBackground(ParseColorHelper(*p));
             }
             if (auto p = node.GetProperty("BorderBrush")) {
-                if (p->Is<core::Color>()) border->SetBorderBrush(p->Get<core::Color>().value());
+                border->SetBorderBrush(ParseColorHelper(*p));
             }
             if (auto p = node.GetProperty("BorderThickness")) {
                 if (p->Is<core::Thickness>()) border->SetBorderThickness(p->Get<core::Thickness>().value());
@@ -401,6 +406,11 @@ std::shared_ptr<core::UIElement> LiveFormRunner::CreateWidget(
         }
         case NodeType::PictureBox: {
             auto pb = std::make_shared<controls::PictureBox>();
+            if (auto p = node.GetProperty("AutoSize")) {
+                if (p->Is<bool>() && p->Get<bool>().value()) {
+                    pb->SetSizeMode(graphics::PictureBoxSizeMode::AutoSize);
+                }
+            }
             element = pb;
             break;
         }
@@ -456,6 +466,15 @@ std::shared_ptr<app::Form> LiveFormRunner::CreateForm(
         static_cast<uint32_t>(settings.initialSize.width),
         static_cast<uint32_t>(settings.initialSize.height)
     );
+
+    if (settings.autoSize) {
+        form->SetAutoSize(true);
+        if (settings.autoSizeMode == "GrowOnly") {
+            form->SetAutoSizeMode(app::AutoSizeMode::GrowOnly);
+        } else {
+            form->SetAutoSizeMode(app::AutoSizeMode::GrowAndShrink);
+        }
+    }
 
     if (const auto* rootNode = doc.GetRoot()) {
         auto rootElement = CreateWidget(*rootNode, std::move(eventCallback));

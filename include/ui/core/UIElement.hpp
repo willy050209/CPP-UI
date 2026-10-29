@@ -87,6 +87,18 @@ public:
     void SetHeight(float height);
 
     /// <summary>
+    /// 取得元件是否啟用內容自適應 (AutoSize)。
+    /// </summary>
+    /// <returns>若啟用傳回 true，否則傳回 false。</returns>
+    COMPAT_NODISCARD bool GetAutoSize() const noexcept { return m_autoSize; }
+
+    /// <summary>
+    /// 設定元件是否啟用內容自適應 (AutoSize)。
+    /// </summary>
+    /// <param name="autoSize">true 啟用自適應尺寸，false 維持手動固定尺寸。</param>
+    void SetAutoSize(bool autoSize);
+
+    /// <summary>
     /// 取得最小寬度約束。
     /// </summary>
     /// <returns>最小寬度像素值。</returns>
@@ -555,6 +567,7 @@ protected:
     layout::HorizontalAlignment m_horizontalAlignment = layout::HorizontalAlignment::Stretch;
     layout::VerticalAlignment   m_verticalAlignment = layout::VerticalAlignment::Stretch;
     layout::Visibility          m_visibility = layout::Visibility::Visible;
+    bool                        m_autoSize = false;
 
     // 排版狀態快取
     Size                        m_desiredSize{ 0.0f, 0.0f };
