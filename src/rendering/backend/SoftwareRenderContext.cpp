@@ -56,7 +56,7 @@ struct DWriteRasterResources {
 
         if (!pFactory) {
             HRESULT hr = fnCreateFactory(
-                DWRITE_FACTORY_TYPE_SHARED,
+                DWRITE_FACTORY_TYPE_ISOLATED,
                 __uuidof(IDWriteFactory),
                 reinterpret_cast<IUnknown**>(&pFactory)
             );

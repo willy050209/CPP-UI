@@ -585,6 +585,9 @@ void TextBox::SetCaretIndex(size_t index) {
     m_selectionAnchorIndex = m_caretIndex;
     m_selectionStart = m_caretIndex;
     m_selectionLength = 0;
+    if (!m_compositionText.empty()) {
+        m_isCompositionLayoutDirty = true;
+    }
     InvalidateVisual();
     UpdateImeCompositionWindow();
 }
@@ -645,6 +648,25 @@ void TextBox::EnsureLayout() {
     if (m_isCompositionLayoutDirty) {
         if (!m_compositionText.empty()) {
             m_compositionLayout = text::TextLayoutEngine::Get().CreateLayout(m_compositionText, m_font, 100000.0f);
+            size_t clampedIndex = (std::min)(m_caretIndex, m_text.size());
+            std::string beforeText = m_text.substr(0, clampedIndex);
+            std::string afterText = m_text.substr(clampedIndex);
+
+            if (!beforeText.empty()) {
+                m_compBeforeLayout = text::TextLayoutEngine::Get().CreateLayout(beforeText, m_font, 100000.0f);
+            } else {
+                m_compBeforeLayout = text::TextLayout();
+            }
+
+            if (!afterText.empty()) {
+                m_compAfterLayout = text::TextLayoutEngine::Get().CreateLayout(afterText, m_font, 100000.0f);
+            } else {
+                m_compAfterLayout = text::TextLayout();
+            }
+        } else {
+            m_compositionLayout = text::TextLayout();
+            m_compBeforeLayout = text::TextLayout();
+            m_compAfterLayout = text::TextLayout();
         }
         m_isCompositionLayoutDirty = false;
     }
@@ -663,6 +685,7 @@ float TextBox::GetCaretXOffset() const {
 
 core::Rect TextBox::GetCaretRect() const {
     const_cast<TextBox*>(this)->EnsureLayout();
+
     float left = m_padding.left + m_borderThickness.left;
     float top = m_padding.top + m_borderThickness.top;
     float innerH = (std::max)(0.0f, m_renderBounds.height - (m_padding.Vertical() + m_borderThickness.Vertical()));
@@ -850,31 +873,27 @@ void TextBox::OnRender(rendering::DrawingContext& dc) {
         dc.DrawTextLayout(m_textLayout, textOrigin, m_foreground);
     } else {
         // 組字渲染：分別繪製前置文字、組字串 (帶底線標記)、後置文字
-        size_t clampedIndex = (std::min)(m_caretIndex, m_text.size());
-        std::string beforeText = m_text.substr(0, clampedIndex);
-        std::string afterText = m_text.substr(clampedIndex);
-
         float xCursor = left - m_scrollOffsetX;
-        if (!beforeText.empty()) {
-            auto beforeLayout = text::TextLayoutEngine::Get().CreateLayout(beforeText, m_font, 100000.0f);
-            dc.DrawTextLayout(beforeLayout, core::Point(xCursor, textY), m_foreground);
-            xCursor += beforeLayout.GetSize().width;
+        if (m_compBeforeLayout.GetLineCount() > 0) {
+            dc.DrawTextLayout(m_compBeforeLayout, core::Point(xCursor, textY), m_foreground);
+            xCursor += m_compBeforeLayout.GetSize().width;
         }
 
-        float compStart = xCursor;
-        dc.DrawTextLayout(m_compositionLayout, core::Point(xCursor, textY), m_foreground);
-        float compW = m_compositionLayout.GetSize().width;
-        float compEnd = compStart + compW;
+        if (m_compositionLayout.GetLineCount() > 0) {
+            float compStart = xCursor;
+            dc.DrawTextLayout(m_compositionLayout, core::Point(xCursor, textY), m_foreground);
+            float compW = m_compositionLayout.GetSize().width;
+            float compEnd = compStart + compW;
 
-        // 繪製組字字串底線標記
-        float underlineY = textY + m_font.GetSize() * 1.2f;
-        dc.DrawLine(core::Point(compStart, underlineY), core::Point(compEnd, underlineY), m_focusBorderColor, 1.5f);
+            // 繪製組字字串底線標記
+            float underlineY = textY + m_font.GetSize() * 1.2f;
+            dc.DrawLine(core::Point(compStart, underlineY), core::Point(compEnd, underlineY), m_focusBorderColor, 1.5f);
 
-        xCursor += compW;
+            xCursor += compW;
+        }
 
-        if (!afterText.empty()) {
-            auto afterLayout = text::TextLayoutEngine::Get().CreateLayout(afterText, m_font, 100000.0f);
-            dc.DrawTextLayout(afterLayout, core::Point(xCursor, textY), m_foreground);
+        if (m_compAfterLayout.GetLineCount() > 0) {
+            dc.DrawTextLayout(m_compAfterLayout, core::Point(xCursor, textY), m_foreground);
         }
     }
 

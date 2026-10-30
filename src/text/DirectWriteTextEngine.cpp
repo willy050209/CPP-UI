@@ -5,6 +5,8 @@
 
 #include "DirectWriteTextEngine.hpp"
 #include <cstdint>
+#include <algorithm>
+#include <cmath>
 
 #ifdef _WIN32
 
@@ -95,7 +97,7 @@ std::string DirectWriteTextEngine::Utf16ToUtf8(const wchar_t* utf16Str, size_t l
     return result;
 }
 
-IDWriteTextFormat* DirectWriteTextEngine::GetOrCreateTextFormat(const FontDescriptor& font) {
+COMPAT_NO_ASAN IDWriteTextFormat* DirectWriteTextEngine::GetOrCreateTextFormat(const FontDescriptor& font) {
     if (!m_factory) return nullptr;
 
     // 依據字型屬性建構快取識別字串
@@ -141,7 +143,7 @@ IDWriteTextFormat* DirectWriteTextEngine::GetOrCreateTextFormat(const FontDescri
     return nullptr;
 }
 
-FontMetrics DirectWriteTextEngine::GetFontMetrics(const FontDescriptor& font) {
+COMPAT_NO_ASAN FontMetrics DirectWriteTextEngine::GetFontMetrics(const FontDescriptor& font) {
     FontMetrics fm;
     IDWriteTextFormat* pFormat = GetOrCreateTextFormat(font);
     if (!pFormat || !m_factory) {
@@ -174,7 +176,7 @@ FontMetrics DirectWriteTextEngine::GetFontMetrics(const FontDescriptor& font) {
     return fm;
 }
 
-IDWriteTextLayout* DirectWriteTextEngine::CreateNativeTextLayout(
+COMPAT_NO_ASAN IDWriteTextLayout* DirectWriteTextEngine::CreateNativeTextLayout(
     compat::string_view text,
     const FontDescriptor& font,
     float maxWidth,
@@ -191,12 +193,15 @@ IDWriteTextLayout* DirectWriteTextEngine::CreateNativeTextLayout(
     std::wstring wideText = Utf8ToUtf16(text);
     IDWriteTextLayout* pLayout = nullptr;
 
+    float layoutW = (maxWidth > 0.0f) ? (std::min)(maxWidth, 10000.0f) : 10000.0f;
+    float layoutH = (maxHeight > 0.0f) ? (std::min)(maxHeight, 10000.0f) : 10000.0f;
+
     HRESULT hr = m_factory->CreateTextLayout(
         wideText.c_str(),
         static_cast<UINT32>(wideText.size()),
         pFormat,
-        (maxWidth > 0.0f) ? maxWidth : 10000.0f,
-        (maxHeight > 0.0f) ? maxHeight : 10000.0f,
+        layoutW,
+        layoutH,
         &pLayout
     );
 

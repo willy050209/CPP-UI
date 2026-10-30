@@ -4,6 +4,8 @@
  */
 
 #include <cassert>
+#include <cstdio>
+#include <cstdlib>
 #include <cstdint>
 #include <string>
 #include "compat/Compat.hpp"
@@ -16,6 +18,29 @@
 #include "ui/controls/TextBox.hpp"
 #include "ui/layout/StackPanel.hpp"
 #include "ui/app/Form.hpp"
+#include "ui/rendering/DisplayList.hpp"
+#include "ui/rendering/DrawingContext.hpp"
+#include "ui/rendering/DisplayListRenderer.hpp"
+#include "ui/text/TextLayoutEngine.hpp"
+#if __has_include("ui/rendering/backend/SoftwareRenderContext.hpp")
+#include "ui/rendering/backend/SoftwareRenderContext.hpp"
+#else
+#include "../src/rendering/backend/SoftwareRenderContext.hpp"
+#endif
+
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <crtdbg.h>
+#ifdef DrawText
+#undef DrawText
+#endif
+#endif
 
 using namespace cppui;
 
@@ -45,6 +70,7 @@ static void TestRawImeEventFactories() {
     assert(endEvt.timestampMs == 12347);
 
     compat::println("[PASS] TestRawImeEventFactories passed.");
+    std::fflush(stdout);
 }
 
 /// <summary>
@@ -77,6 +103,7 @@ static void TestImeCompositionEventArgs() {
     assert(commitArgs.IsCommitted());
 
     compat::println("[PASS] TestImeCompositionEventArgs passed.");
+    std::fflush(stdout);
 }
 
 /// <summary>
@@ -105,6 +132,7 @@ static void TestInputManagerImeDispatch() {
     assert(tb->GetText() == "個");            // 內容已確認
 
     compat::println("[PASS] TestInputManagerImeDispatch passed.");
+    std::fflush(stdout);
 }
 
 /// <summary>
@@ -155,6 +183,7 @@ static void TestTextBoxCompositionLifecycle() {
     assert(tb.GetCaretIndex() == 5);
 
     compat::println("[PASS] TestTextBoxCompositionLifecycle passed.");
+    std::fflush(stdout);
 }
 
 /// <summary>
@@ -211,15 +240,156 @@ static void TestTextBoxImeEdgeCases() {
     assert(tb.GetCaretIndex() == 0);
 
     compat::println("[PASS] TestTextBoxImeEdgeCases passed.");
+    std::fflush(stdout);
 }
 
+/// <summary>
+/// 測試 6: TextBox 中文 IME 組字渲染與 DisplayList 記憶體生命週期 UAF 防禦驗證
+/// </summary>
+static void TestTextBoxCompositionRenderingWithDisplayList() {
+    // -------------------------------------------------------------------------
+    // 測試 A: 驗證 DisplayList 對臨時排版物件之生命週期持有 (防禦層 1)
+    // -------------------------------------------------------------------------
+    {
+        rendering::DisplayList tempDl;
+        text::FontDescriptor font("Microsoft JhengHei", 14.0f);
+
+        {
+            rendering::DrawingContext tempDc(tempDl);
+            text::TextLayout temporaryLayout = text::TextLayoutEngine::Get().CreateLayout("臨時排版物件", font, 1000.0f);
+            assert(temporaryLayout.GetLineCount() > 0);
+            tempDc.DrawTextLayout(temporaryLayout, core::Point(10.0f, 10.0f), core::Colors::White);
+            // 離開此作用域區塊，temporaryLayout 與 tempDc 均解構
+        }
+
+        // 原始 TextLayout 已被解構，驗證 DisplayList 內部保留複本以防護 UAF
+        rendering::SoftwareRenderTarget tempTarget;
+        tempTarget.Resize(200, 100);
+        rendering::DisplayListRenderer tempRenderer;
+        rendering::RenderStats tempStats = tempRenderer.Render(tempDl, &tempTarget);
+
+        assert(tempStats.renderedOps > 0);
+        assert(tempDl.GetOpCount() > 0);
+    }
+
+    // -------------------------------------------------------------------------
+    // 測試 B: 驗證 TextBox 在中文 IME 組字狀態下的完整渲染迴圈 (防禦層 2)
+    // -------------------------------------------------------------------------
+    {
+        controls::TextBox tb;
+        tb.SetText("測試前置");
+        // "測試前置" 在 UTF-8 中每字 3 位元組，前 2 字佔 6 位元組
+        tb.SetCaretIndex(6);
+        assert(tb.GetCaretIndex() == 6);
+
+        // 注入未提交之組字事件 ("中文組字中")
+        input::ImeCompositionEventArgs compArgs(
+            input::StandardEvents::ImeComposition,
+            &tb,
+            "中文組字中",
+            2,
+            false
+        );
+        tb.RaiseEvent(compArgs);
+        assert(tb.GetCompositionText() == "中文組字中");
+        assert(tb.GetCompositionCursor() == 2);
+        assert(tb.GetText() == "測試前置");
+
+        // 設定控制項渲染邊界
+        tb.SetRenderBounds(core::Rect(0.0f, 0.0f, 300.0f, 40.0f));
+
+        rendering::DisplayList dl;
+        rendering::DrawingContext dc(dl);
+
+        tb.Render(dc);
+        assert(dl.GetOpCount() > 0);
+
+        rendering::SoftwareRenderTarget target;
+        target.Resize(300, 100);
+        rendering::DisplayListRenderer renderer;
+        rendering::RenderStats stats = renderer.Render(dl, &target);
+
+        assert(stats.renderedOps > 0);
+
+        // ---------------------------------------------------------------------
+        // 測試 C: 模擬多訊框連續組字更新與確認
+        // ---------------------------------------------------------------------
+        // 訊框 1: 連續變更組字字串為 "中文組字更新"
+        dl.Clear();
+        assert(dl.IsEmpty());
+
+        input::ImeCompositionEventArgs updateArgs(
+            input::StandardEvents::ImeComposition,
+            &tb,
+            "中文組字更新",
+            4,
+            false
+        );
+        tb.RaiseEvent(updateArgs);
+        assert(tb.GetCompositionText() == "中文組字更新");
+        assert(tb.GetCompositionCursor() == 4);
+
+        tb.Render(dc);
+        assert(dl.GetOpCount() > 0);
+
+        rendering::RenderStats updateStats = renderer.Render(dl, &target);
+        assert(updateStats.renderedOps > 0);
+
+        // 訊框 2: 注入定稿事件 ("確認字串", committed = true)
+        dl.Clear();
+        assert(dl.IsEmpty());
+
+        input::ImeCompositionEventArgs commitArgs(
+            input::StandardEvents::ImeComposition,
+            &tb,
+            "確認字串",
+            0,
+            true
+        );
+        tb.RaiseEvent(commitArgs);
+        assert(tb.GetCompositionText().empty());
+        assert(!tb.GetText().empty());
+        assert(tb.GetText() == "測試確認字串前置");
+
+        tb.Render(dc);
+        assert(dl.GetOpCount() > 0);
+
+        rendering::RenderStats commitStats = renderer.Render(dl, &target);
+        assert(commitStats.renderedOps > 0);
+    }
+
+    compat::println("[PASS] TestTextBoxCompositionRenderingWithDisplayList passed.");
+    std::fflush(stdout);
+}
+
+/// <summary>
+/// IME 單元測試進入點，執行所有 IME 與組字管線相關測試。
+/// </summary>
+/// <returns>全數通過回傳 0，否則異常結束。</returns>
 int main() {
+#if defined(_WIN32)
+    // 抑制 Windows CRT 錯誤與斷言彈窗 (Modal Dialog)，直接輸出至 stderr 並以非零狀態碼結束，防止 CI/自動化測試掛起
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+#if defined(_DEBUG)
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+    _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDERR);
+    _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+    _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+    _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+    _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+    _set_error_mode(_OUT_TO_STDERR);
+#endif
+#endif
+
     compat::println("=== 執行 CPPUI 文字輸入法 (IME) 與組字管線單元測試 ===");
+    std::fflush(stdout);
     TestRawImeEventFactories();
     TestImeCompositionEventArgs();
     TestInputManagerImeDispatch();
     TestTextBoxCompositionLifecycle();
     TestTextBoxImeEdgeCases();
+    TestTextBoxCompositionRenderingWithDisplayList();
     compat::println("=== 所有 IME 單元測試全數通過 (100% PASS) ===");
+    std::fflush(stdout);
     return 0;
 }

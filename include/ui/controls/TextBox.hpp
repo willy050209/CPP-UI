@@ -273,10 +273,30 @@ public:
     void ApplyTheme(const theme::Theme& theme) override;
 
 private:
+    /// <summary>
+    /// 將文字與組字之排版快取標記為失效，於下次佈局時重新排版。
+    /// </summary>
     void InvalidateLayout();
+
+    /// <summary>
+    /// 確保文字、提示字與 IME 組字字串之排版快取已生成且最新。
+    /// </summary>
     void EnsureLayout();
+
+    /// <summary>
+    /// 觸發文字變更路由事件。
+    /// </summary>
     void RaiseTextChanged();
-    float GetCaretXOffset() const;
+
+    /// <summary>
+    /// 計算游標在文字佈局中的水平 X 軸偏移量。
+    /// </summary>
+    /// <returns>游標相對文字原點之水平偏移。</returns>
+    COMPAT_NODISCARD float GetCaretXOffset() const;
+
+    /// <summary>
+    /// 更新 IME 組字候選視窗與游標位置至平台視窗。
+    /// </summary>
     void UpdateImeCompositionWindow();
 
     /// <summary>
@@ -327,6 +347,8 @@ private:
     std::string          m_compositionText;
     int32_t              m_compositionCursor = 0;
     text::TextLayout     m_compositionLayout;
+    text::TextLayout     m_compBeforeLayout;
+    text::TextLayout     m_compAfterLayout;
     bool                 m_isCompositionLayoutDirty = true;
 
     text::FontDescriptor m_font;

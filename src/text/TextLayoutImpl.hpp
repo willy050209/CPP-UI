@@ -40,6 +40,7 @@ struct TextLayout::Impl {
             BOOL isTrailing = FALSE;
             BOOL isInside = FALSE;
             DWRITE_HIT_TEST_METRICS htm;
+
             HRESULT hr = nativeLayout->HitTestPoint(pt.x, pt.y, &isTrailing, &isInside, &htm);
             if (SUCCEEDED(hr)) {
                 res.isTrailingHit = (isTrailing == TRUE);
@@ -117,6 +118,7 @@ struct TextLayout::Impl {
             FLOAT px = 0.0f;
             FLOAT py = 0.0f;
             DWRITE_HIT_TEST_METRICS htm;
+
             HRESULT hr = nativeLayout->HitTestTextPosition(static_cast<UINT32>(pos), FALSE, &px, &py, &htm);
             if (SUCCEEDED(hr)) {
                 return core::Rect(px, py, 2.0f, htm.height);

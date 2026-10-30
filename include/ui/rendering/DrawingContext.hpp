@@ -110,6 +110,7 @@ public:
     /// <param name="color">文字填色。</param>
     void DrawTextLayout(const text::TextLayout& layout, core::Point origin, core::Color color) {
         if (layout.GetLineCount() == 0 || color.a == 0) return;
+        m_displayList.RetainLayout(layout);
         DrawTextLayoutOp op;
         op.origin = core::Point(origin.x + m_currentOffset.x, origin.y + m_currentOffset.y);
         op.color = color;

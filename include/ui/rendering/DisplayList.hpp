@@ -9,9 +9,11 @@
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
+#include <vector>
 #include "compat/Compat.hpp"
 #include "ui/rendering/LinearArena.hpp"
 #include "ui/rendering/DrawOp.hpp"
+#include "ui/text/TextLayout.hpp"
 
 namespace cppui {
 namespace rendering {
@@ -39,7 +41,8 @@ public:
     /// <summary>移動建構子。</summary>
     DisplayList(DisplayList&& other) noexcept
         : m_arena(std::move(other.m_arena)),
-          m_opCount(other.m_opCount) {
+          m_opCount(other.m_opCount),
+          m_retainedLayouts(std::move(other.m_retainedLayouts)) {
         other.m_opCount = 0;
     }
 
@@ -48,6 +51,7 @@ public:
         if (this != &other) {
             m_arena = std::move(other.m_arena);
             m_opCount = other.m_opCount;
+            m_retainedLayouts = std::move(other.m_retainedLayouts);
             other.m_opCount = 0;
         }
         return *this;
@@ -120,6 +124,14 @@ public:
     }
 
     /// <summary>
+    /// 保留 TextLayout 生命週期直到顯示清單重設或解構。
+    /// </summary>
+    /// <param name="layout">TextLayout 物件引用。</param>
+    void RetainLayout(const text::TextLayout& layout) {
+        m_retainedLayouts.push_back(layout);
+    }
+
+    /// <summary>
     /// 遍歷重播所有二進位繪圖操作
     /// Visitor 簽章: void(const DrawOpHeader& header, const void* payload)
     /// </summary>
@@ -147,6 +159,7 @@ public:
     void Clear() noexcept {
         m_arena.Reset();
         m_opCount = 0;
+        m_retainedLayouts.clear();
     }
 
     /// <summary>取得操作指令數量。</summary>
@@ -170,8 +183,9 @@ public:
     }
 
 private:
-    LinearArena m_arena;
-    size_t      m_opCount = 0;
+    LinearArena                   m_arena;
+    size_t                        m_opCount = 0;
+    std::vector<text::TextLayout> m_retainedLayouts;
 };
 
 } // namespace rendering

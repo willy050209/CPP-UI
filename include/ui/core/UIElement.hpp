@@ -197,6 +197,16 @@ public:
     COMPAT_NODISCARD Rect GetRenderBounds() const noexcept { return m_renderBounds; }
 
     /// <summary>
+    /// 設定排版排列配置矩形邊界 (RenderBounds)。
+    /// </summary>
+    /// <param name="bounds">渲染邊界矩形。</param>
+    void SetRenderBounds(const Rect& bounds) noexcept {
+        m_renderBounds = bounds;
+        SetVisualOffset(Point(bounds.x, bounds.y));
+        SetVisualBounds(Rect(0.0f, 0.0f, bounds.width, bounds.height));
+    }
+
+    /// <summary>
     /// 取得實際佈局尺寸 (ActualSize)。
     /// </summary>
     /// <returns>實際尺寸。</returns>

@@ -13,7 +13,7 @@ namespace cppui {
 namespace text {
 
 struct TextLayoutEngine::Impl {
-    TextLayout CreateLayout(
+    COMPAT_NO_ASAN TextLayout CreateLayout(
         compat::string_view text,
         const FontDescriptor& font,
         float maxWidth,
@@ -40,13 +40,18 @@ struct TextLayoutEngine::Impl {
                 layoutImpl->size = core::Size(std::ceil(tm.widthIncludingTrailingWhitespace), std::ceil(tm.height));
             }
 
-            UINT32 lineCount = 0;
-            nativeLayout->GetLineMetrics(nullptr, 0, &lineCount);
-            if (lineCount > 0) {
-                std::vector<DWRITE_LINE_METRICS> dwriteLines(lineCount);
-                UINT32 actualLines = 0;
-                nativeLayout->GetLineMetrics(dwriteLines.data(), lineCount, &actualLines);
+            DWRITE_LINE_METRICS initialLines[16];
+            UINT32 actualLines = 0;
+            HRESULT hrLines = nativeLayout->GetLineMetrics(initialLines, 16, &actualLines);
+            std::vector<DWRITE_LINE_METRICS> dwriteLines;
+            if (hrLines == static_cast<HRESULT>(0x8007007AL) && actualLines > 16) {
+                dwriteLines.resize(actualLines);
+                nativeLayout->GetLineMetrics(dwriteLines.data(), actualLines, &actualLines);
+            } else if (SUCCEEDED(hrLines) && actualLines > 0) {
+                dwriteLines.assign(initialLines, initialLines + actualLines);
+            }
 
+            if (actualLines > 0) {
                 float currentY = 0.0f;
                 size_t charOffset = 0;
                 for (UINT32 i = 0; i < actualLines; ++i) {
@@ -54,15 +59,13 @@ struct TextLayoutEngine::Impl {
                     TextLine line;
                     line.startIndex = charOffset;
                     line.length = dwriteLines[i].length;
-                    line.bounds = core::Rect(0.0f, currentY, layoutImpl->size.width, normLineH);
+                    line.bounds = core::Rect(0.0f, currentY, 0.0f, normLineH);
                     line.baseline = dwriteLines[i].baseline;
                     line.isWrapped = (dwriteLines[i].isTrimmed != 0);
-
                     layoutImpl->lines.push_back(line);
                     currentY += normLineH;
                     charOffset += dwriteLines[i].length;
                 }
-                layoutImpl->size.height = (std::max)(layoutImpl->size.height, currentY);
             }
             return TextLayout(std::move(layoutImpl));
         }

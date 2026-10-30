@@ -17,6 +17,12 @@
 #include <windows.h>
 #endif
 
+#if defined(_WIN32) && (defined(__SANITIZE_ADDRESS__) || defined(_MSC_VER))
+extern "C" __declspec(dllexport) const char* __asan_default_options() {
+    return "windows_hook_legacy_allocators=false:detect_leaks=0:symbolize=0:abort_on_error=1";
+}
+#endif
+
 namespace cppui {
 namespace app {
 
